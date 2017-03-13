@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+		 xsi:schemaLocation="
+		 http://maven.apache.org/POM/4.0.0
+		 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+	<modelVersion>4.0.0</modelVersion>
 	<groupId>guru.qas</groupId>
-	<artifactId>jmeter-martini</artifactId>
+	<artifactId>martini-jmeter</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>JMeterMartini</name>
-	<url>https://github.com/qas-guru/infusion</url>
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>Martini: JMeter Plugin</description>
+	<url>https://github.com/qas-guru/martini-jmeter</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -29,23 +32,41 @@
 					<target>${java.version}</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
 	<dependencies>
+		<dependency>
+			<groupId>guru.qas</groupId>
+			<artifactId>martini-core</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.apache.jmeter/ApacheJMeter_components -->
 		<dependency>
-		    <groupId>org.apache.jmeter</groupId>
-		    <artifactId>ApacheJMeter_components</artifactId>
-		    <version>${jmeter.version}</version>
+			<groupId>org.apache.jmeter</groupId>
+			<artifactId>ApacheJMeter_components</artifactId>
+			<version>${jmeter.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.apache.jmeter/ApacheJMeter_java -->
 		<dependency>
-		    <groupId>org.apache.jmeter</groupId>
-		    <artifactId>ApacheJMeter_java</artifactId>
-		    <version>${jmeter.version}</version>
+			<groupId>org.apache.jmeter</groupId>
+			<artifactId>ApacheJMeter_java</artifactId>
+			<version>${jmeter.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
