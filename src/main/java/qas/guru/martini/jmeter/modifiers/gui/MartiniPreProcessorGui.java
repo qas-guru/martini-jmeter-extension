@@ -18,9 +18,8 @@
 
 package qas.guru.martini.jmeter.modifiers.gui;
 
-import java.util.Date;
+import java.awt.Container;
 import java.util.ResourceBundle;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.Box;
 import javax.swing.JComponent;
@@ -34,17 +33,20 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
 
-public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
+import static qas.guru.martini.jmeter.modifiers.MartiniPreProcessor.*;
 
-	private static final String RESOURCE_LABEL = "martini_pre_processor_label";
-	private static final String RESOURCE_TITLE = "martini_pre_processor_title";
-	private static final String DEFAULT_TEXT = "Stirred, not shaken.";
+@SuppressWarnings("WeakerAccess")
+public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
-	private static final long serialVersionUID = 240L;
+	protected static final long serialVersionUID = 240L;
 
-	//private final AtomicReference<ResourceBundle> resourceBundleReference;
-	private ResourceBundle resourceBundle;
-	private JTextField textField;
+	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
+	protected static final String RESOURCE_TEXT_LABEL = "martini_pre_processor_label";
+	protected static final String RESOURCE_CONTEXT_CONFIGURATION_LABEL = "martini_context_configuration_label";
+
+	protected ResourceBundle resourceBundle;
+	protected JTextField textField;
+	protected JTextField contextConfigurationField;
 
 	/**
 	 * No-arg constructor.
@@ -113,8 +115,12 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	public void configure(TestElement el) {
 		super.configure(el);
 		MartiniPreProcessor cast = MartiniPreProcessor.class.cast(el);
-		Date timestamp = cast.getTimestamp();
-		textField.setText(null == timestamp ? DEFAULT_TEXT : timestamp.toString());
+
+		String text = cast.getText();
+		textField.setText(text);
+
+		String contextConfiguration = cast.getContextConfiguration();
+		contextConfigurationField.setText(contextConfiguration);
 	}
 
 	/**
@@ -122,23 +128,37 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	 */
 	private void init() { // WARNING: called from ctor so must not be overridden (i.e. must be private or final)
 		resourceBundle = ResourceBundle.getBundle("qas.guru.martini.jmeter");
+		initTitlePanel();
+		initTextPanel();
+		initContextConfigurationPanel();
+	}
 
+	protected void initTitlePanel() {
 		setLayout(new VerticalLayout(5, VerticalLayout.BOTH, VerticalLayout.TOP));
-
 		setBorder(makeBorder());
-		add(makeTitlePanel());
+		Container container = makeTitlePanel();
+		add(container);
+	}
 
-		Box textPanel = Box.createHorizontalBox();
-		//ResourceBundle resourceBundle = getResourceBundle();
-		String label = resourceBundle.getString(RESOURCE_LABEL);
+	protected void initTextPanel() {
+		textField = initTextField(RESOURCE_TEXT_LABEL, DEFAULT_TEXT);
+	}
+
+	protected JTextField initTextField(String labelKey, String defaultValue) {
+		Box box = Box.createHorizontalBox();
+		String label = resourceBundle.getString(labelKey);
 		JLabel textLabel = new JLabel(label);
-		textPanel.add(textLabel);
+		box.add(textLabel);
 
-		textField = new JTextField(6);
-		textField.setText(DEFAULT_TEXT);
-		textPanel.add(textField);
+		JTextField field = new JTextField(6);
+		field.setText(defaultValue);
+		box.add(field);
+		add(box);
+		return field;
+	}
 
-		add(textPanel);
+	protected void initContextConfigurationPanel() {
+		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL, DEFAULT_CONTEXT_CONFIGURATION);
 	}
 
 	/**
@@ -147,6 +167,7 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void clearGui() {
 		textField.setText(DEFAULT_TEXT);
+		contextConfigurationField.setText(DEFAULT_CONTEXT_CONFIGURATION);
 		super.clearGui();
 	}
 }
