@@ -1,7 +1,5 @@
 package qas.guru.martini.jmeter.modifiers;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestStateListener;
@@ -16,46 +14,27 @@ import org.apache.log.Logger;
 public class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
 	private static final Logger LOG = LoggingManager.getLoggerForClass();
-
 	public static final String JMETER_CONTEXT_KEY = "martiniPreProcessor";
-	public static final String DEFAULT_CONTEXT_CONFIGURATION = "application.xml";
-	public static final String DEFAULT_TEXT = "Stirred, not shaken.";
-
-	protected final AtomicReference<String> textReference;
-	protected final AtomicReference<String> contextConfigurationReference;
 
 	public MartiniPreProcessor() {
-		this(new AtomicReference<>(DEFAULT_TEXT), new AtomicReference<>(DEFAULT_CONTEXT_CONFIGURATION));
+		super();
+		super.setProperty("text", "my Default Text");
+		super.setProperty("contextConfiguration", "meh.xml");
+		System.out.println("breakpoint");
 	}
 
-	protected MartiniPreProcessor(
-		AtomicReference<String> textReference,
-		AtomicReference<String> contextConfigurationReference
-	) {
-		this.textReference = textReference;
-		this.contextConfigurationReference = contextConfigurationReference;
-	}
-
-	public String getText() {
-		return textReference.get();
-	}
-
-	public String getContextConfiguration() {
-		return contextConfigurationReference.get();
-	}
-
-	@SuppressWarnings("MethodDoesntCallSuperMethod")
-	@Override
-	public Object clone() {
-		MartiniPreProcessor processor = new MartiniPreProcessor(textReference, contextConfigurationReference);
-		for (PropertyIterator i = propertyIterator(); i.hasNext(); ) {
-			JMeterProperty source = i.next();
-			JMeterProperty cloned = source.clone();
-			processor.setProperty(cloned);
-		}
-		processor.setRunningVersion(isRunningVersion());
-		return processor;
-	}
+//	@SuppressWarnings("MethodDoesntCallSuperMethod")
+//	@Override
+//	public Object clone() {
+//		MartiniPreProcessor processor = new MartiniPreProcessor();
+//		for (PropertyIterator i = propertyIterator(); i.hasNext(); ) {
+//			JMeterProperty source = i.next();
+//			JMeterProperty cloned = source.clone();
+//			processor.setProperty(cloned);
+//		}
+//		processor.setRunningVersion(isRunningVersion()); // TODO: is this actually necessary?
+//		return processor;
+//	}
 
 	@Override
 	public void process() {

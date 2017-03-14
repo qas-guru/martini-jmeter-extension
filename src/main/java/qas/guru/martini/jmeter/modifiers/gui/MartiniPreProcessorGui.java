@@ -29,11 +29,10 @@ import javax.swing.JTextField;
 
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.testelement.property.StringProperty;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
-
-import static qas.guru.martini.jmeter.modifiers.MartiniPreProcessor.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
@@ -92,6 +91,9 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public TestElement createTestElement() {
 		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
+//		super.configureTestElement(preProcessor);
+//		preProcessor.setProperty(new StringProperty("text", "Stirred, not shaken."));
+//		preProcessor.setProperty(new StringProperty("contextConfiguration", "application.xml"));
 		modifyTestElement(preProcessor);
 		return preProcessor;
 	}
@@ -104,6 +106,11 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void modifyTestElement(TestElement preProcessor) {
 		super.configureTestElement(preProcessor);
+		String text = textField.getText();
+		preProcessor.setProperty(new StringProperty("text", text));
+
+		String configuration = contextConfigurationField.getText();
+		preProcessor.setProperty(new StringProperty("contextConfiguration", configuration));
 	}
 
 	/**
@@ -114,12 +121,11 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void configure(TestElement el) {
 		super.configure(el);
-		MartiniPreProcessor cast = MartiniPreProcessor.class.cast(el);
 
-		String text = cast.getText();
+		String text = el.getPropertyAsString("text");
 		textField.setText(text);
 
-		String contextConfiguration = cast.getContextConfiguration();
+		String contextConfiguration = el.getPropertyAsString("contextConfiguration");
 		contextConfigurationField.setText(contextConfiguration);
 	}
 
@@ -141,7 +147,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	protected void initTextPanel() {
-		textField = initTextField(RESOURCE_TEXT_LABEL, DEFAULT_TEXT);
+		textField = initTextField(RESOURCE_TEXT_LABEL, "Stirred, not shaken.");
 	}
 
 	protected JTextField initTextField(String labelKey, String defaultValue) {
@@ -158,16 +164,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	protected void initContextConfigurationPanel() {
-		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL, DEFAULT_CONTEXT_CONFIGURATION);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void clearGui() {
-		textField.setText(DEFAULT_TEXT);
-		contextConfigurationField.setText(DEFAULT_CONTEXT_CONFIGURATION);
-		super.clearGui();
+		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL, "applicationContext.xml");
 	}
 }

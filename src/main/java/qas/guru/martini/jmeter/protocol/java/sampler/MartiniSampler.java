@@ -32,7 +32,7 @@ public class MartiniSampler extends AbstractJavaSamplerClient {
 			int id = System.identityHashCode(cast);
 			LOG.info("identity of processor object is " + id);
 
-			String configuration = cast.getContextConfiguration();
+			String configuration = cast.getPropertyAsString("contextConfiguration");
 			LOG.info("configured Spring context is " + configuration);
 			sampleResult.setSuccessful(true);
 		}
