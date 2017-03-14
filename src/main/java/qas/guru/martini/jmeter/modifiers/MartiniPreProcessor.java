@@ -63,23 +63,27 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 	@Override
 	public void testStarted() {
 		try {
-			String configLocation = getConfigLocation();
-			ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext(configLocation);
-			String id = applicationContext.getId();
-			synchronized (SPRING_CONTEXTS) {
-				SPRING_CONTEXTS.put(id, applicationContext);
-			}
-			super.setProperty(PROPERTY_KEY_SPRING_CONTEXT_ID, id);
+			startSpring();
 		}
 		catch (Exception e) {
 			String message = "Unable to initialize Spring ApplicationContext; halting execution.";
 			LOG.error(message, e);
 			displayError(message + "\nSee log for details.");
-			stop();
+			StandardJMeterEngine.stopEngineNow();
 		}
 	}
 
-	private String getConfigLocation() {
+	protected void startSpring() {
+		String configLocation = getConfigLocation();
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext(configLocation);
+		String id = applicationContext.getId();
+		synchronized (SPRING_CONTEXTS) {
+			SPRING_CONTEXTS.put(id, applicationContext);
+		}
+		super.setProperty(PROPERTY_KEY_SPRING_CONTEXT_ID, id);
+	}
+
+	protected String getConfigLocation() {
 		String property = getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
 		String trimmed = null == property ? null : property.trim();
 		checkState(null != trimmed && !trimmed.isEmpty(), "missing or empty Spring Application Context");
@@ -92,9 +96,6 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 		JOptionPane.showMessageDialog(component, message, "Error", JOptionPane.ERROR_MESSAGE);
 	}
 
-	protected void stop() {
-		StandardJMeterEngine.stopEngineNow();
-	}
 
 	@Override
 	public void testStarted(String s) {
