@@ -23,11 +23,12 @@ import java.util.ResourceBundle;
 
 import javax.swing.Box;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.property.StringProperty;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
@@ -39,15 +40,74 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected static final long serialVersionUID = 240L;
 
+	protected static final String RESOURCE_BUNDLE = "qas.guru.martini.jmeter";
 	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
 	protected static final String SPRING_CONFIGURATION_LABEL_RESOURCE = "martini_spring_context_label";
 
-	protected ResourceBundle resourceBundle;
-	protected JTextField springContextField;
+	protected final ResourceBundle resourceBundle;
+	protected final JTextField springContextField;
 
 	public MartiniPreProcessorGui() {
 		super();
-		init();
+		resourceBundle = getResourceBundle();
+		springContextField = new JTextField(6);
+		initGui();
+
+	}
+
+	protected ResourceBundle getResourceBundle() {
+		ResourceBundle bundle = null;
+		try {
+			bundle = ResourceBundle.getBundle(RESOURCE_BUNDLE);
+		}
+		catch (Exception e) {
+			String message = String.format("unable to load resource bundle %s", RESOURCE_BUNDLE);
+			JOptionPane.showMessageDialog(this, e, message, JOptionPane.WARNING_MESSAGE);
+		}
+		return bundle;
+	}
+
+	protected void initGui() {
+		initBorder();
+		initTitlePanel();
+		initSpringBox();
+	}
+
+	protected void initBorder() {
+		Border border = makeBorder();
+		setBorder(border);
+	}
+
+	protected void initTitlePanel() {
+		initTitlePanelLayout();
+		initTitlePanelContainer();
+	}
+
+	protected void initTitlePanelLayout() {
+		VerticalLayout layout = new VerticalLayout(5, VerticalLayout.BOTH, VerticalLayout.TOP);
+		setLayout(layout);
+	}
+
+	protected void initTitlePanelContainer() {
+		Container container = makeTitlePanel();
+		add(container);
+	}
+
+	protected void initSpringBox() {
+		String label = null == resourceBundle ? "" : resourceBundle.getString(SPRING_CONFIGURATION_LABEL_RESOURCE);
+		JLabel jLabel = new JLabel(label);
+		initSpringBox(jLabel);
+	}
+
+	protected void initSpringBox(JLabel label) {
+		Box box = Box.createHorizontalBox();
+		box.add(label);
+		initSpringBox(box);
+	}
+
+	protected void initSpringBox(Box box) {
+		box.add(springContextField);
+		add(box);
 	}
 
 	@Override
@@ -57,22 +117,9 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	@Override
 	public String getStaticLabel() {
-		ResourceBundle resourceBundle = getResourceBundle();
-		return resourceBundle.getString(RESOURCE_TITLE);
+		return null == resourceBundle ? "" : resourceBundle.getString(RESOURCE_TITLE);
 	}
 
-	private ResourceBundle getResourceBundle() {
-		if (null == resourceBundle) {
-			resourceBundle = ResourceBundle.getBundle("qas.guru.martini.jmeter");
-		}
-		return resourceBundle;
-	}
-
-	/**
-	 * Create the test element underlying this GUI component.
-	 *
-	 * @see org.apache.jmeter.gui.JMeterGUIComponent#createTestElement()
-	 */
 	@Override
 	public TestElement createTestElement() {
 		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
@@ -80,62 +127,18 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		return preProcessor;
 	}
 
-	/**
-	 * Modifies a given TestElement to mirror the data in the gui components.
-	 *
-	 * @see org.apache.jmeter.gui.JMeterGUIComponent#modifyTestElement(TestElement)
-	 */
 	@Override
 	public void modifyTestElement(TestElement preProcessor) {
 		super.configureTestElement(preProcessor);
 		String configuration = springContextField.getText();
-		preProcessor.setProperty(new StringProperty("contextConfiguration", configuration));
+		preProcessor.setProperty(PROPERTY_KEY_SPRING_CONFIGURATION, configuration);
 	}
 
-	/**
-	 * Configure this GUI component from the underlying TestElement.
-	 *
-	 * @see org.apache.jmeter.gui.JMeterGUIComponent#configure(TestElement)
-	 */
 	@Override
 	public void configure(TestElement el) {
 		super.configure(el);
 
 		String contextConfiguration = el.getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
 		springContextField.setText(contextConfiguration);
-	}
-
-	/**
-	 * Initialize this component.
-	 */
-	private void init() { // WARNING: called from ctor so must not be overridden (i.e. must be private or final)
-		resourceBundle = ResourceBundle.getBundle("qas.guru.martini.jmeter");
-		initTitlePanel();
-		initSpringContextPanel();
-	}
-
-	protected void initTitlePanel() {
-		setLayout(new VerticalLayout(5, VerticalLayout.BOTH, VerticalLayout.TOP));
-		setBorder(makeBorder());
-		Container container = makeTitlePanel();
-		add(container);
-	}
-
-	protected void initSpringContextPanel() {
-		String label = resourceBundle.getString(SPRING_CONFIGURATION_LABEL_RESOURCE);
-		initSpringContextPanel(label);
-	}
-
-	protected void initSpringContextPanel(String label) {
-		Box box = Box.createHorizontalBox();
-		JLabel textLabel = new JLabel(label);
-		box.add(textLabel);
-		initSpringContextPanel(box);
-	}
-
-	protected void initSpringContextPanel(Box box) {
-		springContextField = new JTextField(6);
-		box.add(springContextField);
-		add(box);
 	}
 }

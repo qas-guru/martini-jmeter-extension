@@ -20,8 +20,9 @@ import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
 public class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
 	protected static final Logger LOG = LoggingManager.getLoggerForClass();
-	private static final Map<String, ClassPathXmlApplicationContext> SPRING_CONTEXTS = new HashMap<>();
-	public static final String DEFAULT_SPRING_CONTEXT = "applicationContext.xml";
+	protected static final Map<String, ClassPathXmlApplicationContext> SPRING_CONTEXTS = new HashMap<>();
+	protected static final String DEFAULT_SPRING_CONTEXT = "applicationContext.xml";
+	protected static final String PROPERTY_KEY_SPRING_CONTEXT_ID = "martini_spring_context_id";
 
 	public MartiniPreProcessor() {
 		super();
@@ -30,18 +31,22 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 
 	@Override
 	public void process() {
+		JMeterVariables variables = getJMeterVariables();
+		Object object = variables.getObject(VALUE_KEY_MIXOLOGIST);
+		if (null == object) {
+			Mixologist mixologist = getMixologist();
+			variables.putObject(VALUE_KEY_MIXOLOGIST, mixologist);
+		}
+	}
+
+	protected JMeterVariables getJMeterVariables() {
 		JMeterContext threadContext = getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
 		if (null == variables) {
 			variables = new JMeterVariables();
 			threadContext.setVariables(variables);
 		}
-
-		Object object = variables.getObject(VALUE_KEY_MIXOLOGIST);
-		if (null == object) {
-			Mixologist mixologist = getMixologist();
-			variables.putObject(VALUE_KEY_MIXOLOGIST, mixologist);
-		}
+		return variables;
 	}
 
 	protected Mixologist getMixologist() {

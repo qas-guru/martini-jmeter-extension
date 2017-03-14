@@ -27,26 +27,6 @@
       </ThreadGroup>
       <hashTree>
         <qas.guru.martini.jmeter.modifiers.MartiniPreProcessor guiclass="qas.guru.martini.jmeter.modifiers.gui.MartiniPreProcessorGui" testclass="qas.guru.martini.jmeter.modifiers.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
-          <stringProp name="martini_spring_context">applicationContext.xml</stringProp>
-          <objProp>
-            <name>martini_monitor</name>
-            <value class="com.google.common.util.concurrent.Monitor">
-              <fair>false</fair>
-              <lock>
-                <sync class="java.util.concurrent.locks.ReentrantLock$NonfairSync" serialization="custom">
-                  <java.util.concurrent.locks.AbstractQueuedSynchronizer>
-                    <default>
-                      <state>0</state>
-                    </default>
-                  </java.util.concurrent.locks.AbstractQueuedSynchronizer>
-                  <java.util.concurrent.locks.ReentrantLock_-Sync>
-                    <default/>
-                  </java.util.concurrent.locks.ReentrantLock_-Sync>
-                </sync>
-              </lock>
-            </value>
-          </objProp>
-          <stringProp name="contextConfiguration">applicationContext.xml</stringProp>
         </qas.guru.martini.jmeter.modifiers.MartiniPreProcessor>
         <hashTree/>
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request" enabled="true">
