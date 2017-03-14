@@ -30,9 +30,12 @@ import javax.swing.border.Border;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
+import org.apache.jorphan.logging.LoggingManager;
+import org.apache.log.Logger;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
 
+import static javax.swing.JOptionPane.WARNING_MESSAGE;
 import static qas.guru.martini.jmeter.modifiers.MartiniConstants.PROPERTY_KEY_SPRING_CONFIGURATION;
 
 @SuppressWarnings("WeakerAccess")
@@ -40,6 +43,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected static final long serialVersionUID = 240L;
 
+	protected static final Logger LOG = LoggingManager.getLoggerForClass();
 	protected static final String RESOURCE_BUNDLE = "qas.guru.martini.jmeter";
 	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
 	protected static final String SPRING_CONFIGURATION_LABEL_RESOURCE = "martini_spring_context_label";
@@ -52,7 +56,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		resourceBundle = getResourceBundle();
 		springContextField = new JTextField(6);
 		initGui();
-
 	}
 
 	protected ResourceBundle getResourceBundle() {
@@ -62,7 +65,8 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		}
 		catch (Exception e) {
 			String message = String.format("unable to load resource bundle %s", RESOURCE_BUNDLE);
-			JOptionPane.showMessageDialog(this, e, message, JOptionPane.WARNING_MESSAGE);
+			LOG.warn(message, e);
+			JOptionPane.showMessageDialog(this, message + "; see log for details", "Warning", WARNING_MESSAGE);
 		}
 		return bundle;
 	}

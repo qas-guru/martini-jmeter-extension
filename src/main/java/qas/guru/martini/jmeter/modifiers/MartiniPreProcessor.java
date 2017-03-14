@@ -3,6 +3,11 @@ package qas.guru.martini.jmeter.modifiers;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JOptionPane;
+
+import org.apache.jmeter.engine.StandardJMeterEngine;
+import org.apache.jmeter.gui.GuiPackage;
+import org.apache.jmeter.gui.MainFrame;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestStateListener;
@@ -14,6 +19,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import guru.qas.martini.Mixologist;
 
+import static com.google.common.base.Preconditions.checkState;
 import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -51,21 +57,43 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 
 	protected Mixologist getMixologist() {
 		ClassPathXmlApplicationContext applicationContext = getApplicationContext();
-		if (null == applicationContext) {
-			LOG.warn("Spring application context not initialized");
-		}
-		return null == applicationContext ? null : applicationContext.getBean(Mixologist.class);
+		return applicationContext.getBean(Mixologist.class);
 	}
 
 	@Override
 	public void testStarted() {
-		String config = super.getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
-		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext(config);
-		String id = applicationContext.getId();
-		synchronized (SPRING_CONTEXTS) {
-			SPRING_CONTEXTS.put(id, applicationContext);
+		try {
+			String configLocation = getConfigLocation();
+			ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext(configLocation);
+			String id = applicationContext.getId();
+			synchronized (SPRING_CONTEXTS) {
+				SPRING_CONTEXTS.put(id, applicationContext);
+			}
+			super.setProperty(PROPERTY_KEY_SPRING_CONTEXT_ID, id);
 		}
-		super.setProperty(PROPERTY_KEY_SPRING_CONTEXT_ID, id);
+		catch (Exception e) {
+			String message = "Unable to initialize Spring ApplicationContext; halting execution.";
+			LOG.error(message, e);
+			displayError(message + "\nSee log for details.");
+			stop();
+		}
+	}
+
+	private String getConfigLocation() {
+		String property = getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
+		String trimmed = null == property ? null : property.trim();
+		checkState(null != trimmed && !trimmed.isEmpty(), "missing or empty Spring Application Context");
+		return trimmed;
+	}
+
+	protected void displayError(String message) {
+		GuiPackage guiPackage = GuiPackage.getInstance();
+		MainFrame component = guiPackage.getMainFrame();
+		JOptionPane.showMessageDialog(component, message, "Error", JOptionPane.ERROR_MESSAGE);
+	}
+
+	protected void stop() {
+		StandardJMeterEngine.stopEngineNow();
 	}
 
 	@Override
@@ -78,7 +106,7 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 		super.removeProperty(PROPERTY_KEY_SPRING_CONTEXT_ID);
 		if (null != applicationContext) {
 			String id = applicationContext.getId();
-			synchronized(SPRING_CONTEXTS) {
+			synchronized (SPRING_CONTEXTS) {
 				SPRING_CONTEXTS.remove(id);
 			}
 			applicationContext.close();
