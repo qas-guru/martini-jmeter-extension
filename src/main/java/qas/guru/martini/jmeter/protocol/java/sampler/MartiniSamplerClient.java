@@ -33,6 +33,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		}
 
 		SampleResult sampleResult = new SampleResult();
+		// TODO: add sub results.
 		sampleResult.setSuccessful(true);
 		return sampleResult;
 	}
