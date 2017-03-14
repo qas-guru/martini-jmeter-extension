@@ -91,9 +91,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public TestElement createTestElement() {
 		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
-//		super.configureTestElement(preProcessor);
-//		preProcessor.setProperty(new StringProperty("text", "Stirred, not shaken."));
-//		preProcessor.setProperty(new StringProperty("contextConfiguration", "application.xml"));
 		modifyTestElement(preProcessor);
 		return preProcessor;
 	}
@@ -147,23 +144,22 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	protected void initTextPanel() {
-		textField = initTextField(RESOURCE_TEXT_LABEL, "Stirred, not shaken.");
+		textField = initTextField(RESOURCE_TEXT_LABEL);
 	}
 
-	protected JTextField initTextField(String labelKey, String defaultValue) {
+	protected JTextField initTextField(String labelKey) {
 		Box box = Box.createHorizontalBox();
 		String label = resourceBundle.getString(labelKey);
 		JLabel textLabel = new JLabel(label);
 		box.add(textLabel);
 
 		JTextField field = new JTextField(6);
-		field.setText(defaultValue);
 		box.add(field);
 		add(box);
 		return field;
 	}
 
 	protected void initContextConfigurationPanel() {
-		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL, "applicationContext.xml");
+		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL);
 	}
 }
