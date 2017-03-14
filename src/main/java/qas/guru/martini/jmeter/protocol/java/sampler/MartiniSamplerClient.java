@@ -15,9 +15,9 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 import qas.guru.martini.jmeter.modifiers.MartiniConstants;
 
-public class MartiniSampler extends AbstractJavaSamplerClient {
+public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 
-	private static final Logger LOG = LoggingManager.getLoggerFor(MartiniSampler.class.getName());
+	private static final Logger LOG = LoggingManager.getLoggerFor(MartiniSamplerClient.class.getName());
 
 
 	@Override
