@@ -32,7 +32,7 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
 
-import static qas.guru.martini.jmeter.modifiers.MartiniConstants.PROPERTY_KEY_SPRING_CONTEXT;
+import static qas.guru.martini.jmeter.modifiers.MartiniConstants.PROPERTY_KEY_SPRING_CONFIGURATION;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
@@ -45,9 +45,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	protected ResourceBundle resourceBundle;
 	protected JTextField springContextField;
 
-	/**
-	 * No-arg constructor.
-	 */
 	public MartiniPreProcessorGui() {
 		super();
 		init();
@@ -104,7 +101,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	public void configure(TestElement el) {
 		super.configure(el);
 
-		String contextConfiguration = el.getPropertyAsString(PROPERTY_KEY_SPRING_CONTEXT);
+		String contextConfiguration = el.getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
 		springContextField.setText(contextConfiguration);
 	}
 

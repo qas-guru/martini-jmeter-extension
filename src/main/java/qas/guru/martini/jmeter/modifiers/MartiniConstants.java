@@ -17,8 +17,7 @@ limitations under the License.
 package qas.guru.martini.jmeter.modifiers;
 
 public interface MartiniConstants {
-	String PROPERTY_KEY_SPRING_CONTEXT = "martini_spring_context";
-	String PROPERTY_KEY_MONITOR = "martini_monitor";
-	String VALUE_KEY_MONITOR = PROPERTY_KEY_MONITOR;
-
+	String PROPERTY_KEY_SPRING_CONFIGURATION = "martini_spring_configuration";
+	String PROPERTY_KEY_SPRING_CONTEXT_ID = "martini_spring_context_id";
+	String VALUE_KEY_MIXOLOGIST = "martini_mixologist";
 }
