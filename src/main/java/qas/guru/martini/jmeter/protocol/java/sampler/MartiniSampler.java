@@ -9,7 +9,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 
-import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
+import com.google.common.util.concurrent.Monitor;
 
 import static qas.guru.martini.jmeter.modifiers.MartiniPreProcessor.JMETER_CONTEXT_KEY;
 
@@ -22,10 +22,15 @@ public class MartiniSampler extends AbstractJavaSamplerClient {
 		JMeterContext context = JMeterContextService.getContext();
 
 		JMeterVariables variables = context.getVariables();
-//		Object object = variables.getObject(JMETER_CONTEXT_KEY);
-//		System.out.println(object);
+		Object object = variables.getObject("monitor");
+		System.out.println(object);
 
 		SampleResult sampleResult = new SampleResult();
+
+		if (Monitor.class.isInstance(object)) {
+			Monitor monitor = Monitor.class.cast(object);
+			LOG.info("monitor is " + monitor);
+		}
 
 //		if (MartiniPreProcessor.class.isInstance(object)) {
 //			MartiniPreProcessor cast = MartiniPreProcessor.class.cast(object);
