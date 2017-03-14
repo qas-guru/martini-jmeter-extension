@@ -32,7 +32,6 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 			variables = new JMeterVariables();
 			threadContext.setVariables(variables);
 		}
-		variables.putObject(JMETER_CONTEXT_KEY, this);
 	}
 
 	@Override

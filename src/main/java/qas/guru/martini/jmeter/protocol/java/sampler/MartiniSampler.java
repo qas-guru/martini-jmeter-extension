@@ -22,24 +22,24 @@ public class MartiniSampler extends AbstractJavaSamplerClient {
 		JMeterContext context = JMeterContextService.getContext();
 
 		JMeterVariables variables = context.getVariables();
-		Object object = variables.getObject(JMETER_CONTEXT_KEY);
-		System.out.println(object);
+//		Object object = variables.getObject(JMETER_CONTEXT_KEY);
+//		System.out.println(object);
 
 		SampleResult sampleResult = new SampleResult();
 
-		if (MartiniPreProcessor.class.isInstance(object)) {
-			MartiniPreProcessor cast = MartiniPreProcessor.class.cast(object);
-			int id = System.identityHashCode(cast);
-			LOG.info("identity of processor object is " + id);
-
-			String configuration = cast.getPropertyAsString("contextConfiguration");
-			LOG.info("configured Spring context is " + configuration);
-			sampleResult.setSuccessful(true);
-		}
-		else {
-			sampleResult.setSuccessful(false);
-			System.out.println("I don't know what to do");
-		}
+//		if (MartiniPreProcessor.class.isInstance(object)) {
+//			MartiniPreProcessor cast = MartiniPreProcessor.class.cast(object);
+//			int id = System.identityHashCode(cast);
+//			LOG.info("identity of processor object is " + id);
+//
+//			String configuration = cast.getPropertyAsString("contextConfiguration");
+//			LOG.info("configured Spring context is " + configuration);
+//			sampleResult.setSuccessful(true);
+//		}
+//		else {
+//			sampleResult.setSuccessful(false);
+//			System.out.println("I don't know what to do");
+//		}
 
 		return sampleResult;
 	}
