@@ -25,7 +25,7 @@ import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
 @SuppressWarnings("WeakerAccess")
 public class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
-	protected static final Logger LOG = LoggingManager.getLoggerForClass();
+	protected static final Logger LOG = LoggingManager.getLoggerFor(MartiniPreProcessor.class.getName());
 	protected static final Map<String, ClassPathXmlApplicationContext> SPRING_CONTEXTS = new HashMap<>();
 	protected static final String DEFAULT_SPRING_CONTEXT = "applicationContext.xml";
 	protected static final String PROPERTY_KEY_SPRING_CONTEXT_ID = "martini_spring_context_id";

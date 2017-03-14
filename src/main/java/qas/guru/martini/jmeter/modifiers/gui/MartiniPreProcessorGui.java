@@ -43,7 +43,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected static final long serialVersionUID = 240L;
 
-	protected static final Logger LOG = LoggingManager.getLoggerForClass();
+	protected static final Logger LOG = LoggingManager.getLoggerFor(MartiniPreProcessorGui.class.getName());
 	protected static final String RESOURCE_BUNDLE = "qas.guru.martini.jmeter";
 	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
 	protected static final String SPRING_CONFIGURATION_LABEL_RESOURCE = "martini_spring_context_label";

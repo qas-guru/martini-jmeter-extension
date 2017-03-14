@@ -17,7 +17,8 @@ import qas.guru.martini.jmeter.modifiers.MartiniConstants;
 
 public class MartiniSampler extends AbstractJavaSamplerClient {
 
-	private static final Logger LOG = LoggingManager.getLoggerForClass();
+	private static final Logger LOG = LoggingManager.getLoggerFor(MartiniSampler.class.getName());
+
 
 	@Override
 	public SampleResult runTest(JavaSamplerContext javaSamplerContext) {
