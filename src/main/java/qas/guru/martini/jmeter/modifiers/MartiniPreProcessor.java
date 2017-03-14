@@ -69,7 +69,6 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 
 	@Override
 	public void testEnded() {
-
 		ClassPathXmlApplicationContext applicationContext = getApplicationContext();
 		super.removeProperty(PROPERTY_KEY_SPRING_CONTEXT_ID);
 		if (null != applicationContext) {
