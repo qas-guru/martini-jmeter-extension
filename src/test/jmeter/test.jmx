@@ -34,7 +34,7 @@
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
-          <stringProp name="classname">qas.guru.martini.jmeter.protocol.java.sampler.MartiniSampler</stringProp>
+          <stringProp name="classname">qas.guru.martini.jmeter.protocol.java.sampler.MartiniSamplerClient</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>

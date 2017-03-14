@@ -14,10 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qas.guru.martini.jmeter.modifiers;
+package fixture;
 
-public interface MartiniConstants {
-	String PROPERTY_KEY_SPRING_CONFIGURATION = "martini_spring_configuration";
-	String VALUE_KEY_MIXOLOGIST = "martini_mixologist";
-	String VALUE_KEY_EVENT_PUBLISHER = "martini_event_publisher";
+import org.apache.jorphan.logging.LoggingManager;
+import org.apache.log.Logger;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+import qas.guru.martini.event.SuiteEvent;
+
+@Component
+class TestEventListener {
+
+	private static final Logger LOG = LoggingManager.getLoggerFor(TestEventListener.class.getName());
+
+	@EventListener
+	public void handle(SuiteEvent event) {
+		LOG.info("received event " + event);
+	}
 }

@@ -18,6 +18,8 @@ import org.apache.log.Logger;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import guru.qas.martini.Mixologist;
+import guru.qas.martini.event.MartiniEventPublisher;
+import qas.guru.martini.event.SuiteEvent;
 
 import static com.google.common.base.Preconditions.checkState;
 import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
@@ -38,6 +40,11 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 	@Override
 	public void process() {
 		JMeterVariables variables = getJMeterVariables();
+		setMixologist(variables);
+		setEventPublisher(variables);
+	}
+
+	protected void setMixologist(JMeterVariables variables) {
 		Object object = variables.getObject(VALUE_KEY_MIXOLOGIST);
 		if (null == object) {
 			Mixologist mixologist = getMixologist();
@@ -60,10 +67,24 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 		return applicationContext.getBean(Mixologist.class);
 	}
 
+	protected void setEventPublisher(JMeterVariables variables) {
+		Object object = variables.getObject(VALUE_KEY_EVENT_PUBLISHER);
+		if (null == object) {
+			MartiniEventPublisher publisher = getPublisher();
+			variables.putObject(VALUE_KEY_EVENT_PUBLISHER, publisher);
+		}
+	}
+
+	protected MartiniEventPublisher getPublisher() {
+		ClassPathXmlApplicationContext applicationContext = getApplicationContext();
+		return applicationContext.getBean(MartiniEventPublisher.class);
+	}
+
 	@Override
 	public void testStarted() {
 		try {
 			startSpring();
+			publishStarted();
 		}
 		catch (Exception e) {
 			String message = "Unable to initialize Spring ApplicationContext; halting execution.";
@@ -96,6 +117,11 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 		JOptionPane.showMessageDialog(component, message, "Error", JOptionPane.ERROR_MESSAGE);
 	}
 
+	private void publishStarted() {
+		MartiniEventPublisher publisher = getPublisher();
+		JMeterContext threadContext = getThreadContext();
+		publisher.publish(SuiteEvent.getStarted(threadContext));
+	}
 
 	@Override
 	public void testStarted(String s) {
@@ -103,6 +129,11 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 
 	@Override
 	public void testEnded() {
+		publishEnded();
+		closeSpring();
+	}
+
+	private void closeSpring() {
 		ClassPathXmlApplicationContext applicationContext = getApplicationContext();
 		super.removeProperty(PROPERTY_KEY_SPRING_CONTEXT_ID);
 		if (null != applicationContext) {
@@ -112,6 +143,12 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 			}
 			applicationContext.close();
 		}
+	}
+
+	private void publishEnded() {
+		MartiniEventPublisher publisher = getPublisher();
+		JMeterContext threadContext = getThreadContext();
+		publisher.publish(SuiteEvent.getEnded(threadContext));
 	}
 
 	private ClassPathXmlApplicationContext getApplicationContext() {
