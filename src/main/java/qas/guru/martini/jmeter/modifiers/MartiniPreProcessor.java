@@ -12,22 +12,19 @@ import org.apache.log.Logger;
 
 import com.google.common.util.concurrent.Monitor;
 
+import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
+
 @SuppressWarnings("WeakerAccess")
 public class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
 	private static final Logger LOG = LoggingManager.getLoggerForClass();
-	public static final String JMETER_CONTEXT_KEY = "martiniPreProcessor";
-	public static final String PROPERTY_TEXT_KEY = "text";
-	public static final String PROPERTY_TEXT_VALUE_DEFAULT = "Stirred, not shaken.";
-	public static final String PROPERTY_CONTEXT_CONFIGURATION_KEY = "contextConfiguration";
-	public static final String PROPERTY_CONTEXT_CONFIGURATION_VALUE_DEFAULT = "applicationContext.xml";
-	public static final String PROPERTY_BLAH = "blah";
+	public static final String DEFAULT_SPRING_CONTEXT = "applicationContext.xml";
 
 	public MartiniPreProcessor() {
 		super();
-		super.setProperty(PROPERTY_TEXT_KEY, PROPERTY_TEXT_VALUE_DEFAULT);
-		super.setProperty(PROPERTY_CONTEXT_CONFIGURATION_KEY, PROPERTY_CONTEXT_CONFIGURATION_VALUE_DEFAULT);
-		super.setProperty(new ObjectProperty(PROPERTY_BLAH, new Monitor()));
+		super.setProperty(PROPERTY_KEY_SPRING_CONTEXT, DEFAULT_SPRING_CONTEXT);
+		ObjectProperty monitorProperty = new ObjectProperty(PROPERTY_KEY_MONITOR, new Monitor());
+		super.setProperty(monitorProperty);
 	}
 
 	@Override
@@ -39,8 +36,8 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 			threadContext.setVariables(variables);
 		}
 
-		JMeterProperty monitor = super.getProperty(PROPERTY_BLAH);
-		variables.putObject("monitor", monitor);
+		JMeterProperty monitor = super.getProperty(PROPERTY_KEY_MONITOR);
+		variables.putObject(VALUE_KEY_MONITOR, monitor);
 	}
 
 	@Override

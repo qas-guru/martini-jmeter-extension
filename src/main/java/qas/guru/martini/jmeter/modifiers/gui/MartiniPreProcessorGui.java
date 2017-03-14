@@ -22,9 +22,7 @@ import java.awt.Container;
 import java.util.ResourceBundle;
 
 import javax.swing.Box;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
@@ -34,18 +32,18 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
 
+import static qas.guru.martini.jmeter.modifiers.MartiniConstants.PROPERTY_KEY_SPRING_CONTEXT;
+
 @SuppressWarnings("WeakerAccess")
 public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected static final long serialVersionUID = 240L;
 
 	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
-	protected static final String RESOURCE_TEXT_LABEL = "martini_pre_processor_label";
-	protected static final String RESOURCE_CONTEXT_CONFIGURATION_LABEL = "martini_context_configuration_label";
+	protected static final String SPRING_CONFIGURATION_LABEL_RESOURCE = "martini_spring_context_label";
 
 	protected ResourceBundle resourceBundle;
-	protected JTextField textField;
-	protected JTextField contextConfigurationField;
+	protected JTextField springContextField;
 
 	/**
 	 * No-arg constructor.
@@ -53,16 +51,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	public MartiniPreProcessorGui() {
 		super();
 		init();
-	}
-
-	/**
-	 * Handle an error.
-	 *
-	 * @param e       the Exception that was thrown.
-	 * @param thrower the JComponent that threw the Exception.
-	 */
-	public static void error(Exception e, JComponent thrower) {
-		JOptionPane.showMessageDialog(thrower, e, "Error", JOptionPane.ERROR_MESSAGE);
 	}
 
 	@Override
@@ -103,10 +91,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void modifyTestElement(TestElement preProcessor) {
 		super.configureTestElement(preProcessor);
-		String text = textField.getText();
-		preProcessor.setProperty(new StringProperty("text", text));
-
-		String configuration = contextConfigurationField.getText();
+		String configuration = springContextField.getText();
 		preProcessor.setProperty(new StringProperty("contextConfiguration", configuration));
 	}
 
@@ -119,11 +104,8 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	public void configure(TestElement el) {
 		super.configure(el);
 
-		String text = el.getPropertyAsString("text");
-		textField.setText(text);
-
-		String contextConfiguration = el.getPropertyAsString("contextConfiguration");
-		contextConfigurationField.setText(contextConfiguration);
+		String contextConfiguration = el.getPropertyAsString(PROPERTY_KEY_SPRING_CONTEXT);
+		springContextField.setText(contextConfiguration);
 	}
 
 	/**
@@ -132,8 +114,7 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	private void init() { // WARNING: called from ctor so must not be overridden (i.e. must be private or final)
 		resourceBundle = ResourceBundle.getBundle("qas.guru.martini.jmeter");
 		initTitlePanel();
-		initTextPanel();
-		initContextConfigurationPanel();
+		initSpringContextPanel();
 	}
 
 	protected void initTitlePanel() {
@@ -143,23 +124,21 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		add(container);
 	}
 
-	protected void initTextPanel() {
-		textField = initTextField(RESOURCE_TEXT_LABEL);
+	protected void initSpringContextPanel() {
+		String label = resourceBundle.getString(SPRING_CONFIGURATION_LABEL_RESOURCE);
+		initSpringContextPanel(label);
 	}
 
-	protected JTextField initTextField(String labelKey) {
+	protected void initSpringContextPanel(String label) {
 		Box box = Box.createHorizontalBox();
-		String label = resourceBundle.getString(labelKey);
 		JLabel textLabel = new JLabel(label);
 		box.add(textLabel);
-
-		JTextField field = new JTextField(6);
-		box.add(field);
-		add(box);
-		return field;
+		initSpringContextPanel(box);
 	}
 
-	protected void initContextConfigurationPanel() {
-		contextConfigurationField = initTextField(RESOURCE_CONTEXT_CONFIGURATION_LABEL);
+	protected void initSpringContextPanel(Box box) {
+		springContextField = new JTextField(6);
+		box.add(springContextField);
+		add(box);
 	}
 }

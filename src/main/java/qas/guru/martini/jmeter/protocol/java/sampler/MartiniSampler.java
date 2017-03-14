@@ -11,7 +11,7 @@ import org.apache.log.Logger;
 
 import com.google.common.util.concurrent.Monitor;
 
-import static qas.guru.martini.jmeter.modifiers.MartiniPreProcessor.JMETER_CONTEXT_KEY;
+import qas.guru.martini.jmeter.modifiers.MartiniConstants;
 
 public class MartiniSampler extends AbstractJavaSamplerClient {
 
@@ -22,7 +22,7 @@ public class MartiniSampler extends AbstractJavaSamplerClient {
 		JMeterContext context = JMeterContextService.getContext();
 
 		JMeterVariables variables = context.getVariables();
-		Object object = variables.getObject("monitor");
+		Object object = variables.getObject(MartiniConstants.PROPERTY_KEY_MONITOR);
 		System.out.println(object);
 
 		SampleResult sampleResult = new SampleResult();
@@ -31,21 +31,6 @@ public class MartiniSampler extends AbstractJavaSamplerClient {
 			Monitor monitor = Monitor.class.cast(object);
 			LOG.info("monitor is " + monitor);
 		}
-
-//		if (MartiniPreProcessor.class.isInstance(object)) {
-//			MartiniPreProcessor cast = MartiniPreProcessor.class.cast(object);
-//			int id = System.identityHashCode(cast);
-//			LOG.info("identity of processor object is " + id);
-//
-//			String configuration = cast.getPropertyAsString("contextConfiguration");
-//			LOG.info("configured Spring context is " + configuration);
-//			sampleResult.setSuccessful(true);
-//		}
-//		else {
-//			sampleResult.setSuccessful(false);
-//			System.out.println("I don't know what to do");
-//		}
-
 		return sampleResult;
 	}
 }
