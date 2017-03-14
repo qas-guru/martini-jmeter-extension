@@ -3,8 +3,6 @@ package qas.guru.martini.jmeter.modifiers;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestStateListener;
-import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.PropertyIterator;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.logging.LoggingManager;
@@ -15,26 +13,16 @@ public class MartiniPreProcessor extends AbstractTestElement implements PreProce
 
 	private static final Logger LOG = LoggingManager.getLoggerForClass();
 	public static final String JMETER_CONTEXT_KEY = "martiniPreProcessor";
+	public static final String PROPERTY_TEXT_KEY = "text";
+	public static final String PROPERTY_TEXT_VALUE_DEFAULT = "Stirred, not shaken.";
+	public static final String PROPERTY_CONTEXT_CONFIGURATION_KEY = "contextConfiguration";
+	public static final String PROPERTY_CONTEXT_CONFIGURATION_VALUE_DEFAULT = "applicationContext.xml";
 
 	public MartiniPreProcessor() {
 		super();
-		super.setProperty("text", "my Default Text");
-		super.setProperty("contextConfiguration", "meh.xml");
-		System.out.println("breakpoint");
+		super.setProperty(PROPERTY_TEXT_KEY, PROPERTY_TEXT_VALUE_DEFAULT);
+		super.setProperty(PROPERTY_CONTEXT_CONFIGURATION_KEY, PROPERTY_CONTEXT_CONFIGURATION_VALUE_DEFAULT);
 	}
-
-//	@SuppressWarnings("MethodDoesntCallSuperMethod")
-//	@Override
-//	public Object clone() {
-//		MartiniPreProcessor processor = new MartiniPreProcessor();
-//		for (PropertyIterator i = propertyIterator(); i.hasNext(); ) {
-//			JMeterProperty source = i.next();
-//			JMeterProperty cloned = source.clone();
-//			processor.setProperty(cloned);
-//		}
-//		processor.setRunningVersion(isRunningVersion()); // TODO: is this actually necessary?
-//		return processor;
-//	}
 
 	@Override
 	public void process() {
