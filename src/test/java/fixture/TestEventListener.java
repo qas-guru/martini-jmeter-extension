@@ -21,6 +21,7 @@ import org.apache.log.Logger;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import qas.guru.martini.event.ScenarioEvent;
 import qas.guru.martini.event.SuiteEvent;
 
 @Component
@@ -30,6 +31,11 @@ class TestEventListener {
 
 	@EventListener
 	public void handle(SuiteEvent event) {
+		LOG.info("received event " + event);
+	}
+
+	@EventListener
+	public void handle(ScenarioEvent event) {
 		LOG.info("received event " + event);
 	}
 }
