@@ -19,62 +19,76 @@
 package qas.guru.martini.jmeter.modifiers.gui;
 
 import java.awt.Container;
-import java.util.ResourceBundle;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Box;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 
-import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
+import org.apache.jmeter.gui.util.MenuFactory;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
 
+import qas.guru.martini.AbstractMartiniGui;
 import qas.guru.martini.jmeter.modifiers.MartiniPreProcessor;
 
-import static javax.swing.JOptionPane.WARNING_MESSAGE;
-import static qas.guru.martini.jmeter.modifiers.MartiniConstants.PROPERTY_KEY_SPRING_CONFIGURATION;
+import static qas.guru.martini.jmeter.modifiers.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
+public class MartiniPreProcessorGui extends AbstractMartiniGui {
 
-	protected static final long serialVersionUID = 240L;
+	private static final long serialVersionUID = 240L;
 
-	protected static final Logger LOG = LoggingManager.getLoggerFor(MartiniPreProcessorGui.class.getName());
-	protected static final String RESOURCE_BUNDLE = "qas.guru.martini.jmeter";
-	protected static final String RESOURCE_TITLE = "martini_pre_processor_title";
+	// TODO: replace this mess by distributing as a Plugin for use by PluginManager.
+	private static final AtomicBoolean ICONS_REGISTERED = new AtomicBoolean(false);
+	private static final String ICON_ENABLED = "icons/spring-logo.png";
+	private static final String ICON_DISABLED = "icons/spring-logo-disabled.png";
+
+	protected static final String GUI_TITLE_KEY = "martini_pre_processor_title";
 	protected static final String SPRING_CONFIGURATION_LABEL_RESOURCE = "martini_spring_context_label";
 
-	protected final ResourceBundle resourceBundle;
 	protected final JTextField springContextField;
 
 	public MartiniPreProcessorGui() {
-		super();
-		resourceBundle = getResourceBundle();
+		this(GUI_TITLE_KEY);
+	}
+
+	protected MartiniPreProcessorGui(String titleKey) {
+		super(titleKey);
 		springContextField = new JTextField(6);
 		initGui();
 	}
 
-	protected ResourceBundle getResourceBundle() {
-		ResourceBundle bundle = null;
-		try {
-			bundle = ResourceBundle.getBundle(RESOURCE_BUNDLE);
-		}
-		catch (Exception e) {
-			String message = String.format("unable to load resource bundle %s", RESOURCE_BUNDLE);
-			LOG.warn(message, e);
-			JOptionPane.showMessageDialog(this, message + "; see log for details", "Warning", WARNING_MESSAGE);
-		}
-		return bundle;
+	@Override
+	public JPopupMenu createPopupMenu() {
+		return MenuFactory.getDefaultExtractorMenu();
 	}
 
+	@Override
+	public Collection<String> getMenuCategories() {
+		return Collections.singleton(MenuFactory.PRE_PROCESSORS);
+	}
+
+	@Override
 	protected void initGui() {
+		initIcons();
 		initBorder();
 		initTitlePanel();
 		initSpringBox();
+	}
+
+	protected void initIcons() {
+		synchronized (ICONS_REGISTERED) {
+			if (!ICONS_REGISTERED.get()) {
+				ICONS_REGISTERED.set(true);
+				registerEnabledIcon(ICON_ENABLED);
+				registerDisabledIcon(ICON_DISABLED);
+			}
+		}
 	}
 
 	protected void initBorder() {
@@ -115,16 +129,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	@Override
-	public String getLabelResource() {
-		return RESOURCE_TITLE;
-	}
-
-	@Override
-	public String getStaticLabel() {
-		return null == resourceBundle ? "" : resourceBundle.getString(RESOURCE_TITLE);
-	}
-
-	@Override
 	public TestElement createTestElement() {
 		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
 		modifyTestElement(preProcessor);
@@ -141,7 +145,6 @@ public class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void configure(TestElement el) {
 		super.configure(el);
-
 		String contextConfiguration = el.getPropertyAsString(PROPERTY_KEY_SPRING_CONFIGURATION);
 		springContextField.setText(contextConfiguration);
 	}
