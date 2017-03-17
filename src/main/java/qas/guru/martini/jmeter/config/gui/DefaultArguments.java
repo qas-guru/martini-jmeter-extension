@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qas.guru.martini.jmeter.modifiers;
+package qas.guru.martini.jmeter.config.gui;
 
-public interface MartiniConstants {
-	String PROPERTY_KEY_SPRING_CONFIGURATION = "martini_spring_configuration";
-	String VALUE_KEY_MIXOLOGIST = "martini_mixologist";
-	String VALUE_KEY_EVENT_PUBLISHER = "martini_event_publisher";
+import org.apache.jmeter.config.Arguments;
+
+public class DefaultArguments extends Arguments {
+
+	public DefaultArguments() {
+		super();
+		addArgument("spring.profiles.active", "default", null, "active Spring profiles");
+	}
 }

@@ -17,11 +17,8 @@ limitations under the License.
 package qas.guru.martini.jmeter.config.gui;
 
 import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Box;
 import javax.swing.JLabel;
@@ -38,79 +35,43 @@ import qas.guru.martini.AbstractMartiniGui;
 import qas.guru.martini.jmeter.config.MartiniSpringConfiguration;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniSpringConfigurationGui extends AbstractMartiniGui implements ActionListener {
+public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 
 	private static final long serialVersionUID = -4852200848794934491L;
-
-	// TODO: replace this mess by distributing as a Plugin for use by PluginManager.
-	protected static final AtomicBoolean ICONS_REGISTERED = new AtomicBoolean(false);
-	protected static final String ICON_ENABLED = "icons/spring-logo.png";
-	protected static final String ICON_DISABLED = "icons/spring-logo-disabled.png";
-
-	protected static final Arguments DEFAULT_ARGUMENTS = new Arguments();
-
-	static {
-		DEFAULT_ARGUMENTS.addArgument("spring.profiles.active", "default", null, "active Spring profiles");
-	}
-
-	protected static final String DEFAULT_CONFIG_LOCATION = "applicationContext.xml";
-
-	protected static final String TITLE_KEY = "martini_config_title";
-	protected static final String LOCATION_LABEL_KEY = "martini_controller_spring_context_label";
-	protected static final String ARGUMENTS_LABEL_KEY = "martini_controller_runtime_arguments_label";
 
 	protected final JTextField contextLocationField;
 	protected final ArgumentsPanel argumentsPanel;
 
 	public MartiniSpringConfigurationGui() {
-		this(TITLE_KEY);
-	}
-
-	public MartiniSpringConfigurationGui(String titleKey) {
-		super(titleKey);
+		super();
 		contextLocationField = new JTextField(6);
-		//contextLocationField.setText(DEFAULT_CONFIG_LOCATION);
-
-		String label = super.getResourceValue(ARGUMENTS_LABEL_KEY);
-		argumentsPanel = new ArgumentsPanel(label);
-
-//		Object clone = DEFAULT_ARGUMENTS.clone();
-//		Arguments arguments = Arguments.class.cast(clone);
-//		argumentsPanel.configure(arguments);
-
+		argumentsPanel = buildArgumentsPanel();
 		initGui();
 	}
 
-	@Override
-	protected void initGui() {
-		initIcons();
+	protected ArgumentsPanel buildArgumentsPanel() {
+		String key = String.format("%s.spring.runtime.arguments.label", getClass().getName());
+		String value = getResourceBundleManager().get(key);
+		return new ArgumentsPanel(null == value ? key : value);
+	}
 
-		this.setLayout(new BorderLayout(0, 5));
-		this.setBorder(this.makeBorder());
-		this.add(this.makeTitlePanel(), "North");
+	protected void initGui() {
+		setLayout(new BorderLayout(0, 5));
+		setBorder(makeBorder());
+		add(makeTitlePanel(), "North");
 
 		JPanel panel = new JPanel(new BorderLayout(0, 5));
 		Box box = getContextLocationBox();
 		panel.add(box, "North");
 
 		panel.add(argumentsPanel, "Center");
-		this.add(panel, "Center");
-	}
-
-	// TODO: replace this mess by distributing as a Plugin for use by PluginManager.
-	protected void initIcons() {
-		synchronized (ICONS_REGISTERED) {
-			if (!ICONS_REGISTERED.get()) {
-				ICONS_REGISTERED.set(true);
-				registerEnabledIcon(ICON_ENABLED);
-				registerDisabledIcon(ICON_DISABLED);
-			}
-		}
+		add(panel, "Center");
 	}
 
 	protected Box getContextLocationBox() {
-		String label = getResourceValue(LOCATION_LABEL_KEY);
-		JLabel jLabel = new JLabel(label);
+		String key = String.format("%s.spring.context.label", getClass().getName());
+		String value = super.getResourceBundleManager().get(key);
+		JLabel jLabel = new JLabel(null == value ? key : value);
 		return getContextLocationBox(jLabel);
 	}
 
@@ -166,61 +127,16 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui implements
 		super.clearGui();
 		argumentsPanel.clearGui();
 
-		contextLocationField.setText(DEFAULT_CONFIG_LOCATION);
+		String defaultLocation = getDefaultContextLocation();
+		contextLocationField.setText(defaultLocation);
 
-		Object clone = DEFAULT_ARGUMENTS.clone();
-		Arguments arguments = Arguments.class.cast(clone);
+		Arguments arguments = new DefaultArguments();
 		argumentsPanel.configure(arguments);
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent evt) {
-		System.out.println("breakpoint");
+	protected String getDefaultContextLocation() {
+		String key = String.format("%s.application.context", getClass().getName());
+		String value = getResourceBundleManager().get(key);
+		return null == value ? key : value;
 	}
-
-
-	/*
-		public void actionPerformed(ActionEvent evt) {
-	        if(evt.getSource() == this.classnameCombo) {
-	            String className = ((String)this.classnameCombo.getSelectedItem()).trim();
-
-	            try {
-	                JavaSamplerClient e = (JavaSamplerClient)Class.forName(className, true, Thread.currentThread().getContextClassLoader()).newInstance();
-	                Arguments currArgs = new Arguments();
-	                this.argsPanel.modifyTestElement(currArgs);
-	                Map currArgsMap = currArgs.getArgumentsAsMap();
-	                Arguments newArgs = new Arguments();
-	                Arguments testParams = null;
-
-	                try {
-	                    testParams = e.getDefaultParameters();
-	                } catch (AbstractMethodError var14) {
-	                    log.warn("JavaSamplerClient doesn\'t implement getDefaultParameters.  Default parameters won\'t be shown.  Please update your client class: " + className);
-	                }
-
-	                String name;
-	                String value;
-	                if(testParams != null) {
-	                    for(Iterator i$ = testParams.getArguments().iterator(); i$.hasNext(); newArgs.addArgument(name, value)) {
-	                        JMeterProperty jMeterProperty = (JMeterProperty)i$.next();
-	                        Argument arg = (Argument)jMeterProperty.getObjectValue();
-	                        name = arg.getName();
-	                        value = arg.getValue();
-	                        if(currArgsMap.containsKey(name)) {
-	                            String newVal = (String)currArgsMap.get(name);
-	                            if(newVal != null && newVal.length() > 0) {
-	                                value = newVal;
-	                            }
-	                        }
-	                    }
-	                }
-
-	                this.argsPanel.configure(newArgs);
-	            } catch (Exception var15) {
-	                log.error("Error getting argument list for " + className, var15);
-	            }
-	        }
-
-	    }
-	    */
 }

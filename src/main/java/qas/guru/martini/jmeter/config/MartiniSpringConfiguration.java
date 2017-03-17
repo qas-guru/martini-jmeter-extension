@@ -23,12 +23,10 @@ import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
-import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import qas.guru.martini.jmeter.SpringContextRegistry;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniSpringConfiguration extends ConfigTestElement implements TestStateListener, Serializable {
@@ -85,7 +83,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		}
 
 		String location = this.getConfigLocation();
-		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[] {location}, false);
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[]{location}, false);
 		// TODO: set spring profiles
 		context.refresh();
 
@@ -99,11 +97,10 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 	@Override
 	public void testEnded() {
 		JMeterContext threadContext = getThreadContext();
-		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
-
-		SpringContextRegistry registry = SpringContextRegistry.getInstance();
-		ClassPathXmlApplicationContext context = registry.remove(threadGroup);
-		if (null != context) {
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject("applicationContext");
+		if (ConfigurableApplicationContext.class.isInstance(o)) {
+			ConfigurableApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 			context.close();
 		}
 	}
