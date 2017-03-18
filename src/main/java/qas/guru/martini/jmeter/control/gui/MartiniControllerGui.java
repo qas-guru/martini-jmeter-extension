@@ -70,8 +70,9 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 		if (isMartiniController(element)) {
 			super.configure(element);
 		}
-
 	}
+
+
 
 	@Override
 	public JPopupMenu createPopupMenu() {

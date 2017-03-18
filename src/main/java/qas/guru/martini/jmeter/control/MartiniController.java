@@ -18,72 +18,92 @@ package qas.guru.martini.jmeter.control;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.apache.jmeter.control.GenericController;
-import org.apache.jmeter.control.ReplaceableController;
-import org.apache.jmeter.gui.tree.JMeterTreeNode;
+import org.apache.jmeter.control.NextIsNullException;
+import org.apache.jmeter.processor.PreProcessor;
+import org.apache.jmeter.sampler.DebugSampler;
+import org.apache.jmeter.samplers.Sampler;
+import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jorphan.collections.HashTree;
+import org.apache.jorphan.util.JMeterStopTestException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements Serializable/*, ReplaceableController*/ {
+public class MartiniController extends GenericController implements Serializable {
+
+	protected transient final Monitor monitor;
+	protected transient ImmutableList<Martini> martinis;
+	protected transient Iterator<Martini> iterator;
 
 	public MartiniController() {
 		super();
+		this.monitor = new Monitor();
 	}
 
 	@Override
 	public void initialize() {
 		super.initialize();
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
+		JMeterVariables variables = getJMeterVariables();
 		initialize(variables);
 	}
 
+	private JMeterVariables getJMeterVariables() {
+		JMeterContext threadContext = super.getThreadContext();
+		return threadContext.getVariables();
+	}
+
 	protected void initialize(JMeterVariables variables) {
-		Object o = variables.getObject("applicationContext");
+		Object o = variables.getObject("applicationContext"); // TODO: a constant
 		ClassPathXmlApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 		Mixologist mixologist = context.getBean(Mixologist.class);
 		initialize(mixologist);
 	}
 
 	protected void initialize(Mixologist mixologist) {
-		Collection<Martini> martinis = mixologist.getMartinis();
+		Collection<Martini> martinis = mixologist.getMartinis(); // TODO: scenario filtering
 		if (martinis.isEmpty()) {
-			// Shoot up some kind of warning message.
+			String message = String.format("%s:%s has no scenarios to run", getClass().getName(), getName());
+			throw new JMeterStopTestException(message);
 		}
-		for (Martini martini : martinis) {
-			System.out.println("martini: " + martini);
-		}
-		//super.addTestElement();
+		initialize(martinis);
 	}
 
-//	@Override
-//	public HashTree getReplacementSubTree() {
-//
-//		/*
-//		        HashTree tree = new ListedHashTree();
-//        if (selectedNode != null) {
-//            // Use a local variable to avoid replacing reference by modified clone (see Bug 54950)
-//            JMeterTreeNode nodeToReplace = selectedNode;
-//            // We clone to avoid enabling existing node
-//            if (!nodeToReplace.isEnabled()) {
-//                nodeToReplace = cloneTreeNode(selectedNode);
-//                nodeToReplace.setEnabled(true);
-//            }
-//            HashTree subtree = tree.add(nodeToReplace);
-//            createSubTree(subtree, nodeToReplace);
-//        }
-//        return tree;
-//		 */
-//	}
-//
-//	@Override
-//	public void resolveReplacementSubTree(JMeterTreeNode context) {
-//	}
+	protected void initialize(Collection<Martini> martinis) {
+		this.martinis = ImmutableList.copyOf(martinis);
+		iterator = martinis.iterator();
+	}
+
+	@Override
+	protected void reInitialize() {
+		super.reInitialize();
+		iterator = martinis.iterator();
+	}
+
+
+	@Override
+	protected TestElement getCurrentElement() throws NextIsNullException {
+		TestElement currentElement = super.getCurrentElement();
+		System.out.println("breakpoint");
+		return currentElement;
+	}
+
+	@Override
+	public boolean isDone() {
+		monitor.enter();
+		try {
+			return !iterator.hasNext();
+		}
+		finally {
+			monitor.leave();
+		}
+	}
 }
