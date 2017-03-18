@@ -17,7 +17,6 @@ limitations under the License.
 package qas.guru.martini.jmeter.control;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.jmeter.control.GenericController;
@@ -29,11 +28,11 @@ import org.apache.jorphan.util.JMeterStopTestException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
-import qas.guru.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniController extends GenericController implements Serializable {
@@ -67,15 +66,16 @@ public class MartiniController extends GenericController implements Serializable
 	}
 
 	protected void initialize(Mixologist mixologist) {
-		Collection<Martini> martinis = mixologist.getMartinis(); // TODO: scenario filtering
-		if (martinis.isEmpty()) {
+		Iterable<Martini> martinis = mixologist.getMartinis(); // TODO: scenario filtering
+		if (Iterables.isEmpty(martinis)) {
 			String message = String.format("%s:%s has no scenarios to run", getClass().getName(), getName());
 			throw new JMeterStopTestException(message);
 		}
+		martinis = Iterables.concat(martinis, martinis);// TODO: TESTING ONLY
 		initialize(martinis);
 	}
 
-	protected void initialize(Collection<Martini> martinis) {
+	protected void initialize(Iterable<Martini> martinis) {
 		this.martinis = ImmutableList.copyOf(martinis);
 		iterator = martinis.iterator();
 	}
@@ -88,22 +88,48 @@ public class MartiniController extends GenericController implements Serializable
 
 	@Override
 	protected TestElement getCurrentElement() throws NextIsNullException {
-		TestElement currentElement = super.getCurrentElement();
-		if (MartiniSampler.class.isInstance(currentElement)) {
-			Martini martini = getNextMartini();
-			if (null == martini) {
-				throw new NextIsNullException();
+		synchronized (this) {
+			TestElement currentElement = super.getCurrentElement();
+
+			if (null == currentElement) {
+				Martini martini = getNextMartini();
+				if (null != martini) {
+					resetCurrent();
+					currentElement = super.getCurrentElement();
+					setCurrent(martini);
+				}
 			}
-			JMeterVariables variables = getJMeterVariables();
-			variables.putObject("martini", martini);
+			else
+			{
+				Martini martini = getCurrentMartini();
+				if (null == martini) {
+					martini = getNextMartini();
+					if (null == martini) {
+						throw new NextIsNullException();
+					}
+					setCurrent(martini);
+				}
+			}
+			return currentElement;
 		}
-		return currentElement;
+
+	}
+
+	protected Martini getCurrentMartini() {
+		JMeterVariables variables = this.getJMeterVariables();
+		Object o = variables.getObject("martini");// TODO: constants
+		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+	}
+
+	protected void setCurrent(Martini martini) {
+		JMeterVariables variables = this.getJMeterVariables();
+		variables.putObject("martini", martini); // TODO: constants
 	}
 
 	protected Martini getNextMartini() {
 		monitor.enter();
 		try {
-			return isDone() ? null : iterator.next();
+			return iterator.hasNext() ? iterator.next() : null;
 		}
 		finally {
 			monitor.leave();
@@ -114,7 +140,7 @@ public class MartiniController extends GenericController implements Serializable
 	public boolean isDone() {
 		monitor.enter();
 		try {
-			return !iterator.hasNext();
+			return super.isDone() && !iterator.hasNext();
 		}
 		finally {
 			monitor.leave();

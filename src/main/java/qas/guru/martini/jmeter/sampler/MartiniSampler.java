@@ -16,6 +16,8 @@ limitations under the License.
 
 package qas.guru.martini.jmeter.sampler;
 
+import java.util.List;
+
 import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
@@ -28,6 +30,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 
 import gherkin.ast.Feature;
 import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleStep;
 import guru.qas.martini.Martini;
 import guru.qas.martini.gherkin.Recipe;
 
@@ -59,12 +62,24 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		Pickle pickle = recipe.getPickle();
 		String pickleName = pickle.getName();
 
-		String label = String.format("%s: %s", featureName, pickleName);
+		String label = String.format("%s (%s)", pickleName, featureName);
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(label);
-
-		// TODO: append sub-samples
 		sampleResult.setSuccessful(true);
+		sampleResult.sampleStart();
+
+		List<PickleStep> steps = pickle.getSteps();
+		for (PickleStep step : steps) {
+			SampleResult subResult;
+			if (sampleResult.isSuccessful()) {
+				subResult = getSubResult(step);
+			}
+			else {
+				subResult = getSkipped(step);
+			}
+			sampleResult.addSubResult(subResult);
+		}
+
 		return sampleResult;
 	}
 
@@ -73,6 +88,32 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject("martini");
 		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+	}
+
+	protected SampleResult getSubResult(PickleStep step) {
+		SampleResult result = new SampleResult();
+		result.setSuccessful(true);
+		String label = step.getText();
+		result.sampleStart();
+
+		try {
+			// do something here
+		}
+		catch (Exception e) {
+			result.setSuccessful(false);
+			label = "FAIL: " + label;
+		}
+		result.sampleEnd();
+		result.setSampleLabel(label);
+		return result;
+	}
+
+	protected SampleResult getSkipped(PickleStep step) {
+		SampleResult result = new SampleResult();
+		result.setSuccessful(false);
+		String label = String.format("SKIPPED: %s", step.getText());
+		result.setSampleLabel(label);
+		return result;
 	}
 
 	@Override
