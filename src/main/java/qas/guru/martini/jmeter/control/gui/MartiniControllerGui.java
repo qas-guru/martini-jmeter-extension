@@ -72,8 +72,6 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 		}
 	}
 
-
-
 	@Override
 	public JPopupMenu createPopupMenu() {
 		return MenuFactory.getDefaultControllerMenu();

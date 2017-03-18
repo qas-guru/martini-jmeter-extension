@@ -22,9 +22,6 @@ import java.util.Iterator;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
-import org.apache.jmeter.processor.PreProcessor;
-import org.apache.jmeter.sampler.DebugSampler;
-import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -36,6 +33,7 @@ import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
+import qas.guru.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniController extends GenericController implements Serializable {
@@ -88,12 +86,28 @@ public class MartiniController extends GenericController implements Serializable
 		iterator = martinis.iterator();
 	}
 
-
 	@Override
 	protected TestElement getCurrentElement() throws NextIsNullException {
 		TestElement currentElement = super.getCurrentElement();
-		System.out.println("breakpoint");
+		if (MartiniSampler.class.isInstance(currentElement)) {
+			Martini martini = getNextMartini();
+			if (null == martini) {
+				throw new NextIsNullException();
+			}
+			JMeterVariables variables = getJMeterVariables();
+			variables.putObject("martini", martini);
+		}
 		return currentElement;
+	}
+
+	protected Martini getNextMartini() {
+		monitor.enter();
+		try {
+			return isDone() ? null : iterator.next();
+		}
+		finally {
+			monitor.leave();
+		}
 	}
 
 	@Override
