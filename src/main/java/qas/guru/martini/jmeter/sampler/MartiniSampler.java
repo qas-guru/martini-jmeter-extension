@@ -32,9 +32,7 @@ import org.apache.jorphan.logging.LoggingManager;
 import org.apache.jorphan.util.JMeterStopTestNowException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
 
 import gherkin.ast.Feature;
 import gherkin.ast.Step;
@@ -43,9 +41,13 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.step.StepImplementation;
 import qas.guru.martini.DefaultIconManager;
-import qas.guru.martini.event.ScenarioEvent;
+import qas.guru.martini.event.DefaultAfterScenarioEvent;
+import qas.guru.martini.event.DefaultAfterStepEvent;
+import qas.guru.martini.event.DefaultBeforeScenarioEvent;
+import qas.guru.martini.event.DefaultBeforeStepEvent;
 
 import static com.google.common.base.Preconditions.*;
+import static guru.qas.martini.MartiniConstants.BEAN_NAME_CONVERSION_SERVICE;
 import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -65,9 +67,9 @@ public class MartiniSampler extends AbstractSampler {
 	@Override
 	public SampleResult sample(Entry entry) {
 		Martini martini = getMartiniUnchecked();
-		publishStarting(martini);
+		publishBeforeEvent(martini);
 
-		SampleResult sampleResult = null;
+		SampleResult sampleResult;
 		try {
 			martini = getMartiniChecked();
 			sampleResult = sample(martini);
@@ -76,17 +78,23 @@ public class MartiniSampler extends AbstractSampler {
 			logger.error("unable to execute Martini sample", e);
 			sampleResult = getError(martini, e);
 		}
-		finally {
-			publishEnded(sampleResult, martini);
-		}
+
+		publishAfterEvent(martini, sampleResult);
 		return sampleResult;
 	}
 
-	protected void publishStarting(Martini martini) {
-		ApplicationEventPublisher publisher = getApplicationContext();
-		JMeterContext threadContext = getThreadContext();
-		ScenarioEvent starting = ScenarioEvent.getStarting(threadContext, martini);
-		publisher.publishEvent(starting);
+	protected void publishBeforeEvent(Martini martini) {
+		JMeterContext threadContext = super.getThreadContext();
+		DefaultBeforeScenarioEvent event = new DefaultBeforeScenarioEvent(martini, threadContext);
+		ApplicationContext applicationContext = getApplicationContext();
+		applicationContext.publishEvent(event);
+	}
+
+	protected void publishAfterEvent(Martini martini, SampleResult sampleResult) {
+		JMeterContext threadContext = super.getThreadContext();
+		DefaultAfterScenarioEvent event = new DefaultAfterScenarioEvent(martini, threadContext, sampleResult);
+		ApplicationContext applicationContext = getApplicationContext();
+		applicationContext.publishEvent(event);
 	}
 
 	protected ApplicationContext getApplicationContext() {
@@ -140,11 +148,13 @@ public class MartiniSampler extends AbstractSampler {
 		for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
 			Step step = mapEntry.getKey();
 			StepImplementation implementation = mapEntry.getValue();
+
 			SampleResult subResult = sampleResult.isSuccessful() ?
-				getSubResult(step, implementation) : getSkipped(step);
+				getSubResult(martini, step, implementation) : getSkipped(step);
 			sampleResult.addSubResult(subResult);
 			sampleResult.setSuccessful(sampleResult.isSuccessful() && subResult.isSuccessful());
 		}
+
 		return sampleResult;
 	}
 
@@ -170,7 +180,9 @@ public class MartiniSampler extends AbstractSampler {
 		return Martini.class.cast(o);
 	}
 
-	protected SampleResult getSubResult(Step step, StepImplementation implementation) {
+	protected SampleResult getSubResult(Martini martini, Step step, StepImplementation implementation) {
+		publishBeforeStep(martini, step);
+
 		String text = step.getText();
 
 		SampleResult result = new SampleResult();
@@ -179,12 +191,12 @@ public class MartiniSampler extends AbstractSampler {
 		result.sampleStart();
 
 		try {
-			ApplicationContext applicationContext = this.getApplicationContext();
-			ConversionService conversionService = getConversionService(applicationContext);
-
 			Method method = implementation.getMethod();
 			Matcher matcher = implementation.getPattern().matcher(text);
 			MatchResult matchResult = matcher.toMatchResult();
+
+			ApplicationContext applicationContext = this.getApplicationContext();
+			ConversionService conversionService = getConversionService(applicationContext);
 
 			Parameter[] parameters = method.getParameters();
 			Object[] arguments = new Object[parameters.length];
@@ -207,20 +219,27 @@ public class MartiniSampler extends AbstractSampler {
 		finally {
 			result.sampleEnd();
 			result.setSampleLabel(label);
+			publishAfterStep(martini, step, result);
 		}
 		return result;
 	}
 
-	// TODO: Should be registered in Martini as default.
+	protected void publishBeforeStep(Martini martini, Step step) {
+		JMeterContext context = super.getThreadContext();
+		DefaultBeforeStepEvent event = new DefaultBeforeStepEvent(martini, step, context);
+		ApplicationContext applicationContext = this.getApplicationContext();
+		applicationContext.publishEvent(event);
+	}
+
+	protected void publishAfterStep(Martini martini, Step step, SampleResult result) {
+		JMeterContext context = super.getThreadContext();
+		DefaultAfterStepEvent event = new DefaultAfterStepEvent(martini, step, context, result);
+		ApplicationContext applicationContext = this.getApplicationContext();
+		applicationContext.publishEvent(event);
+	}
+
 	protected ConversionService getConversionService(ApplicationContext applicationContext) {
-		ConversionService conversionService;
-		try {
-			conversionService = applicationContext.getBean(ConversionService.class);
-		}
-		catch (Exception e) {
-			conversionService = new DefaultConversionService();
-		}
-		return conversionService;
+		return applicationContext.getBean(BEAN_NAME_CONVERSION_SERVICE, ConversionService.class);
 	}
 
 	protected SampleResult getSkipped(Step step) {
@@ -229,12 +248,5 @@ public class MartiniSampler extends AbstractSampler {
 		String label = String.format("SKIPPED: %s", step.getText());
 		result.setSampleLabel(label);
 		return result;
-	}
-
-	protected void publishEnded(SampleResult result, Martini martini) {
-		ApplicationEventPublisher publisher = getApplicationContext();
-		JMeterContext threadContext = getThreadContext();
-		ScenarioEvent starting = ScenarioEvent.getEnded(threadContext, martini, result);
-		publisher.publishEvent(starting);
 	}
 }

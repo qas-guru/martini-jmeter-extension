@@ -21,7 +21,6 @@ import org.apache.jmeter.threads.JMeterContext;
 
 import com.google.common.base.MoreObjects;
 
-import guru.qas.martini.Martini;
 import guru.qas.martini.event.MartiniEvent;
 
 @SuppressWarnings("WeakerAccess")
@@ -29,7 +28,6 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 
 	private final long timestamp;
 	private final JMeterContext context;
-	private final Martini martini;
 
 	@Override
 	public long getTimestamp() {
@@ -40,19 +38,13 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 		return context;
 	}
 
-	@Override
-	public Martini getMartini() {
-		return martini;
+	protected AbstractMartiniEvent(JMeterContext context) {
+		this(System.currentTimeMillis(), context);
 	}
 
 	protected AbstractMartiniEvent(long timestamp, JMeterContext context) {
-		this(timestamp, context, null);
-	}
-
-	protected AbstractMartiniEvent(long timestamp, JMeterContext context, Martini martini) {
 		this.timestamp = timestamp;
 		this.context = context;
-		this.martini = martini;
 	}
 
 	protected MoreObjects.ToStringHelper getThreadGroupStringHelper() {
@@ -68,8 +60,7 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 	protected MoreObjects.ToStringHelper getStringHelper() {
 		return MoreObjects.toStringHelper(this)
 			.add("timestamp", timestamp)
-			.add("context", getJMeterContextStringHelper())
-			.add("martini", martini);
+			.add("context", getJMeterContextStringHelper());
 	}
 
 	@Override

@@ -16,26 +16,31 @@ limitations under the License.
 
 package fixture;
 
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import qas.guru.martini.event.ScenarioEvent;
-import qas.guru.martini.event.SuiteEvent;
+import guru.qas.martini.event.AfterScenarioEvent;
+import guru.qas.martini.event.BeforeScenarioEvent;
+import guru.qas.martini.event.MartiniEvent;
 
 @Component
 class TestEventListener {
 
-	private static final Logger LOG = LoggingManager.getLoggerFor(TestEventListener.class.getName());
+	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestEventListener.class);
 
 	@EventListener
-	public void handle(SuiteEvent event) {
-		LOG.info("received event " + event);
+	public void handle(MartiniEvent event) {
+		LOGGER.info("received event {}", event);
+	}
+
+	@EventListener(condition = "!#event.successful")
+	public void handleFailedScenario(AfterScenarioEvent event) {
+		LOGGER.error("failed scenario: {}", event);
 	}
 
 	@EventListener
-	public void handle(ScenarioEvent event) {
-		LOG.info("received event " + event);
+	public void handleBeforeScenarioEvent(BeforeScenarioEvent event) {
+		LOGGER.info("received BeforeScenarioEvent {}", event);
 	}
 }

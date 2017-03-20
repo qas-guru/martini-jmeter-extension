@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
-import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
@@ -30,7 +29,6 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.util.JMeterStopTestException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEventPublisher;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -39,8 +37,6 @@ import com.google.common.util.concurrent.Monitor;
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 import qas.guru.martini.MartiniConstants;
-import qas.guru.martini.event.ScenarioEvent;
-import qas.guru.martini.jmeter.sampler.MartiniSampler;
 
 import static qas.guru.martini.MartiniConstants.*;
 

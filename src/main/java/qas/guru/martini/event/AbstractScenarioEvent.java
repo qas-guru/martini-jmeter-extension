@@ -20,39 +20,31 @@ import org.apache.jmeter.threads.JMeterContext;
 
 import com.google.common.base.MoreObjects;
 
+import guru.qas.martini.Martini;
+
 @SuppressWarnings("WeakerAccess")
-public class SuiteEvent extends AbstractMartiniEvent {
+public abstract class AbstractScenarioEvent extends AbstractMartiniEvent {
 
-	public enum Type {
-		STARTING, ENDED
+	protected final Martini martini;
+
+	protected Martini getMartini() {
+		return martini;
 	}
 
-	private final Type type;
-
-	public Type getType() {
-		return type;
+	protected AbstractScenarioEvent(Martini martini, JMeterContext context) {
+		this(System.currentTimeMillis(), martini, context);
 	}
 
-	protected SuiteEvent(long timestamp, JMeterContext context, Type type) {
+	protected AbstractScenarioEvent(long timestamp, Martini martini, JMeterContext context) {
 		super(timestamp, context);
-		this.type = type;
-	}
-
-	public static SuiteEvent getStarting(JMeterContext context) {
-		long now = System.currentTimeMillis();
-		return new SuiteEvent(now, context, Type.STARTING);
-	}
-
-	public static SuiteEvent getEnded(JMeterContext context) {
-		long now = System.currentTimeMillis();
-		return new SuiteEvent(now, context, Type.ENDED);
+		this.martini = martini;
 	}
 
 	@Override
 	protected MoreObjects.ToStringHelper getStringHelper() {
 		return MoreObjects.toStringHelper(this)
-			.add("timestamp", getTimestamp())
-			.add("type", type)
-			.add("context", getJMeterContextStringHelper());
+			.add("timestamp", super.getTimestamp())
+			.add("context", getJMeterContextStringHelper())
+			.add("martini", martini);
 	}
 }

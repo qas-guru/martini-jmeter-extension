@@ -28,7 +28,8 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import qas.guru.martini.event.SuiteEvent;
+import qas.guru.martini.event.DefaultAfterSuiteEvent;
+import qas.guru.martini.event.DefaultBeforeSuiteEvent;
 
 import static qas.guru.martini.MartiniConstants.VARIABLE_APPLICATION_CONTEXT;
 
@@ -92,7 +93,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		context.refresh();
 		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
 
-		SuiteEvent event = SuiteEvent.getStarting(threadContext);
+		DefaultBeforeSuiteEvent event = new DefaultBeforeSuiteEvent(System.currentTimeMillis(), threadContext);
 		context.publishEvent(event);
 	}
 
@@ -109,7 +110,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		if (ConfigurableApplicationContext.class.isInstance(o)) {
 			ConfigurableApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 
-			SuiteEvent event = SuiteEvent.getEnded(threadContext);
+			DefaultAfterSuiteEvent event = new DefaultAfterSuiteEvent(System.currentTimeMillis(), threadContext);
 			context.publishEvent(event);
 			context.close();
 		}
