@@ -28,7 +28,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import qas.guru.martini.MartiniConstants;
+import qas.guru.martini.event.SuiteEvent;
 
 import static qas.guru.martini.MartiniConstants.VARIABLE_APPLICATION_CONTEXT;
 
@@ -90,8 +90,10 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[]{location}, false);
 		// TODO: set spring profiles
 		context.refresh();
-
 		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
+
+		SuiteEvent event = SuiteEvent.getStarted(threadContext);
+		context.publishEvent(event);
 	}
 
 	@Override
@@ -101,10 +103,14 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 	@Override
 	public void testEnded() {
 		JMeterContext threadContext = getThreadContext();
+
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject(VARIABLE_APPLICATION_CONTEXT);
 		if (ConfigurableApplicationContext.class.isInstance(o)) {
 			ConfigurableApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
+
+			SuiteEvent event = SuiteEvent.getEnded(threadContext);
+			context.publishEvent(event);
 			context.close();
 		}
 	}

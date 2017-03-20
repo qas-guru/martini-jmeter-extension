@@ -16,7 +16,10 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
+
+import com.google.common.base.MoreObjects;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.MartiniEvent;
@@ -69,5 +72,23 @@ public class SuiteEvent implements MartiniEvent {
 	public static SuiteEvent getAborted(JMeterContext context) {
 		long now = System.currentTimeMillis();
 		return new SuiteEvent(now, context, Type.ABORTED);
+	}
+
+	@Override
+	public String toString() {
+		AbstractThreadGroup threadGroup = context.getThreadGroup();
+		String groupToString = null == threadGroup ? null : MoreObjects.toStringHelper(threadGroup)
+			.add("name", threadGroup.getName())
+			.toString();
+
+		String contextToString = MoreObjects.toStringHelper(context)
+			.add("threadGroup", groupToString)
+			.toString();
+
+		return MoreObjects.toStringHelper(this)
+			.add("timestamp", timestamp)
+			.add("type", type)
+			.add("context", contextToString)
+			.toString();
 	}
 }

@@ -39,6 +39,8 @@ import static qas.guru.martini.MartiniConstants.VARIABLE_MARTINI;
 @SuppressWarnings("WeakerAccess")
 public class MartiniSampler extends AbstractSampler implements TestBean {
 
+	// TODO: own GUI/icon?
+
 	private static final long serialVersionUID = -5644094193554791266L;
 	protected static final String GUI = "org.apache.jmeter.config.gui.SimpleConfigGui";
 

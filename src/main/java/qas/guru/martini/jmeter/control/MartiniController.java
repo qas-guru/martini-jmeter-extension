@@ -111,8 +111,6 @@ public class MartiniController extends GenericController implements Serializable
 		resetIterator();
 	}
 
-
-
 	@Override
 	protected void fireIterationStart() {
 		super.fireIterationStart();
@@ -165,7 +163,7 @@ public class MartiniController extends GenericController implements Serializable
 		resetIterator();
 	}
 
-	private void resetIterator() {
+	protected void resetIterator() {
 		monitor.enter();
 		try {
 			Iterator<Martini> iterator = iteratorRef.get();
