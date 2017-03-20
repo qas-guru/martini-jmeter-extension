@@ -55,17 +55,16 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		return new ArgumentsPanel(null == value ? key : value);
 	}
 
+	@Override
 	protected void initGui() {
-		setLayout(new BorderLayout(0, 5));
-		setBorder(makeBorder());
-		add(makeTitlePanel(), "North");
+		initTitlePanel();
 
 		JPanel panel = new JPanel(new BorderLayout(0, 5));
 		Box box = getContextLocationBox();
-		panel.add(box, "North");
+		panel.add(box, BorderLayout.NORTH);
 
-		panel.add(argumentsPanel, "Center");
-		add(panel, "Center");
+		panel.add(argumentsPanel, BorderLayout.CENTER);
+		add(panel, BorderLayout.CENTER);
 	}
 
 	protected Box getContextLocationBox() {

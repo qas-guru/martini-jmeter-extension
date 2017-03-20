@@ -14,36 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qas.guru.martini.jmeter.control.gui;
+package qas.guru.martini.jmeter.sampler.gui;
 
-import java.awt.BorderLayout;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import org.apache.jmeter.gui.util.MenuFactory;
 import org.apache.jmeter.testelement.TestElement;
 
 import qas.guru.martini.AbstractMartiniGui;
-import qas.guru.martini.jmeter.control.MartiniController;
+import qas.guru.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniControllerGui extends AbstractMartiniGui {
+public class MartiniSamplerGui extends AbstractMartiniGui {
 
-	private static final long serialVersionUID = -1197223648762160415L;
+	private static final long serialVersionUID = 4219666069854254153L;
 
-	public MartiniControllerGui() {
+	public MartiniSamplerGui() {
 		super();
 		initGui();
 	}
 
 	@Override
 	public TestElement createTestElement() {
-		MartiniController controller = new MartiniController();
-		modifyTestElement(controller);
-		return controller;
+		MartiniSampler sampler = new MartiniSampler();
+		modifyTestElement(sampler);
+		return sampler;
 	}
 
 	@Override
@@ -53,11 +52,11 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 
 	@Override
 	public JPopupMenu createPopupMenu() {
-		return MenuFactory.getDefaultControllerMenu();
+		return MenuFactory.getDefaultSamplerMenu();
 	}
 
 	@Override
 	public Collection<String> getMenuCategories() {
-		return Collections.singleton(MenuFactory.CONTROLLERS);
+		return Collections.singletonList(MenuFactory.SAMPLERS);
 	}
 }

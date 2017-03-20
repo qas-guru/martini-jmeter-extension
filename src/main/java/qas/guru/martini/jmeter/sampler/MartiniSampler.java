@@ -23,13 +23,9 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 
 import org.apache.jmeter.assertions.AssertionResult;
-import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.logging.LoggingManager;
@@ -46,31 +42,24 @@ import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.step.StepImplementation;
+import qas.guru.martini.DefaultIconManager;
 import qas.guru.martini.event.ScenarioEvent;
 
 import static com.google.common.base.Preconditions.*;
 import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniSampler extends AbstractSampler implements TestBean {
-
-	// TODO: own GUI/icon?
+public class MartiniSampler extends AbstractSampler {
 
 	private static final long serialVersionUID = -5644094193554791266L;
-	protected static final String GUI = "org.apache.jmeter.config.gui.SimpleConfigGui";
 
 	private final Logger logger;
 
 	public MartiniSampler() {
 		super();
 		logger = LoggingManager.getLoggerFor(getClass().getName());
-	}
-
-	@Override
-	public boolean applies(ConfigTestElement configElement) {
-		JMeterProperty property = configElement.getProperty(TestElement.GUI_CLASS);
-		String guiClass = property.getStringValue();
-		return GUI.equals(guiClass);
+		DefaultIconManager iconManager = DefaultIconManager.getInstance();
+		iconManager.registerIcons(getClass());
 	}
 
 	@Override

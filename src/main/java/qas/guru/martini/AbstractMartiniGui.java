@@ -16,6 +16,10 @@ limitations under the License.
 
 package qas.guru.martini;
 
+import java.awt.BorderLayout;
+
+import javax.swing.JPanel;
+
 import org.apache.jmeter.gui.AbstractJMeterGuiComponent;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
@@ -66,5 +70,17 @@ public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 	@Override
 	public String getLabelResource() {
 		return String.format("%s.title", getClass().getName());
+	}
+
+	protected void initGui() {
+		initTitlePanel();
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		add(mainPanel, BorderLayout.CENTER);
+	}
+
+	protected void initTitlePanel() {
+		setLayout(new BorderLayout(0, 5));
+		setBorder(makeBorder());
+		add(makeTitlePanel(), BorderLayout.NORTH);
 	}
 }
