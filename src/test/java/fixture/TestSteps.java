@@ -39,6 +39,12 @@ public class TestSteps {
 	@Given("a pre-existing condition")
 	@Given("a given")
 	public void aGiven() {
+		System.out.println("executing aGiven");
+	}
+
+	@Given("a disease called \"(.+)\"")
+	public void aDiseaseCalled(String name) {
+		System.out.println("executing aDiseaseCalled with name " + name);
 	}
 
 	@Given("another \"(.+)\" here")

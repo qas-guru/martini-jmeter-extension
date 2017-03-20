@@ -16,7 +16,11 @@ limitations under the License.
 
 package qas.guru.martini.jmeter.sampler;
 
-import java.util.List;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Map;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 
 import org.apache.jmeter.assertions.AssertionResult;
 import org.apache.jmeter.config.ConfigTestElement;
@@ -33,12 +37,15 @@ import org.apache.jorphan.util.JMeterStopTestNowException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 
 import gherkin.ast.Feature;
+import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
-import gherkin.pickles.PickleStep;
 import guru.qas.martini.Martini;
 import guru.qas.martini.gherkin.Recipe;
+import guru.qas.martini.step.StepImplementation;
 import qas.guru.martini.event.ScenarioEvent;
 
 import static com.google.common.base.Preconditions.*;
@@ -109,7 +116,6 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		return threadContext.getVariables();
 	}
 
-
 	protected SampleResult getError(Martini martini, Exception e) {
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(null == martini ? "UNKNOWN" : getLabel(martini));
@@ -134,8 +140,7 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 	}
 
 	protected SampleResult sample(Martini martini) {
-		Recipe recipe = martini.getRecipe();
-		Pickle pickle = recipe.getPickle();
+		Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
 
 		String label = getLabel(martini);
 		SampleResult sampleResult = new SampleResult();
@@ -143,18 +148,14 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		sampleResult.setSuccessful(true);
 		sampleResult.sampleStart();
 
-		List<PickleStep> steps = pickle.getSteps();
-		for (PickleStep step : steps) {
-			SampleResult subResult;
-			if (sampleResult.isSuccessful()) {
-				subResult = getSubResult(step);
-			}
-			else {
-				subResult = getSkipped(step);
-			}
+		for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
+			Step step = mapEntry.getKey();
+			StepImplementation implementation = mapEntry.getValue();
+			SampleResult subResult = sampleResult.isSuccessful() ?
+				getSubResult(step, implementation) : getSkipped(step);
 			sampleResult.addSubResult(subResult);
+			sampleResult.setSuccessful(sampleResult.isSuccessful() && subResult.isSuccessful());
 		}
-
 		return sampleResult;
 	}
 
@@ -180,25 +181,62 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		return Martini.class.cast(o);
 	}
 
-	protected SampleResult getSubResult(PickleStep step) {
+	protected SampleResult getSubResult(Step step, StepImplementation implementation) {
+		String text = step.getText();
+
 		SampleResult result = new SampleResult();
 		result.setSuccessful(true);
 		String label = step.getText();
 		result.sampleStart();
 
 		try {
-			// do something here
+			ApplicationContext applicationContext = this.getApplicationContext();
+			ConversionService conversionService = getConversionService(applicationContext);
+
+			// TODO: must account for parameter matching! - this is happening in DefaultMixologist
+			Method method = implementation.getMethod();
+			Matcher matcher = implementation.getPattern().matcher(text);
+			MatchResult matchResult = matcher.toMatchResult();
+
+			Parameter[] parameters = method.getParameters();
+			Object[] arguments = new Object[parameters.length];
+			for (int i = 0; i < parameters.length; i++) {
+				String parameterAsString = matchResult.group(i + 1);
+				Parameter parameter = parameters[i];
+				Class<?> parameterType = parameter.getType();
+				Object converted = conversionService.convert(parameterAsString, parameterType);
+				arguments[i] = converted;
+			}
+
+			Class<?> declaringClass = implementation.getMethod().getDeclaringClass();
+			Object bean = applicationContext.getBean(declaringClass);
+			Object o = method.invoke(bean, arguments);
+			System.out.println("breakpoint, return object was " + o);
 		}
 		catch (Exception e) {
 			result.setSuccessful(false);
 			label = "FAIL: " + label;
 		}
-		result.sampleEnd();
-		result.setSampleLabel(label);
+		finally {
+			result.sampleEnd();
+			result.setSampleLabel(label);
+		}
 		return result;
 	}
 
-	protected SampleResult getSkipped(PickleStep step) {
+	// TODO: Should be registered in Martini as default.
+	protected ConversionService getConversionService(ApplicationContext applicationContext) {
+		ConversionService conversionService;
+		try {
+			conversionService = applicationContext.getBean(ConversionService.class);
+		}
+		catch (Exception e) {
+			conversionService = new DefaultConversionService();
+		}
+		return conversionService;
+	}
+
+	protected SampleResult getSkipped(Step step) {
 		SampleResult result = new SampleResult();
 		result.setSuccessful(false);
 		String label = String.format("SKIPPED: %s", step.getText());

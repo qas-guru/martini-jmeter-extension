@@ -42,8 +42,8 @@ Feature: Functionality of the Reporting Subsystem
     Then assert expected outcome
 
 
-  Scenario: Another Regression Case
-    Given a pre-existing condition
+  Scenario: An Argument case
+    Given a disease called "Celiac Disease"
     And an emergent condition
     When something happens
     Then assert expected outcome
