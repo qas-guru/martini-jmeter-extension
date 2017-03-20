@@ -193,7 +193,6 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			ConversionService conversionService = getConversionService(applicationContext);
 
-			// TODO: must account for parameter matching! - this is happening in DefaultMixologist
 			Method method = implementation.getMethod();
 			Matcher matcher = implementation.getPattern().matcher(text);
 			MatchResult matchResult = matcher.toMatchResult();
@@ -210,8 +209,7 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 
 			Class<?> declaringClass = implementation.getMethod().getDeclaringClass();
 			Object bean = applicationContext.getBean(declaringClass);
-			Object o = method.invoke(bean, arguments);
-			System.out.println("breakpoint, return object was " + o);
+			method.invoke(bean, arguments);
 		}
 		catch (Exception e) {
 			result.setSuccessful(false);
