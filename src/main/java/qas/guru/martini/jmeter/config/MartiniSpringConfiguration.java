@@ -17,6 +17,10 @@ limitations under the License.
 package qas.guru.martini.jmeter.config;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.ConfigTestElement;
@@ -25,13 +29,20 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 
+import com.google.common.base.Splitter;
+
+import qas.guru.martini.MartiniConstants;
 import qas.guru.martini.event.DefaultAfterSuiteEvent;
 import qas.guru.martini.event.DefaultBeforeSuiteEvent;
 
-import static qas.guru.martini.MartiniConstants.VARIABLE_APPLICATION_CONTEXT;
+import static org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.*;
+import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniSpringConfiguration extends ConfigTestElement implements TestStateListener, Serializable {
@@ -89,12 +100,51 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 
 		String location = this.getConfigLocation();
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[]{location}, false);
-		// TODO: set spring profiles
+
+		List<String> profiles = getActiveProfiles();
+		if (!profiles.isEmpty()) {
+			ConfigurableEnvironment environment = context.getEnvironment();
+			String[] asArray = profiles.toArray(new String[profiles.size()]);
+			environment.setActiveProfiles(asArray);
+		}
+
+		PropertyPlaceholderConfigurer configurer = new PropertyPlaceholderConfigurer();
+		Properties properties = getProperties();
+		configurer.setProperties(properties);
+		configurer.setLocalOverride(true);
+		configurer.setSearchSystemEnvironment(true);
+		configurer.setSystemPropertiesMode(SYSTEM_PROPERTIES_MODE_FALLBACK);
+		context.addBeanFactoryPostProcessor(configurer);
 		context.refresh();
+
 		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
 
 		DefaultBeforeSuiteEvent event = new DefaultBeforeSuiteEvent(System.currentTimeMillis(), threadContext);
 		context.publishEvent(event);
+	}
+
+	private List<String> getActiveProfiles() {
+		// TODO: this should be a separate GUI field
+		Arguments arguments = getArguments();
+		Map<String, String> index = arguments.getArgumentsAsMap();
+		String argument = index.get(MartiniConstants.ARGUMENT_SPRING_PROFILES_ACTIVE);
+		return null == argument ?
+			Collections.emptyList() : Splitter.on(',').trimResults().omitEmptyStrings().splitToList(argument);
+	}
+
+	private Properties getProperties() {
+		Arguments arguments = getArguments();
+		Map<String, String> argumentsAsMap = arguments.getArgumentsAsMap();
+
+		Properties properties = new Properties();
+		for (Map.Entry<String, String> mapEntry : argumentsAsMap.entrySet()) {
+			String key = mapEntry.getKey().trim();
+			if (!key.isEmpty()) {
+				String value = mapEntry.getValue().trim();
+				properties.setProperty(key, value);
+			}
+		}
+		return properties;
 	}
 
 	@Override

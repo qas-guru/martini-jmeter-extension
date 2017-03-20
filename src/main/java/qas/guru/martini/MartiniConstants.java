@@ -20,4 +20,6 @@ public interface MartiniConstants {
 	String VARIABLE_APPLICATION_CONTEXT = "applicationContext";
 	String VARIABLE_MARTINI = "martini";
 
+	String ARGUMENT_SPRING_PROFILES_ACTIVE = "spring.profiles.active";
+
 }

@@ -18,10 +18,14 @@ package qas.guru.martini.jmeter.config.gui;
 
 import org.apache.jmeter.config.Arguments;
 
+
+import static qas.guru.martini.MartiniConstants.ARGUMENT_SPRING_PROFILES_ACTIVE;
+
+@SuppressWarnings("WeakerAccess")
 public class DefaultArguments extends Arguments {
 
 	public DefaultArguments() {
 		super();
-		addArgument("spring.profiles.active", "default", null, "active Spring profiles");
+		addArgument(ARGUMENT_SPRING_PROFILES_ACTIVE, "default", null, "active Spring profiles");
 	}
 }
