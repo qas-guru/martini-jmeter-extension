@@ -28,6 +28,10 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import qas.guru.martini.MartiniConstants;
+
+import static qas.guru.martini.MartiniConstants.VARIABLE_APPLICATION_CONTEXT;
+
 @SuppressWarnings("WeakerAccess")
 public class MartiniSpringConfiguration extends ConfigTestElement implements TestStateListener, Serializable {
 
@@ -87,7 +91,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		// TODO: set spring profiles
 		context.refresh();
 
-		variables.putObject("applicationContext", context);
+		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
 	}
 
 	@Override
@@ -98,7 +102,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 	public void testEnded() {
 		JMeterContext threadContext = getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject("applicationContext");
+		Object o = variables.getObject(VARIABLE_APPLICATION_CONTEXT);
 		if (ConfigurableApplicationContext.class.isInstance(o)) {
 			ConfigurableApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 			context.close();

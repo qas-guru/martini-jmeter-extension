@@ -18,8 +18,6 @@ package qas.guru.martini.jmeter.control;
 
 import java.io.Serializable;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
@@ -33,14 +31,13 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Monitor;
 
-import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.gherkin.Recipe;
-import guru.qas.martini.step.StepImplementation;
+import qas.guru.martini.MartiniConstants;
+
+import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniController extends GenericController implements Serializable, TestStateListener {
@@ -48,6 +45,7 @@ public class MartiniController extends GenericController implements Serializable
 	protected volatile transient Monitor monitor;
 	protected volatile transient AtomicReference<ImmutableList<Martini>> martinisRef;
 	protected volatile transient AtomicReference<Iterator<Martini>> iteratorRef;
+	protected Martini martini;
 
 	public MartiniController() {
 		super();
@@ -97,7 +95,7 @@ public class MartiniController extends GenericController implements Serializable
 	}
 
 	protected void initialize(JMeterVariables variables) {
-		Object o = variables.getObject("applicationContext"); // TODO: a constant
+		Object o = variables.getObject(MartiniConstants.VARIABLE_APPLICATION_CONTEXT);
 		ClassPathXmlApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 		Mixologist mixologist = context.getBean(Mixologist.class);
 		initialize(mixologist);
@@ -109,44 +107,11 @@ public class MartiniController extends GenericController implements Serializable
 			String message = String.format("%s:%s has no scenarios to run", getClass().getName(), getName());
 			throw new JMeterStopTestException(message);
 		}
-
-		Martini template = Iterables.getFirst(martinis, null);
-		List<Martini> temps = Lists.newArrayList();
-		for (int i = 0; i < 3; i++) {
-			temps.add(new MartiniWrapper("Martini " + i, template));
-		}
-		//martinisRef.set(ImmutableList.copyOf(martinis));
-		martinisRef.set(ImmutableList.copyOf(temps));
+		martinisRef.set(ImmutableList.copyOf(martinis));
 		resetIterator();
 	}
 
-	static final class MartiniWrapper implements Martini {
 
-		private final String label;
-		private final Martini martini;
-
-		MartiniWrapper(String label, Martini martini) {
-			this.label = label;
-			this.martini = martini;
-		}
-
-		@Override
-		public Recipe getRecipe() {
-			return martini.getRecipe();
-		}
-
-		@Override
-		public Map<Step, StepImplementation> getStepIndex() {
-			return martini.getStepIndex();
-		}
-
-		@Override
-		public String toString() {
-			return label;
-		}
-	}
-
-	protected Martini martini;
 
 	@Override
 	protected void fireIterationStart() {
@@ -167,7 +132,7 @@ public class MartiniController extends GenericController implements Serializable
 
 		if (null != element && null != martini) {
 			JMeterVariables variables = getJMeterVariables();
-			variables.putObject("martini", martini);
+			variables.putObject(VARIABLE_MARTINI, martini);
 		}
 		else if (null != element) {
 			element = null;
