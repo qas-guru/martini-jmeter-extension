@@ -187,30 +187,6 @@ public class MartiniController extends GenericController implements Serializable
 			}
 		}
 		return element;
-
-//		monitor.enter();
-//		try {
-//			Iterator<Martini> iterator = iteratorRef.get();
-//			if (0 == current && iterator.hasNext()) { // if it's a loop, go around again!
-//				Martini martini = iterator.next();
-//				JMeterVariables variables = getJMeterVariables();
-//				variables.putObject("martini", martini);
-//				ObjectProperty property = new ObjectProperty("whatever", Boolean.TRUE);
-//				element.setProperty(property);
-//				element.setTemporary(property);
-//			}
-//			else if (0 == current && !iterator.hasNext()) {
-//				element = null;
-//			}
-//			else if (0 != current && null == element && iterator.hasNext()) {
-//				reInitialize();
-//				element = this.getCurrentElement();
-//			}
-//			return element;
-//		}
-//		finally {
-//			monitor.leave();
-//		}
 	}
 
 	@Override
