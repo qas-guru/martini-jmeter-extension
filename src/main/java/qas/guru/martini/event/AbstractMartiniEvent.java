@@ -17,13 +17,16 @@ limitations under the License.
 package qas.guru.martini.event;
 
 import org.apache.jmeter.samplers.Sampler;
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
 
 import com.google.common.base.MoreObjects;
 
+import guru.qas.martini.Martini;
 import guru.qas.martini.event.MartiniEvent;
 
+@SuppressWarnings("WeakerAccess")
 public abstract class AbstractMartiniEvent implements MartiniEvent {
 
 	private final long timestamp;
@@ -38,19 +41,34 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 		return context;
 	}
 
-	AbstractMartiniEvent(long timestamp, JMeterContext context) {
+	protected AbstractMartiniEvent(long timestamp, JMeterContext context) {
 		this.timestamp = timestamp;
 		this.context = context;
 	}
 
-	protected String getContextSummary() {
-		Sampler sampler = context.getCurrentSampler();
-		JMeterThread thread = context.getThread();
+	@Override
+	public Martini getMartini() {
+		return null;
+	}
 
-		return MoreObjects
-			.toStringHelper(context)
-			.add("currentSampler", sampler.getName())
-			.add("thread", thread.getThreadName())
-			.toString();
+	protected MoreObjects.ToStringHelper getThreadGroupStringHelper() {
+		AbstractThreadGroup threadGroup = context.getThreadGroup();
+		return null == threadGroup ? null : MoreObjects.toStringHelper(threadGroup).add("name", threadGroup.getName());
+	}
+
+	protected MoreObjects.ToStringHelper getJMeterContextStringHelper() {
+		return MoreObjects.toStringHelper(context)
+			.add("threadGroup", getThreadGroupStringHelper());
+	}
+
+	protected MoreObjects.ToStringHelper getStringHelper() {
+		return MoreObjects.toStringHelper(this)
+			.add("timestamp", timestamp)
+			.add("context", getJMeterContextStringHelper());
+	}
+
+	@Override
+	public String toString() {
+		return getStringHelper().toString();
 	}
 }

@@ -16,46 +16,25 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
-import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 
 import com.google.common.base.MoreObjects;
 
-import guru.qas.martini.Martini;
-import guru.qas.martini.event.MartiniEvent;
-
 @SuppressWarnings("WeakerAccess")
-public class SuiteEvent implements MartiniEvent {
+public class SuiteEvent extends AbstractMartiniEvent {
 
 	public enum Type {
 		ABORTED, STARTED, ENDED
 	}
 
-	private final long timestamp;
-	private final JMeterContext context;
 	private final Type type;
-
-	@Override
-	public long getTimestamp() {
-		return timestamp;
-	}
-
-	@Override
-	public Martini getMartini() {
-		return null;
-	}
-
-	public JMeterContext getContext() {
-		return context;
-	}
 
 	public Type getType() {
 		return type;
 	}
 
 	protected SuiteEvent(long timestamp, JMeterContext context, Type type) {
-		this.timestamp = timestamp;
-		this.context = context;
+		super(timestamp, context);
 		this.type = type;
 	}
 
@@ -75,20 +54,10 @@ public class SuiteEvent implements MartiniEvent {
 	}
 
 	@Override
-	public String toString() {
-		AbstractThreadGroup threadGroup = context.getThreadGroup();
-		String groupToString = null == threadGroup ? null : MoreObjects.toStringHelper(threadGroup)
-			.add("name", threadGroup.getName())
-			.toString();
-
-		String contextToString = MoreObjects.toStringHelper(context)
-			.add("threadGroup", groupToString)
-			.toString();
-
+	protected MoreObjects.ToStringHelper getStringHelper() {
 		return MoreObjects.toStringHelper(this)
-			.add("timestamp", timestamp)
+			.add("timestamp", getTimestamp())
 			.add("type", type)
-			.add("context", contextToString)
-			.toString();
+			.add("context", getJMeterContextStringHelper());
 	}
 }
