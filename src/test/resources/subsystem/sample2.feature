@@ -12,37 +12,14 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
-
-# This is a comment.
-
 @Classification("Reporting")
+@Classification("Ad-Hoc")
 @Meta("Selenium")
-Feature: Functionality of the Reporting Subsystem
-  This is the basic description for my functionality.
+Feature: Ad-Hoc Reports
 
-  @Smoke
-  @Meta("Firefox")
-  Scenario: A Smoke Case
-  This is the detailed description for my Scenario.
-  This is a warning note.
-    # This is a comment under the Scenario.
-
-    Given a pre-existing condition
-    And an emergent condition
-    When something happens
-    Then assert expected outcome
-
-
-  Scenario: A Regression Case
+  Scenario: An Ad-Hoc Regression Case
   A regression case.
 
-    Given a pre-existing condition
-    And an emergent condition
-    When something happens
-    Then assert expected outcome
-
-
-  Scenario: Another Regression Case
     Given a pre-existing condition
     And an emergent condition
     When something happens
