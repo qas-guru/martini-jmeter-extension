@@ -16,59 +16,54 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
+import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.JMeterContext;
 
 import com.google.common.base.MoreObjects;
 
 import guru.qas.martini.Martini;
-import guru.qas.martini.event.MartiniEvent;
 
-public class ScenarioEvent implements MartiniEvent {
+@SuppressWarnings("WeakerAccess")
+public class ScenarioEvent extends AbstractMartiniEvent {
 
 	public enum Type {
 		STARTING, ENDED
 	}
 
-	private final long timestamp;
-	private final JMeterContext context;
-	private final Martini martini;
+	private final SampleResult result;
 	private final Type type;
 
-	@Override
-	public long getTimestamp() {
-		return timestamp;
-	}
-
-	public JMeterContext getJmeterContext() {
-		return context;
-	}
-
-	@Override
-	public Martini getMartini() {
-		return martini;
+	public SampleResult getResult() {
+		return result;
 	}
 
 	public Type getType() {
 		return type;
 	}
 
-	private ScenarioEvent(long timestamp, JMeterContext context, Martini martini, Type type) {
-		this.timestamp = timestamp;
-		this.context = context;
-		this.martini = martini;
+	protected ScenarioEvent(long timestamp, JMeterContext context, Type type, Martini martini, SampleResult result) {
+		super(timestamp, context, martini);
 		this.type = type;
+		this.result = result;
 	}
 
 	public static ScenarioEvent getStarting(JMeterContext context, Martini martini) {
 		long now = System.currentTimeMillis();
-		return new ScenarioEvent(now, context, martini, Type.STARTING);
+		return new ScenarioEvent(now, context, Type.STARTING, martini, null);
+	}
+
+	public static ScenarioEvent getEnded(JMeterContext context, Martini martini, SampleResult result) {
+		long timestamp = result.getEndTime();
+		return new ScenarioEvent(timestamp, context, Type.ENDED, martini, result);
 	}
 
 	@Override
-	public String toString() {
+	protected MoreObjects.ToStringHelper getStringHelper() {
 		return MoreObjects.toStringHelper(this)
+			.add("timestamp", super.getTimestamp())
 			.add("type", type)
-			.add("martini", martini)
-			.toString();
+			.add("context", getJMeterContextStringHelper())
+			.add("martini", super.getMartini())
+			.add("result", result);
 	}
 }

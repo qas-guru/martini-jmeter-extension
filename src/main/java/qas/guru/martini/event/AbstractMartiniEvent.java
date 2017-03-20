@@ -16,10 +16,8 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
-import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterThread;
 
 import com.google.common.base.MoreObjects;
 
@@ -31,6 +29,7 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 
 	private final long timestamp;
 	private final JMeterContext context;
+	private final Martini martini;
 
 	@Override
 	public long getTimestamp() {
@@ -41,14 +40,19 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 		return context;
 	}
 
-	protected AbstractMartiniEvent(long timestamp, JMeterContext context) {
-		this.timestamp = timestamp;
-		this.context = context;
-	}
-
 	@Override
 	public Martini getMartini() {
-		return null;
+		return martini;
+	}
+
+	protected AbstractMartiniEvent(long timestamp, JMeterContext context) {
+		this(timestamp, context, null);
+	}
+
+	protected AbstractMartiniEvent(long timestamp, JMeterContext context, Martini martini) {
+		this.timestamp = timestamp;
+		this.context = context;
+		this.martini = martini;
 	}
 
 	protected MoreObjects.ToStringHelper getThreadGroupStringHelper() {
@@ -64,7 +68,8 @@ public abstract class AbstractMartiniEvent implements MartiniEvent {
 	protected MoreObjects.ToStringHelper getStringHelper() {
 		return MoreObjects.toStringHelper(this)
 			.add("timestamp", timestamp)
-			.add("context", getJMeterContextStringHelper());
+			.add("context", getJMeterContextStringHelper())
+			.add("martini", martini);
 	}
 
 	@Override

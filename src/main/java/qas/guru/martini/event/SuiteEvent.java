@@ -24,7 +24,7 @@ import com.google.common.base.MoreObjects;
 public class SuiteEvent extends AbstractMartiniEvent {
 
 	public enum Type {
-		ABORTED, STARTED, ENDED
+		STARTING, ENDED
 	}
 
 	private final Type type;
@@ -38,19 +38,14 @@ public class SuiteEvent extends AbstractMartiniEvent {
 		this.type = type;
 	}
 
-	public static SuiteEvent getStarted(JMeterContext context) {
+	public static SuiteEvent getStarting(JMeterContext context) {
 		long now = System.currentTimeMillis();
-		return new SuiteEvent(now, context, Type.STARTED);
+		return new SuiteEvent(now, context, Type.STARTING);
 	}
 
 	public static SuiteEvent getEnded(JMeterContext context) {
 		long now = System.currentTimeMillis();
 		return new SuiteEvent(now, context, Type.ENDED);
-	}
-
-	public static SuiteEvent getAborted(JMeterContext context) {
-		long now = System.currentTimeMillis();
-		return new SuiteEvent(now, context, Type.ABORTED);
 	}
 
 	@Override

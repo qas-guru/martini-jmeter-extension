@@ -92,7 +92,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		context.refresh();
 		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
 
-		SuiteEvent event = SuiteEvent.getStarted(threadContext);
+		SuiteEvent event = SuiteEvent.getStarting(threadContext);
 		context.publishEvent(event);
 	}
 

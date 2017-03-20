@@ -22,12 +22,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
+import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.util.JMeterStopTestException;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -36,6 +39,8 @@ import com.google.common.util.concurrent.Monitor;
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 import qas.guru.martini.MartiniConstants;
+import qas.guru.martini.event.ScenarioEvent;
+import qas.guru.martini.jmeter.sampler.MartiniSampler;
 
 import static qas.guru.martini.MartiniConstants.*;
 
@@ -70,8 +75,8 @@ public class MartiniController extends GenericController implements Serializable
 		monitor.enter();
 		try {
 			if (null == getMartinis()) {
-				JMeterVariables variables = getJMeterVariables();
-				initialize(variables);
+				BeanFactory beanFactory = getApplicationContext();
+				initialize(beanFactory);
 			}
 		}
 		finally {
@@ -89,16 +94,20 @@ public class MartiniController extends GenericController implements Serializable
 		}
 	}
 
+	protected void initialize(BeanFactory beanFactory) {
+		Mixologist mixologist = beanFactory.getBean(Mixologist.class);
+		initialize(mixologist);
+	}
+
+	protected ApplicationContext getApplicationContext() {
+		JMeterVariables variables = getJMeterVariables();
+		Object o = variables.getObject(MartiniConstants.VARIABLE_APPLICATION_CONTEXT);
+		return ApplicationContext.class.cast(o);
+	}
+
 	private JMeterVariables getJMeterVariables() {
 		JMeterContext threadContext = getThreadContext();
 		return threadContext.getVariables();
-	}
-
-	protected void initialize(JMeterVariables variables) {
-		Object o = variables.getObject(MartiniConstants.VARIABLE_APPLICATION_CONTEXT);
-		ClassPathXmlApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
-		Mixologist mixologist = context.getBean(Mixologist.class);
-		initialize(mixologist);
 	}
 
 	protected void initialize(Mixologist mixologist) {
@@ -109,6 +118,15 @@ public class MartiniController extends GenericController implements Serializable
 		}
 		martinisRef.set(ImmutableList.copyOf(martinis));
 		resetIterator();
+	}
+
+	@Override
+	public void testStarted() {
+		resetIterator();
+	}
+
+	@Override
+	public void testStarted(String host) {
 	}
 
 	@Override
@@ -153,11 +171,6 @@ public class MartiniController extends GenericController implements Serializable
 	}
 
 	@Override
-	public void testStarted() {
-		resetIterator();
-	}
-
-	@Override
 	public void triggerEndOfLoop() {
 		super.triggerEndOfLoop();
 		resetIterator();
@@ -178,10 +191,6 @@ public class MartiniController extends GenericController implements Serializable
 		finally {
 			monitor.leave();
 		}
-	}
-
-	@Override
-	public void testStarted(String host) {
 	}
 
 	@Override
