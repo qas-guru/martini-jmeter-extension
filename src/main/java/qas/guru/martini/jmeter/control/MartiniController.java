@@ -18,10 +18,14 @@ package qas.guru.martini.jmeter.control;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.util.JMeterStopTestException;
@@ -29,32 +33,66 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Monitor;
 
+import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
+import guru.qas.martini.gherkin.Recipe;
+import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements Serializable {
+public class MartiniController extends GenericController implements Serializable, TestStateListener {
 
-	protected transient final Monitor monitor;
-	protected transient ImmutableList<Martini> martinis;
-	protected transient Iterator<Martini> iterator;
+	protected volatile transient Monitor monitor;
+	protected volatile transient AtomicReference<ImmutableList<Martini>> martinisRef;
+	protected volatile transient AtomicReference<Iterator<Martini>> iteratorRef;
 
 	public MartiniController() {
 		super();
-		this.monitor = new Monitor();
+		monitor = new Monitor();
+		martinisRef = new AtomicReference<>();
+		iteratorRef = new AtomicReference<>();
+	}
+
+	@Override
+	public Object clone() {
+		Object o = super.clone();
+		MartiniController clone = MartiniController.class.cast(o);
+		clone.monitor = this.monitor;
+		clone.martinisRef = this.martinisRef;
+		clone.iteratorRef = this.iteratorRef;
+		return clone;
 	}
 
 	@Override
 	public void initialize() {
 		super.initialize();
-		JMeterVariables variables = getJMeterVariables();
-		initialize(variables);
+		monitor.enter();
+		try {
+			if (null == getMartinis()) {
+				JMeterVariables variables = getJMeterVariables();
+				initialize(variables);
+			}
+		}
+		finally {
+			monitor.leave();
+		}
+	}
+
+	private ImmutableList<Martini> getMartinis() {
+		monitor.enter();
+		try {
+			return martinisRef.get();
+		}
+		finally {
+			monitor.leave();
+		}
 	}
 
 	private JMeterVariables getJMeterVariables() {
-		JMeterContext threadContext = super.getThreadContext();
+		JMeterContext threadContext = getThreadContext();
 		return threadContext.getVariables();
 	}
 
@@ -71,65 +109,132 @@ public class MartiniController extends GenericController implements Serializable
 			String message = String.format("%s:%s has no scenarios to run", getClass().getName(), getName());
 			throw new JMeterStopTestException(message);
 		}
-		martinis = Iterables.concat(martinis, martinis);// TODO: TESTING ONLY
-		initialize(martinis);
+
+		Martini template = Iterables.getFirst(martinis, null);
+		List<Martini> temps = Lists.newArrayList();
+		for (int i = 0; i < 3; i++) {
+			temps.add(new MartiniWrapper("Martini " + i, template));
+		}
+		//martinisRef.set(ImmutableList.copyOf(martinis));
+		martinisRef.set(ImmutableList.copyOf(temps));
+		resetIterator();
 	}
 
-	protected void initialize(Iterable<Martini> martinis) {
-		this.martinis = ImmutableList.copyOf(martinis);
-		iterator = martinis.iterator();
+	static final class MartiniWrapper implements Martini {
+
+		private final String label;
+		private final Martini martini;
+
+		MartiniWrapper(String label, Martini martini) {
+			this.label = label;
+			this.martini = martini;
+		}
+
+		@Override
+		public Recipe getRecipe() {
+			return martini.getRecipe();
+		}
+
+		@Override
+		public Map<Step, StepImplementation> getStepIndex() {
+			return martini.getStepIndex();
+		}
+
+		@Override
+		public String toString() {
+			return label;
+		}
 	}
+
+	protected Martini martini;
 
 	@Override
-	protected void reInitialize() {
-		super.reInitialize();
-		iterator = martinis.iterator();
+	protected void fireIterationStart() {
+		super.fireIterationStart();
+		monitor.enter();
+		try {
+			Iterator<Martini> iterator = this.iteratorRef.get();
+			martini = null != iterator && iterator.hasNext() ? iterator.next() : null;
+		}
+		finally {
+			monitor.leave();
+		}
 	}
 
 	@Override
 	protected TestElement getCurrentElement() throws NextIsNullException {
-		synchronized (this) {
-			TestElement currentElement = super.getCurrentElement();
+		TestElement element = super.getCurrentElement();
 
-			if (null == currentElement) {
-				Martini martini = getNextMartini();
-				if (null != martini) {
-					resetCurrent();
-					currentElement = super.getCurrentElement();
-					setCurrent(martini);
-				}
-			}
-			else
-			{
-				Martini martini = getCurrentMartini();
-				if (null == martini) {
-					martini = getNextMartini();
-					if (null == martini) {
-						throw new NextIsNullException();
-					}
-					setCurrent(martini);
-				}
-			}
-			return currentElement;
+		if (null != element && null != martini) {
+			JMeterVariables variables = getJMeterVariables();
+			variables.putObject("martini", martini);
 		}
+		else if (null != element) {
+			element = null;
+		}
+		else {
+			monitor.enter();
+			try {
+				Iterator<Martini> iterator = iteratorRef.get();
+				if (iterator.hasNext()) {
+					martini = iterator.next();
+					resetCurrent();
+					element = this.getCurrentElement();
+				}
+			}
+			finally {
+				monitor.leave();
+			}
+		}
+		return element;
 
+//		monitor.enter();
+//		try {
+//			Iterator<Martini> iterator = iteratorRef.get();
+//			if (0 == current && iterator.hasNext()) { // if it's a loop, go around again!
+//				Martini martini = iterator.next();
+//				JMeterVariables variables = getJMeterVariables();
+//				variables.putObject("martini", martini);
+//				ObjectProperty property = new ObjectProperty("whatever", Boolean.TRUE);
+//				element.setProperty(property);
+//				element.setTemporary(property);
+//			}
+//			else if (0 == current && !iterator.hasNext()) {
+//				element = null;
+//			}
+//			else if (0 != current && null == element && iterator.hasNext()) {
+//				reInitialize();
+//				element = this.getCurrentElement();
+//			}
+//			return element;
+//		}
+//		finally {
+//			monitor.leave();
+//		}
 	}
 
-	protected Martini getCurrentMartini() {
-		JMeterVariables variables = this.getJMeterVariables();
-		Object o = variables.getObject("martini");// TODO: constants
-		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+	@Override
+	public void testStarted() {
+		resetIterator();
 	}
 
-	protected void setCurrent(Martini martini) {
-		JMeterVariables variables = this.getJMeterVariables();
-		variables.putObject("martini", martini); // TODO: constants
+	@Override
+	public void triggerEndOfLoop() {
+		super.triggerEndOfLoop();
+		resetIterator();
 	}
 
-	protected Martini getNextMartini() {
+	private void resetIterator() {
 		monitor.enter();
 		try {
-			return iterator.hasNext() ? iterator.next() : null;
+			Iterator<Martini> iterator = iteratorRef.get();
+			if (null == iterator) {
+				ImmutableList<Martini> martinis = getMartinis();
+				if (null != martinis) {
+					iterator = martinis.iterator();
+					iteratorRef.set(iterator);
+				}
+			}
 		}
 		finally {
 			monitor.leave();
@@ -137,13 +242,15 @@ public class MartiniController extends GenericController implements Serializable
 	}
 
 	@Override
-	public boolean isDone() {
-		monitor.enter();
-		try {
-			return super.isDone() && !iterator.hasNext();
-		}
-		finally {
-			monitor.leave();
-		}
+	public void testStarted(String host) {
+	}
+
+	@Override
+	public void testEnded() {
+		iteratorRef.set(null);
+	}
+
+	@Override
+	public void testEnded(String host) {
 	}
 }

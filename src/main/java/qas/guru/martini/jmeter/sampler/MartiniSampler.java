@@ -43,6 +43,7 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 	@Override
 	public SampleResult sample(Entry e) {
 		Martini martini = getMartini();
+		System.out.println("GOT MARTINI " + martini);
 		return null == martini ? getFailure() : sample(martini);
 	}
 
@@ -62,7 +63,8 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 		Pickle pickle = recipe.getPickle();
 		String pickleName = pickle.getName();
 
-		String label = String.format("%s (%s)", pickleName, featureName);
+		//TODO: temporary String label = String.format("%s (%s)", pickleName, featureName);
+		String label = martini.toString();
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(label);
 		sampleResult.setSuccessful(true);
@@ -84,7 +86,7 @@ public class MartiniSampler extends AbstractSampler implements TestBean {
 	}
 
 	protected Martini getMartini() {
-		JMeterContext threadContext = getThreadContext();
+		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject("martini");
 		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;

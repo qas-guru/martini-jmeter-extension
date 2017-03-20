@@ -70,7 +70,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 
 	@Override
 	public boolean expectsModification() {
-		return true;
+		return false;
 	}
 
 	@Override
