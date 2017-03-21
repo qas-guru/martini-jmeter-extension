@@ -32,7 +32,6 @@ import org.apache.jmeter.gui.util.MenuFactory;
 import org.apache.jmeter.testelement.TestElement;
 
 import qas.guru.martini.AbstractMartiniGui;
-import qas.guru.martini.DefaultResourceBundleManager;
 import qas.guru.martini.jmeter.config.MartiniSpringConfiguration;
 
 @SuppressWarnings("WeakerAccess")
@@ -63,7 +62,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	}
 
 	protected Box getContextLocationBox() {
-		String key = String.format("%s.spring.context.label", getClass().getName());
+		String key = String.format("%s.contexts.label", getClass().getName());
 		String value = super.getResourceBundleManager().get(key);
 		JLabel jLabel = new JLabel(null == value ? key : value);
 		return getContextLocationBox(jLabel);
@@ -129,7 +128,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	}
 
 	protected String getDefaultContextLocation() {
-		String key = String.format("%s.application.context", getClass().getName());
+		String key = String.format("%s.contexts.default", getClass().getName());
 		String value = getResourceBundleManager().get(key);
 		return null == value ? key : value;
 	}
