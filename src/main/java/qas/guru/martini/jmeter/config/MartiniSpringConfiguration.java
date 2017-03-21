@@ -116,7 +116,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		context.addBeanFactoryPostProcessor(configurer);
 		context.refresh();
 
-		variables.putObject(VARIABLE_APPLICATION_CONTEXT, context);
+		variables.putObject(VARIABLE_SPRING_CONTEXT, context);
 
 		DefaultBeforeSuiteEvent event = new DefaultBeforeSuiteEvent(System.currentTimeMillis(), threadContext);
 		context.publishEvent(event);
@@ -155,7 +155,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement implements Tes
 		JMeterContext threadContext = getThreadContext();
 
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(VARIABLE_APPLICATION_CONTEXT);
+		Object o = variables.getObject(VARIABLE_SPRING_CONTEXT);
 		if (ConfigurableApplicationContext.class.isInstance(o)) {
 			ConfigurableApplicationContext context = ClassPathXmlApplicationContext.class.cast(o);
 

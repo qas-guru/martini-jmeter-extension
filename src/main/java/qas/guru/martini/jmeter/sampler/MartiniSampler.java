@@ -99,10 +99,10 @@ public class MartiniSampler extends AbstractSampler {
 
 	protected ApplicationContext getApplicationContext() {
 		JMeterVariables variables = getVariables();
-		Object o = variables.getObject(VARIABLE_APPLICATION_CONTEXT);
+		Object o = variables.getObject(VARIABLE_SPRING_CONTEXT);
 		if (!ApplicationContext.class.isInstance(o)) {
 			String message = String.format(
-				"property %s is not an instance of ApplicationContext: %s", VARIABLE_APPLICATION_CONTEXT, o);
+				"property %s is not an instance of ApplicationContext: %s", VARIABLE_SPRING_CONTEXT, o);
 			throw new JMeterStopTestNowException(message);
 		}
 		return ApplicationContext.class.cast(o);

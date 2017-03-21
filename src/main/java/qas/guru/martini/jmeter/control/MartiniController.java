@@ -97,7 +97,7 @@ public class MartiniController extends GenericController implements Serializable
 
 	protected ApplicationContext getApplicationContext() {
 		JMeterVariables variables = getJMeterVariables();
-		Object o = variables.getObject(MartiniConstants.VARIABLE_APPLICATION_CONTEXT);
+		Object o = variables.getObject(MartiniConstants.VARIABLE_SPRING_CONTEXT);
 		return ApplicationContext.class.cast(o);
 	}
 

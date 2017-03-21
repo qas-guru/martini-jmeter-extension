@@ -19,6 +19,7 @@ package qas.guru.martini;
 import java.awt.BorderLayout;
 
 import javax.swing.JPanel;
+import javax.swing.event.AncestorListener;
 
 import org.apache.jmeter.gui.AbstractJMeterGuiComponent;
 import org.apache.jorphan.logging.LoggingManager;
