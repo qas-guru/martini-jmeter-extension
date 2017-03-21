@@ -167,19 +167,16 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	@Override
 	public void clearGui() {
 		super.clearGui();
+
+		String contextsDefault = getImplementationResource("%s.contexts.default");
+		contextLocationsField.setText(contextsDefault);
+
+		String profilesDefault = getImplementationResource("%s.profiles.default");
+		profilesField.setText(profilesDefault);
+
 		environmentPanel.clearGui();
-
-		String defaultLocation = getDefaultContextLocation();
-		contextLocationsField.setText(defaultLocation);
-
 		Arguments arguments = new Arguments();
 		environmentPanel.configure(arguments);
-	}
-
-	protected String getDefaultContextLocation() {
-		String key = String.format("%s.contexts.default", getClass().getName());
-		String value = getResourceBundleManager().get(key);
-		return null == value ? key : value;
 	}
 
 	protected class SpringArgumentsPanel extends ArgumentsPanel {
