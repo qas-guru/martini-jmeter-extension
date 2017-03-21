@@ -133,10 +133,12 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	public void configure(TestElement element) {
 		super.configure(element);
 		MartiniSpringConfiguration config = MartiniSpringConfiguration.class.cast(element);
-		String contextLocation = config.getConfigLocation();
-		contextLocationsField.setText(contextLocation);
-		Arguments arguments = config.getArguments();
-		environmentPanel.configure(arguments);
+		String contextLocations = config.getContextLocations();
+		contextLocationsField.setText(contextLocations);
+		String profiles = config.getProfiles();
+		profilesField.setText(profiles);
+		Arguments environment = config.getEnvironmentProperties();
+		environmentPanel.configure(environment);
 	}
 
 	@Override
@@ -153,10 +155,13 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		MartiniSpringConfiguration configuration = MartiniSpringConfiguration.class.cast(element);
 		TestElement testElement = environmentPanel.createTestElement();
 		Arguments arguments = Arguments.class.cast(testElement);
-		configuration.setArguments(arguments);
+		configuration.setEnvironment(arguments);
 
-		String location = contextLocationsField.getText();
-		configuration.setConfigLocation(location);
+		String locations = contextLocationsField.getText();
+		configuration.setContextLocations(locations);
+
+		String profiles = profilesField.getText();
+		configuration.setProfiles(profiles);
 	}
 
 	@Override
