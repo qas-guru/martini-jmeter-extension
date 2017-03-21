@@ -17,10 +17,12 @@ limitations under the License.
 package qas.guru.martini.jmeter.config.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.util.Collection;
 import java.util.Collections;
 
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -39,41 +41,83 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 
 	private static final long serialVersionUID = -4852200848794934491L;
 
-	protected final JTextField contextLocationField;
-	protected final SpringArgumentsPanel argumentsPanel;
+	protected final JTextField contextLocationsField;
+	protected final JTextField profilesField;
+	protected final SpringArgumentsPanel environmentPanel;
 
 	public MartiniSpringConfigurationGui() {
 		super();
-		contextLocationField = new JTextField(6);
-		argumentsPanel = new SpringArgumentsPanel("");
+		contextLocationsField = new JTextField(6);
+		profilesField = new JTextField(6);
+		environmentPanel = new SpringArgumentsPanel("");
 		initGui();
 	}
 
 	@Override
-	protected void initGui() {
-		initTitlePanel();
+		protected void initGui() {
+			initTitlePanel();
+			JPanel panel = new JPanel(new BorderLayout(0, 5));
+			JPanel springPanel = getSpringPanel();
+			panel.add(springPanel, BorderLayout.CENTER);
+			add(panel, BorderLayout.CENTER);
+		}
 
-		JPanel panel = new JPanel(new BorderLayout(0, 5));
-		Box box = getContextLocationBox();
-		panel.add(box, BorderLayout.NORTH);
+		protected JPanel getSpringPanel() {
+			JPanel panel = new JPanel();
+			BoxLayout boxLayout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+			panel.setLayout(boxLayout);
 
-		panel.add(argumentsPanel, BorderLayout.CENTER);
-		add(panel, BorderLayout.CENTER);
-	}
+			Box contextLocationsBox = getContextLocationsBox();
+			panel.add(contextLocationsBox);
 
-	protected Box getContextLocationBox() {
-		String key = String.format("%s.contexts.label", getClass().getName());
-		String value = super.getResourceBundleManager().get(key);
-		JLabel jLabel = new JLabel(null == value ? key : value);
-		return getContextLocationBox(jLabel);
-	}
+			Box profilesBox = getProfilesBox();
+			panel.add(profilesBox);
 
-	protected Box getContextLocationBox(JLabel label) {
-		Box box = Box.createHorizontalBox();
-		box.add(label);
-		box.add(contextLocationField);
-		return box;
-	}
+			initEnvironmentPanel();
+			panel.add(environmentPanel);
+			return panel;
+		}
+
+		protected Box getContextLocationsBox() {
+			setMaximumSize(contextLocationsField);
+			return getBox("%s.contexts.label", "%s.contexts.tooltip", contextLocationsField);
+		}
+
+		protected void setMaximumSize(JTextField field) {
+			Dimension preferredSize = field.getPreferredSize();
+			double height = preferredSize.getHeight();
+			int maximumHeight = new Double(height).intValue();
+			Dimension maximumSize = new Dimension(Integer.MAX_VALUE, maximumHeight);
+			field.setMaximumSize(maximumSize);
+		}
+
+		protected Box getProfilesBox() {
+			setMaximumSize(profilesField);
+			return getBox("%s.profiles.label", "%s.profiles.tooltip", profilesField);
+		}
+
+		protected Box getBox(String labelKeyTemplate, String tooltipKeyTemplate, JTextField field) {
+			String label = getImplementationResource(labelKeyTemplate);
+			JLabel jLabel = new JLabel(label);
+			String tooltip = super.getImplementationResource(tooltipKeyTemplate);
+			jLabel.setToolTipText(tooltip);
+			return getBox(jLabel, field);
+		}
+
+		protected Box getBox(JLabel label, JTextField field) {
+			Box box = Box.createHorizontalBox();
+			box.add(label);
+			box.add(field);
+			return box;
+		}
+
+		protected void initEnvironmentPanel() {
+			String label = getImplementationResource("%s.environment.label");
+			String tooltip = getImplementationResource("%s.environment.tooltip");
+			JLabel jLabel = environmentPanel.getTableLabel();
+			jLabel.setText(label);
+			jLabel.setToolTipText(tooltip);
+		}
 
 	@Override
 	public JPopupMenu createPopupMenu() {
@@ -90,9 +134,9 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		super.configure(element);
 		MartiniSpringConfiguration config = MartiniSpringConfiguration.class.cast(element);
 		String contextLocation = config.getConfigLocation();
-		contextLocationField.setText(contextLocation);
+		contextLocationsField.setText(contextLocation);
 		Arguments arguments = config.getArguments();
-		argumentsPanel.configure(arguments);
+		environmentPanel.configure(arguments);
 	}
 
 	@Override
@@ -107,24 +151,24 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		configureTestElement(element);
 
 		MartiniSpringConfiguration configuration = MartiniSpringConfiguration.class.cast(element);
-		TestElement testElement = argumentsPanel.createTestElement();
+		TestElement testElement = environmentPanel.createTestElement();
 		Arguments arguments = Arguments.class.cast(testElement);
 		configuration.setArguments(arguments);
 
-		String location = contextLocationField.getText();
+		String location = contextLocationsField.getText();
 		configuration.setConfigLocation(location);
 	}
 
 	@Override
 	public void clearGui() {
 		super.clearGui();
-		argumentsPanel.clearGui();
+		environmentPanel.clearGui();
 
 		String defaultLocation = getDefaultContextLocation();
-		contextLocationField.setText(defaultLocation);
+		contextLocationsField.setText(defaultLocation);
 
 		Arguments arguments = new Arguments();
-		argumentsPanel.configure(arguments);
+		environmentPanel.configure(arguments);
 	}
 
 	protected String getDefaultContextLocation() {
