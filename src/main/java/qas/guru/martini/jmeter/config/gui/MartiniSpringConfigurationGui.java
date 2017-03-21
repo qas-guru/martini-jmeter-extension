@@ -32,6 +32,7 @@ import org.apache.jmeter.gui.util.MenuFactory;
 import org.apache.jmeter.testelement.TestElement;
 
 import qas.guru.martini.AbstractMartiniGui;
+import qas.guru.martini.DefaultResourceBundleManager;
 import qas.guru.martini.jmeter.config.MartiniSpringConfiguration;
 
 @SuppressWarnings("WeakerAccess")

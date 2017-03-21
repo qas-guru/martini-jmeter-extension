@@ -29,47 +29,27 @@ public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 
 	private static final long serialVersionUID = -8876922196511437500L;
 
-	protected final Logger logger;
-	protected final Class implementation;
 	protected final IconManager iconManager;
-
-	protected ResourceBundleManager bundleManagerRef;
 
 	protected AbstractMartiniGui() {
 		super(); // Careful, calls getStaticLabel().
-		implementation = getClass();
-		logger = LoggingManager.getLoggerFor(implementation.getName());
 		iconManager = DefaultIconManager.getInstance();
-		init();
-	}
-
-	protected void init() {
-		iconManager.registerIcons(implementation);
+		iconManager.registerIcons(getClass());
 	}
 
 	@Override
 	public String getStaticLabel() {
 		String key = getLabelResource();
-		return getStaticLabel(key);
-
-	}
-
-	protected String getStaticLabel(String key) {
-		ResourceBundleManager bundleManager = getResourceBundleManager();
-		String label = bundleManager.get(key);
-		return null == label ? key : label;
-	}
-
-	protected ResourceBundleManager getResourceBundleManager() {
-		if (null == bundleManagerRef) {
-			bundleManagerRef = DefaultResourceBundleManager.getInstance();
-		}
-		return bundleManagerRef;
+		return getResource(key, key);
 	}
 
 	@Override
 	public String getLabelResource() {
-		return String.format("%s.title", getClass().getName());
+		return getImplementationKey("%s.title");
+	}
+
+	protected String getImplementationKey(String template) {
+		return String.format(template, getClass().getName());
 	}
 
 	protected void initGui() {
@@ -82,5 +62,25 @@ public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
+	}
+
+	protected String getImplementationResource(String template) {
+		String key = getImplementationKey(template);
+		return getResource(key, key);
+	}
+
+	protected String getResource(String key, String defaultValue) {
+		ResourceBundleManager resourceManager = getResourceBundleManager();
+		String value = resourceManager.get(key);
+		if (null == value) {
+			String message = String.format("unable to find value for key %s; returning default %s", key, defaultValue);
+			Logger logger = LoggingManager.getLoggerFor(getClass().getName());
+			logger.warn(message);
+		}
+		return null == value ? defaultValue : value;
+	}
+
+	protected ResourceBundleManager getResourceBundleManager() {
+		return DefaultResourceBundleManager.getInstance();
 	}
 }
