@@ -40,19 +40,13 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	private static final long serialVersionUID = -4852200848794934491L;
 
 	protected final JTextField contextLocationField;
-	protected final ArgumentsPanel argumentsPanel;
+	protected final SpringArgumentsPanel argumentsPanel;
 
 	public MartiniSpringConfigurationGui() {
 		super();
 		contextLocationField = new JTextField(6);
-		argumentsPanel = buildArgumentsPanel();
+		argumentsPanel = new SpringArgumentsPanel("");
 		initGui();
-	}
-
-	protected ArgumentsPanel buildArgumentsPanel() {
-		String key = String.format("%s.spring.runtime.arguments.label", getClass().getName());
-		String value = getResourceBundleManager().get(key);
-		return new ArgumentsPanel(null == value ? key : value);
 	}
 
 	@Override
@@ -129,7 +123,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		String defaultLocation = getDefaultContextLocation();
 		contextLocationField.setText(defaultLocation);
 
-		Arguments arguments = new DefaultArguments();
+		Arguments arguments = new Arguments();
 		argumentsPanel.configure(arguments);
 	}
 
@@ -137,5 +131,17 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		String key = String.format("%s.application.context", getClass().getName());
 		String value = getResourceBundleManager().get(key);
 		return null == value ? key : value;
+	}
+
+	protected class SpringArgumentsPanel extends ArgumentsPanel {
+
+		protected SpringArgumentsPanel(String label) {
+			super(label);
+		}
+
+		@Override
+		public JLabel getTableLabel() {
+			return super.getTableLabel();
+		}
 	}
 }
