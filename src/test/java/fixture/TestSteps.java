@@ -36,18 +36,18 @@ public class TestSteps {
 		this.mixology = mixology;
 	}
 
-	@Given("a pre-existing condition")
-	@Given("a given")
+	@Given("^a pre-existing condition$")
+	@Given("^a given$")
 	public void aGiven() {
 		System.out.println("executing aGiven");
 	}
 
-	@Given("a disease called \"(.+)\"")
+	@Given("^a disease called \"(.+)\"$")
 	public void aDiseaseCalled(String name) {
 		System.out.println("executing aDiseaseCalled with name " + name);
 	}
 
-	@Given("another \"(.+)\" here")
+	@Given("^another \"(.+)\" here$")
 	public void anotherStep(String myParameter) {
 		LOGGER.info("executing with parameter {}", myParameter);
 	}

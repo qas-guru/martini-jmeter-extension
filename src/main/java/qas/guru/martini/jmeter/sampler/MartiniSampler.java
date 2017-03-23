@@ -19,17 +19,21 @@ package qas.guru.martini.jmeter.sampler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Map;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.jmeter.assertions.AssertionResult;
+import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
+import org.apache.jmeter.testelement.property.JMeterProperty;
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jorphan.logging.LoggingManager;
-import org.apache.jorphan.util.JMeterStopTestNowException;
+import org.apache.jorphan.util.JMeterStopThreadException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
@@ -40,14 +44,13 @@ import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.step.StepImplementation;
-import qas.guru.martini.DefaultIconManager;
+
 import qas.guru.martini.event.DefaultAfterScenarioEvent;
 import qas.guru.martini.event.DefaultAfterStepEvent;
 import qas.guru.martini.event.DefaultBeforeScenarioEvent;
 import qas.guru.martini.event.DefaultBeforeStepEvent;
 
-import static com.google.common.base.Preconditions.*;
-import static guru.qas.martini.MartiniConstants.BEAN_NAME_CONVERSION_SERVICE;
+import static com.google.common.base.Preconditions.checkState;
 import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -55,23 +58,25 @@ public class MartiniSampler extends AbstractSampler {
 
 	private static final long serialVersionUID = -5644094193554791266L;
 
-	private final Logger logger;
+	protected final Logger logger;
 
 	public MartiniSampler() {
 		super();
 		logger = LoggingManager.getLoggerFor(getClass().getName());
-		DefaultIconManager iconManager = DefaultIconManager.getInstance();
-		iconManager.registerIcons(getClass());
+	}
+
+	@Override
+	public boolean applies(ConfigTestElement configElement) {
+		return super.applies(configElement);
 	}
 
 	@Override
 	public SampleResult sample(Entry entry) {
-		Martini martini = getMartiniUnchecked();
+		Martini martini = getMartini();
 		publishBeforeEvent(martini);
 
 		SampleResult sampleResult;
 		try {
-			martini = getMartiniChecked();
 			sampleResult = sample(martini);
 		}
 		catch (Exception e) {
@@ -98,19 +103,14 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected ApplicationContext getApplicationContext() {
-		JMeterVariables variables = getVariables();
-		Object o = variables.getObject(VARIABLE_SPRING_CONTEXT);
+		JMeterContext threadContext = super.getThreadContext();
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		JMeterProperty property = threadGroup.getProperty(PROPERTY_SPRING_CONTEXT);
+		Object o = null == property ? null : property.getObjectValue();
 		if (!ApplicationContext.class.isInstance(o)) {
-			String message = String.format(
-				"property %s is not an instance of ApplicationContext: %s", VARIABLE_SPRING_CONTEXT, o);
-			throw new JMeterStopTestNowException(message);
+			throw new JMeterStopThreadException("unable to retrieve Spring ApplicationContext from ThreadGroup");
 		}
 		return ApplicationContext.class.cast(o);
-	}
-
-	protected JMeterVariables getVariables() {
-		JMeterContext threadContext = super.getThreadContext();
-		return threadContext.getVariables();
 	}
 
 	protected SampleResult getError(Martini martini, Exception e) {
@@ -162,21 +162,20 @@ public class MartiniSampler extends AbstractSampler {
 	 * Returns Martini stored in variable, or null. This allows listeners to inject changes prior to the
 	 * Sampler continuing execution.
 	 *
-	 * @return current Martini from JMeter variables
+	 * @return currentRef Martini from JMeter variables
 	 */
-	protected Martini getMartiniUnchecked() {
-		Object o = getMartiniObject();
-		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
-	}
+	protected Martini getMartini() {
+		JMeterContext threadContext = getThreadContext();
+		JMeterThread thread = threadContext.getThread();
+		String threadName = thread.getThreadName();
+		String key = String.format("martini.%s", threadName);
 
-	protected Object getMartiniObject() {
-		JMeterVariables variables = getVariables();
-		return variables.getObject(VARIABLE_MARTINI);
-	}
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(key);
 
-	protected Martini getMartiniChecked() {
-		Object o = getMartiniObject();
-		checkState(Martini.class.isInstance(o), "variable %s is not an instance of Martini: %s", VARIABLE_MARTINI, o);
+		if (!Martini.class.isInstance(o)) {
+			throw new JMeterStopThreadException("unable to retrieve Martini from JMeterVariables");
+		}
 		return Martini.class.cast(o);
 	}
 
@@ -192,20 +191,28 @@ public class MartiniSampler extends AbstractSampler {
 
 		try {
 			Method method = implementation.getMethod();
-			Matcher matcher = implementation.getPattern().matcher(text);
-			MatchResult matchResult = matcher.toMatchResult();
 
 			ApplicationContext applicationContext = this.getApplicationContext();
-			ConversionService conversionService = getConversionService(applicationContext);
-
 			Parameter[] parameters = method.getParameters();
 			Object[] arguments = new Object[parameters.length];
-			for (int i = 0; i < parameters.length; i++) {
-				String parameterAsString = matchResult.group(i + 1);
-				Parameter parameter = parameters[i];
-				Class<?> parameterType = parameter.getType();
-				Object converted = conversionService.convert(parameterAsString, parameterType);
-				arguments[i] = converted;
+
+
+			if (parameters.length > 0) {
+				Pattern pattern = implementation.getPattern();
+				Matcher matcher = pattern.matcher(text);
+				checkState(matcher.find(),
+					"unable to locate substitution parameters for pattern %s with input %s", pattern.pattern(), text);
+
+				ConversionService conversionService = applicationContext.getBean(ConversionService.class);
+
+				int groupCount = matcher.groupCount();
+				for (int i = 0; i < groupCount; i++) {
+					String parameterAsString = matcher.group(i + 1);
+					Parameter parameter = parameters[i];
+					Class<?> parameterType = parameter.getType();
+					Object converted = conversionService.convert(parameterAsString, parameterType);
+					arguments[i] = converted;
+				}
 			}
 
 			Class<?> declaringClass = implementation.getMethod().getDeclaringClass();
@@ -236,10 +243,6 @@ public class MartiniSampler extends AbstractSampler {
 		DefaultAfterStepEvent event = new DefaultAfterStepEvent(martini, step, context, result);
 		ApplicationContext applicationContext = this.getApplicationContext();
 		applicationContext.publishEvent(event);
-	}
-
-	protected ConversionService getConversionService(ApplicationContext applicationContext) {
-		return applicationContext.getBean(BEAN_NAME_CONVERSION_SERVICE, ConversionService.class);
 	}
 
 	protected SampleResult getSkipped(Step step) {

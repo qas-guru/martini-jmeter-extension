@@ -36,7 +36,7 @@ class TestEventListener {
 
 	@EventListener(condition = "!#event.successful")
 	public void handleFailedScenario(AfterScenarioEvent event) {
-		LOGGER.error("failed scenario: {}", event);
+		LOGGER.info("failed scenario: {}", event);
 	}
 
 	@EventListener

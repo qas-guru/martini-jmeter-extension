@@ -155,7 +155,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		MartiniSpringConfiguration configuration = MartiniSpringConfiguration.class.cast(element);
 		TestElement testElement = environmentPanel.createTestElement();
 		Arguments arguments = Arguments.class.cast(testElement);
-		configuration.setEnvironment(arguments);
+		configuration.setEnvironmentProperties(arguments);
 
 		String locations = contextLocationsField.getText();
 		configuration.setContextLocations(locations);

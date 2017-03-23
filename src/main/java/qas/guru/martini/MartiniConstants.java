@@ -17,9 +17,6 @@ limitations under the License.
 package qas.guru.martini;
 
 public interface MartiniConstants {
-	String VARIABLE_SPRING_CONTEXT = "applicationContext";
-	String VARIABLE_MARTINI = "martini";
 
-	String ARGUMENT_SPRING_PROFILES_ACTIVE = "spring.profiles.active";
-
+	String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
 }

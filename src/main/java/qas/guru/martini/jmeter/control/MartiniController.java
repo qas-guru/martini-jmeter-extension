@@ -17,62 +17,73 @@ limitations under the License.
 package qas.guru.martini.jmeter.control;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
+import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.testelement.property.JMeterProperty;
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jorphan.util.JMeterStopTestException;
-import org.springframework.beans.factory.BeanFactory;
+import org.apache.jorphan.logging.LoggingManager;
+import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 import qas.guru.martini.MartiniConstants;
 
-import static qas.guru.martini.MartiniConstants.*;
-
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements Serializable, TestStateListener {
+public class MartiniController extends GenericController implements Serializable, TestStateListener, TestIterationListener {
 
 	protected volatile transient Monitor monitor;
 	protected volatile transient AtomicReference<ImmutableList<Martini>> martinisRef;
 	protected volatile transient AtomicReference<Iterator<Martini>> iteratorRef;
-	protected Martini martini;
+	protected volatile transient Map<String, Martini> index;
 
 	public MartiniController() {
 		super();
-		monitor = new Monitor();
+		monitor = new Monitor(true);
 		martinisRef = new AtomicReference<>();
 		iteratorRef = new AtomicReference<>();
+		index = new HashMap<>();
 	}
 
 	@Override
 	public Object clone() {
+
 		Object o = super.clone();
 		MartiniController clone = MartiniController.class.cast(o);
-		clone.monitor = this.monitor;
-		clone.martinisRef = this.martinisRef;
-		clone.iteratorRef = this.iteratorRef;
+		clone.monitor = monitor;
+		clone.martinisRef = martinisRef;
+		clone.iteratorRef = iteratorRef;
+		clone.index = index;
 		return clone;
 	}
 
 	@Override
-	public void initialize() {
-		super.initialize();
+	public void testIterationStart(LoopIterationEvent event) {
 		monitor.enter();
 		try {
-			if (null == getMartinis()) {
-				BeanFactory beanFactory = getApplicationContext();
-				initialize(beanFactory);
+			ImmutableList<Martini> martinis = martinisRef.get();
+			if (null == martinis) {
+				TestElement source = event.getSource();
+				initializeMartinis(source);
+				resetIterator();
+				index.clear();
 			}
 		}
 		finally {
@@ -80,117 +91,109 @@ public class MartiniController extends GenericController implements Serializable
 		}
 	}
 
-	private ImmutableList<Martini> getMartinis() {
-		monitor.enter();
+	protected void initializeMartinis(TestElement source) {
+		JMeterContext threadContext = source.getThreadContext();
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		JMeterProperty property = threadGroup.getProperty(MartiniConstants.PROPERTY_SPRING_CONTEXT);
+		Object o = null == property ? null : property.getObjectValue();
+		if (!ApplicationContext.class.isInstance(o)) {
+			String message =
+				String.format("%s unable to find Spring application context in ThreadGroup properties", getName());
+			getLogger().error(message);
+			super.setDone(true);
+		}
+		else {
+			ApplicationContext applicationContext = ApplicationContext.class.cast(o);
+			initializeMartinis(applicationContext);
+		}
+	}
+
+	protected Logger getLogger() {
+		String implementation = getClass().getName();
+		return LoggingManager.getLoggerFor(implementation);
+	}
+
+	protected void initializeMartinis(ApplicationContext context) {
+		Collection<Martini> martinis = null;
 		try {
-			return martinisRef.get();
+			Mixologist mixologist = context.getBean(Mixologist.class);
+			martinis = mixologist.getMartinis();
 		}
-		finally {
-			monitor.leave();
+		catch (Exception e) {
+			String message = String.format("%s unable to obtain Martini objects from Spring application context", getName());
+			getLogger().error(message, e);
 		}
+		martinisRef.set(null == martinis ? ImmutableList.of() : ImmutableList.copyOf(martinis));
 	}
 
-	protected void initialize(BeanFactory beanFactory) {
-		Mixologist mixologist = beanFactory.getBean(Mixologist.class);
-		initialize(mixologist);
-	}
-
-	protected ApplicationContext getApplicationContext() {
-		JMeterVariables variables = getJMeterVariables();
-		Object o = variables.getObject(MartiniConstants.VARIABLE_SPRING_CONTEXT);
-		return ApplicationContext.class.cast(o);
-	}
-
-	private JMeterVariables getJMeterVariables() {
-		JMeterContext threadContext = getThreadContext();
-		return threadContext.getVariables();
-	}
-
-	protected void initialize(Mixologist mixologist) {
-		Iterable<Martini> martinis = mixologist.getMartinis(); // TODO: scenario filtering
-		if (Iterables.isEmpty(martinis)) {
-			String message = String.format("%s:%s has no scenarios to run", getClass().getName(), getName());
-			throw new JMeterStopTestException(message);
-		}
-		martinisRef.set(ImmutableList.copyOf(martinis));
-		resetIterator();
+	protected void resetIterator() {
+		ImmutableList<Martini> martinis = martinisRef.get();
+		UnmodifiableIterator<Martini> iterator = martinis.iterator();
+		iteratorRef.set(iterator);
 	}
 
 	@Override
 	public void testStarted() {
-		resetIterator();
 	}
 
 	@Override
 	public void testStarted(String host) {
 	}
 
-	@Override
-	protected void fireIterationStart() {
-		super.fireIterationStart();
+	protected TestElement getCurrentElement() throws NextIsNullException {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterThread thread = threadContext.getThread();
+		String threadName = thread.getThreadName();
+
+		JMeterVariables variables = threadContext.getVariables();
+		String key = String.format("martini.%s", threadName);
+
+		TestElement element;
 		monitor.enter();
 		try {
-			Iterator<Martini> iterator = this.iteratorRef.get();
-			martini = null != iterator && iterator.hasNext() ? iterator.next() : null;
+			element = super.getCurrentElement();
+			Iterator<Martini> iterator = iteratorRef.get();
+			boolean hasNext = iterator.hasNext();
+			Martini martini = index.get(key);
+
+			//noinspection StatementWithEmptyBody
+			if (null != element && null != martini) {
+				// no-op, maintain status quo
+			}
+			else if (null != element && hasNext) {
+				martini = iterator.next();
+				index.put(key, martini);
+			}
+			else if (null != element) {
+				element = null;
+			}
+			else if (hasNext) {
+				reInitialize();
+				initializeSubControllers();
+				element = super.getCurrentElement();
+				martini = iterator.next();
+				index.put(key, martini);
+			}
+			else {
+				index.remove(key);
+			}
+
+			if (null == element || null == martini) {
+				variables.remove(key);
+			}
+			else {
+				variables.putObject(key, martini);
+			}
 		}
 		finally {
 			monitor.leave();
-		}
-	}
-
-	@Override
-	protected TestElement getCurrentElement() throws NextIsNullException {
-		TestElement element = super.getCurrentElement();
-
-		if (null != element && null != martini) {
-			JMeterVariables variables = getJMeterVariables();
-			variables.putObject(VARIABLE_MARTINI, martini);
-		}
-		else if (null != element) {
-			element = null;
-		}
-		else {
-			monitor.enter();
-			try {
-				Iterator<Martini> iterator = iteratorRef.get();
-				if (iterator.hasNext()) {
-					martini = iterator.next();
-					resetCurrent();
-					element = this.getCurrentElement();
-				}
-			}
-			finally {
-				monitor.leave();
-			}
 		}
 		return element;
 	}
 
 	@Override
-	public void triggerEndOfLoop() {
-		super.triggerEndOfLoop();
-		resetIterator();
-	}
-
-	protected void resetIterator() {
-		monitor.enter();
-		try {
-			Iterator<Martini> iterator = iteratorRef.get();
-			if (null == iterator) {
-				ImmutableList<Martini> martinis = getMartinis();
-				if (null != martinis) {
-					iterator = martinis.iterator();
-					iteratorRef.set(iterator);
-				}
-			}
-		}
-		finally {
-			monitor.leave();
-		}
-	}
-
-	@Override
 	public void testEnded() {
+		martinisRef.set(null);
 		iteratorRef.set(null);
 	}
 
