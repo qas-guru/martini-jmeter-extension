@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import guru.qas.martini.annotation.And;
 import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 import guru.qas.martini.gherkin.Mixology;
@@ -53,5 +54,10 @@ public class TestSteps {
 	}
 
 	private void aPrivateMethod() {
+	}
+
+	@And("^an emergent condition$")
+	public void anEmergentCondition() {
+		System.out.println("executing anEmergentCondition");
 	}
 }

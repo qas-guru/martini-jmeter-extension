@@ -186,7 +186,7 @@ public class MartiniSampler extends AbstractSampler {
 
 		SampleResult result = new SampleResult();
 		result.setSuccessful(true);
-		String label = step.getText();
+		String label = String.format("%s %s", implementation.getKeyword(), step.getText());
 		result.sampleStart();
 
 		try {
