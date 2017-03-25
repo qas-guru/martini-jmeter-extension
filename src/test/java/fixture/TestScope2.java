@@ -16,19 +16,14 @@ limitations under the License.
 
 package fixture;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import guru.qas.martini.annotation.And;
-import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 
 @SuppressWarnings("WeakerAccess")
 @Steps
 public class TestScope2 {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TestScope2.class);
 
 	@SuppressWarnings("FieldCanBeLocal")
 	private final ScenarioScopedBean scopedBean;
