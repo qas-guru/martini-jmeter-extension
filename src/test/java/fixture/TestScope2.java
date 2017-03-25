@@ -24,41 +24,23 @@ import guru.qas.martini.annotation.And;
 import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 
+@SuppressWarnings("WeakerAccess")
 @Steps
-public class TestSteps {
+public class TestScope2 {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TestSteps.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestScope2.class);
 
 	@SuppressWarnings("FieldCanBeLocal")
 	private final ScenarioScopedBean scopedBean;
 
 	@Autowired
-	TestSteps(ScenarioScopedBean scopedBean) {
+	TestScope2(ScenarioScopedBean scopedBean) {
 		this.scopedBean = scopedBean;
 	}
 
-	@Given("^a pre-existing condition$")
-	@Given("^a given$")
-	public void aGiven() {
+	@And("^scope condition 2$")
+	public void scopeCondition2() {
 		int ordinal = scopedBean.getOrdinal();
-		System.out.println("executing aGiven");
-	}
-
-	@Given("^a disease called \"(.+)\"$")
-	public void aDiseaseCalled(String name) {
-		System.out.println("executing aDiseaseCalled with name " + name);
-	}
-
-	@Given("^another \"(.+)\" here$")
-	public void anotherStep(String myParameter) {
-		LOGGER.info("executing with parameter {}", myParameter);
-	}
-
-	private void aPrivateMethod() {
-	}
-
-	@And("^an emergent condition$")
-	public void anEmergentCondition() {
-		System.out.println("executing anEmergentCondition");
+		System.out.println("executing TestScope2.scopeCondition2()");
 	}
 }

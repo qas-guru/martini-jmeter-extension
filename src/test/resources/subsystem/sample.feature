@@ -20,6 +20,7 @@
 Feature: Functionality of the Reporting Subsystem
   This is the basic description for my functionality.
 
+
   @Smoke
   @Meta("Firefox")
   Scenario: A Smoke Case

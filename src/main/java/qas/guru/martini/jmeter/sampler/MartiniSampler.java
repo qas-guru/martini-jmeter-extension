@@ -89,9 +89,9 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected void publishBeforeEvent(Martini martini) {
+		ApplicationContext applicationContext = getApplicationContext();
 		JMeterContext threadContext = super.getThreadContext();
 		DefaultBeforeScenarioEvent event = new DefaultBeforeScenarioEvent(martini, threadContext);
-		ApplicationContext applicationContext = getApplicationContext();
 		applicationContext.publishEvent(event);
 	}
 
