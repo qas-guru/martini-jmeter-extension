@@ -21,11 +21,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 public interface ApplicationContextBuilder {
 
-	DefaultApplicationContextBuilder setConfigLocations(JMeterProperty property);
+	ApplicationContextBuilder setConfigLocations(JMeterProperty property);
 
-	DefaultApplicationContextBuilder setProfiles(JMeterProperty property);
+	ApplicationContextBuilder setProfiles(JMeterProperty property);
 
-	DefaultApplicationContextBuilder setEnvironment(JMeterProperty property);
+	ApplicationContextBuilder setEnvironment(JMeterProperty property);
 
 	ConfigurableApplicationContext build();
 }

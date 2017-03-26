@@ -112,7 +112,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 	protected ConfigurableApplicationContext initializeContext() {
 		ConfigurableApplicationContext context = null;
 		try {
-			DefaultApplicationContextBuilder contextBuilder = getContextBuilder();
+			ApplicationContextBuilder contextBuilder = getContextBuilder();
 			context = contextBuilder.build();
 		}
 		catch (Exception e) {
@@ -123,7 +123,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 		return context;
 	}
 
-	protected DefaultApplicationContextBuilder getContextBuilder() {
+	protected ApplicationContextBuilder getContextBuilder() {
 		return new DefaultApplicationContextBuilder()
 			.setConfigLocations(getProperty(PROPERTY_CONFIGS))
 			.setProfiles(getProperty(PROPERTY_PROFILES))
