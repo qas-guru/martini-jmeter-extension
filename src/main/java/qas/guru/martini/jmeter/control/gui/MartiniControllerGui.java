@@ -16,11 +16,9 @@ limitations under the License.
 
 package qas.guru.martini.jmeter.control.gui;
 
-import java.awt.BorderLayout;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import org.apache.jmeter.gui.util.MenuFactory;
@@ -34,7 +32,7 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 
 	private static final long serialVersionUID = -1197223648762160415L;
 
-	public MartiniControllerGui() {
+	public MartiniControllerGui() throws Exception {
 		super();
 		initGui();
 	}

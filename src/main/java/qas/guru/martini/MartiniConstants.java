@@ -18,5 +18,6 @@ package qas.guru.martini;
 
 public interface MartiniConstants {
 
+	String RESOURCE_BUNDLE_TITLE = "title";
 	String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
 }

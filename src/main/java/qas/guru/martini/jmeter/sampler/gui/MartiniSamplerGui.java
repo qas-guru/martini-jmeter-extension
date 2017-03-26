@@ -16,7 +16,6 @@ limitations under the License.
 
 package qas.guru.martini.jmeter.sampler.gui;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -33,7 +32,7 @@ public class MartiniSamplerGui extends AbstractMartiniGui {
 
 	private static final long serialVersionUID = 4219666069854254153L;
 
-	public MartiniSamplerGui() {
+	public MartiniSamplerGui() throws Exception {
 		super();
 		initGui();
 	}

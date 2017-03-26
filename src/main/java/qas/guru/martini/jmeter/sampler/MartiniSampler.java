@@ -58,11 +58,17 @@ public class MartiniSampler extends AbstractSampler {
 
 	private static final long serialVersionUID = -5644094193554791266L;
 
-	protected final Logger logger;
+	protected Logger logger;
 
 	public MartiniSampler() {
 		super();
-		logger = LoggingManager.getLoggerFor(getClass().getName());
+		init();
+	}
+
+	protected void init() {
+		Class<? extends MartiniSampler> implementation = getClass();
+		String category = implementation.getName();
+		logger = LoggingManager.getLoggerFor(category);
 	}
 
 	@Override
@@ -195,7 +201,6 @@ public class MartiniSampler extends AbstractSampler {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			Parameter[] parameters = method.getParameters();
 			Object[] arguments = new Object[parameters.length];
-
 
 			if (parameters.length > 0) {
 				Pattern pattern = implementation.getPattern();

@@ -17,40 +17,103 @@ limitations under the License.
 package qas.guru.martini;
 
 import java.awt.BorderLayout;
+import java.awt.Image;
+import java.beans.BeanDescriptor;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
 
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
-import javax.swing.event.AncestorListener;
 
 import org.apache.jmeter.gui.AbstractJMeterGuiComponent;
+import org.apache.jmeter.gui.GUIFactory;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
+
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 
 	private static final long serialVersionUID = -8876922196511437500L;
 
-	protected final IconManager iconManager;
+	protected Logger logger;
 
-	protected AbstractMartiniGui() {
+	protected AbstractMartiniGui() throws Exception {
 		super(); // Careful, calls getStaticLabel().
-		iconManager = DefaultIconManager.getInstance();
-		iconManager.registerIcons(getClass());
+		init();
+	}
+
+	protected void init() throws Exception {
+		initLogging();
+		initIcon();
+	}
+
+	protected void initLogging() {
+		Class<? extends AbstractMartiniGui> implementation = getClass();
+		String category = implementation.getName();
+		logger = LoggingManager.getLoggerFor(category);
+	}
+
+	protected String getDescriptorValue(String key) {
+		BeanInfo beanInfo = getBeanInfo();
+		BeanDescriptor descriptor = beanInfo.getBeanDescriptor();
+		Object o = null == descriptor ? null : descriptor.getValue(key);
+		return String.class.isInstance(o) ? String.class.cast(o) : getPlaceholder(key);
+	}
+
+	protected BeanDescriptor getDescriptor() {
+		BeanInfo beanInfo = getBeanInfo();
+		BeanDescriptor descriptor = beanInfo.getBeanDescriptor();
+		return checkNotNull(descriptor, "BeanInfo returned null BeanDescriptor for class " + getClass());
+	}
+
+	protected BeanInfo getBeanInfo() {
+		Class<? extends AbstractMartiniGui> implementation = getClass();
+		try {
+			return Introspector.getBeanInfo(implementation);
+		}
+		catch (IntrospectionException e) {
+			throw new RuntimeException("unable to obtain BeanInfo for class " + implementation, e);
+		}
+	}
+
+	protected String getPlaceholder(String key) {
+		BeanDescriptor descriptor = getDescriptor();
+		String name = descriptor.getName();
+		String undefined = String.format("%s.%s", name, key);
+		String message = String.format("BeanDescriptor missing property %s, returning %s", key, undefined);
+		logger.warn(message);
+		return undefined;
+	}
+
+	protected void initIcon() {
+		BeanInfo beanInfo = getBeanInfo();
+		Image icon = beanInfo.getIcon(BeanInfo.ICON_COLOR_16x16);
+		if (null != icon) {
+			ImageIcon imageIcon = new ImageIcon(icon);
+			Class<? extends AbstractMartiniGui> implementation = getClass();
+			String className = implementation.getName();
+			GUIFactory.registerIcon(className, imageIcon);
+		}
 	}
 
 	@Override
 	public String getStaticLabel() {
-		String key = getLabelResource();
-		return getResource(key, key);
+		try {
+			BeanInfo beanInfo = Introspector.getBeanInfo(getClass());
+			BeanDescriptor descriptor = beanInfo.getBeanDescriptor();
+			return descriptor.getDisplayName();
+		}
+		catch (IntrospectionException e) {
+			throw new RuntimeException("unable to obtain BeanDescriptor", e);
+		}
 	}
 
 	@Override
 	public String getLabelResource() {
-		return getImplementationKey("%s.title");
-	}
-
-	protected String getImplementationKey(String template) {
-		return String.format(template, getClass().getName());
+		throw new UnsupportedOperationException();
 	}
 
 	protected void initGui() {
@@ -63,25 +126,5 @@ public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
-	}
-
-	protected String getImplementationResource(String template) {
-		String key = getImplementationKey(template);
-		return getResource(key, key);
-	}
-
-	protected String getResource(String key, String defaultValue) {
-		ResourceBundleManager resourceManager = getResourceBundleManager();
-		String value = resourceManager.get(key);
-		if (null == value) {
-			String message = String.format("unable to find value for key %s; returning default %s", key, defaultValue);
-			Logger logger = LoggingManager.getLoggerFor(getClass().getName());
-			logger.warn(message);
-		}
-		return null == value ? defaultValue : value;
-	}
-
-	protected ResourceBundleManager getResourceBundleManager() {
-		return DefaultResourceBundleManager.getInstance();
 	}
 }

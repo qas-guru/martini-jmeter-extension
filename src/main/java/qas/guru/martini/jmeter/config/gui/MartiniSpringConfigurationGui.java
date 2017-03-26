@@ -45,7 +45,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	protected final JTextField profilesField;
 	protected final SpringArgumentsPanel environmentPanel;
 
-	public MartiniSpringConfigurationGui() {
+	public MartiniSpringConfigurationGui() throws Exception {
 		super();
 		contextLocationsField = new JTextField(6);
 		profilesField = new JTextField(6);
@@ -54,70 +54,72 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	}
 
 	@Override
-		protected void initGui() {
-			initTitlePanel();
-			JPanel panel = new JPanel(new BorderLayout(0, 5));
-			JPanel springPanel = getSpringPanel();
-			panel.add(springPanel, BorderLayout.CENTER);
-			add(panel, BorderLayout.CENTER);
-		}
+	protected void initGui() {
+		initTitlePanel();
+		JPanel panel = new JPanel(new BorderLayout(0, 5));
+		JPanel springPanel = getSpringPanel();
+		panel.add(springPanel, BorderLayout.CENTER);
+		add(panel, BorderLayout.CENTER);
+	}
 
-		protected JPanel getSpringPanel() {
-			JPanel panel = new JPanel();
-			BoxLayout boxLayout = new BoxLayout(panel, BoxLayout.Y_AXIS);
-			panel.setLayout(boxLayout);
+	protected JPanel getSpringPanel() {
+		JPanel panel = new JPanel();
+		BoxLayout boxLayout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+		panel.setLayout(boxLayout);
 
-			Box contextLocationsBox = getContextLocationsBox();
-			panel.add(contextLocationsBox);
+		Box contextLocationsBox = getContextLocationsBox();
+		panel.add(contextLocationsBox);
 
-			Box profilesBox = getProfilesBox();
-			panel.add(profilesBox);
+		Box profilesBox = getProfilesBox();
+		panel.add(profilesBox);
 
-			initEnvironmentPanel();
-			panel.add(environmentPanel);
-			return panel;
-		}
+		initEnvironmentPanel();
+		panel.add(environmentPanel);
+		return panel;
+	}
 
-		protected Box getContextLocationsBox() {
-			setMaximumSize(contextLocationsField);
-			return getBox("%s.contexts.label", "%s.contexts.tooltip", contextLocationsField);
-		}
+	protected Box getContextLocationsBox() {
+		setMaximumSize(contextLocationsField);
+		String label = super.getDescriptorValue("label.contexts");
+		String tooltip = super.getDescriptorValue("tooltip.contexts");
+		return getBox(label, tooltip, contextLocationsField);
+	}
 
-		protected void setMaximumSize(JTextField field) {
-			Dimension preferredSize = field.getPreferredSize();
-			double height = preferredSize.getHeight();
-			int maximumHeight = new Double(height).intValue();
-			Dimension maximumSize = new Dimension(Integer.MAX_VALUE, maximumHeight);
-			field.setMaximumSize(maximumSize);
-		}
+	protected void setMaximumSize(JTextField field) {
+		Dimension preferredSize = field.getPreferredSize();
+		double height = preferredSize.getHeight();
+		int maximumHeight = new Double(height).intValue();
+		Dimension maximumSize = new Dimension(Integer.MAX_VALUE, maximumHeight);
+		field.setMaximumSize(maximumSize);
+	}
 
-		protected Box getProfilesBox() {
-			setMaximumSize(profilesField);
-			return getBox("%s.profiles.label", "%s.profiles.tooltip", profilesField);
-		}
+	protected Box getProfilesBox() {
+		setMaximumSize(profilesField);
+		String label = super.getDescriptorValue("label.profiles");
+		String tooltip = super.getDescriptorValue("tooltip.profiles");
+		return getBox(label, tooltip, profilesField);
+	}
 
-		protected Box getBox(String labelKeyTemplate, String tooltipKeyTemplate, JTextField field) {
-			String label = getImplementationResource(labelKeyTemplate);
-			JLabel jLabel = new JLabel(label);
-			String tooltip = super.getImplementationResource(tooltipKeyTemplate);
-			jLabel.setToolTipText(tooltip);
-			return getBox(jLabel, field);
-		}
+	protected Box getBox(String label, String tooltip, JTextField field) {
+		JLabel jLabel = new JLabel(label);
+		jLabel.setToolTipText(tooltip);
+		return getBox(jLabel, field);
+	}
 
-		protected Box getBox(JLabel label, JTextField field) {
-			Box box = Box.createHorizontalBox();
-			box.add(label);
-			box.add(field);
-			return box;
-		}
+	protected Box getBox(JLabel label, JTextField field) {
+		Box box = Box.createHorizontalBox();
+		box.add(label);
+		box.add(field);
+		return box;
+	}
 
-		protected void initEnvironmentPanel() {
-			String label = getImplementationResource("%s.environment.label");
-			String tooltip = getImplementationResource("%s.environment.tooltip");
-			JLabel jLabel = environmentPanel.getTableLabel();
-			jLabel.setText(label);
-			jLabel.setToolTipText(tooltip);
-		}
+	protected void initEnvironmentPanel() {
+		String label = super.getDescriptorValue("label.environment");
+		String tooltip = super.getDescriptorValue("tooltip.environment");
+		JLabel jLabel = environmentPanel.getTableLabel();
+		jLabel.setText(label);
+		jLabel.setToolTipText(tooltip);
+	}
 
 	@Override
 	public JPopupMenu createPopupMenu() {
@@ -168,10 +170,10 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	public void clearGui() {
 		super.clearGui();
 
-		String contextsDefault = getImplementationResource("%s.contexts.default");
+		String contextsDefault = super.getDescriptorValue("default.contexts");
 		contextLocationsField.setText(contextsDefault);
 
-		String profilesDefault = getImplementationResource("%s.profiles.default");
+		String profilesDefault = super.getDescriptorValue("default.profiles");
 		profilesField.setText(profilesDefault);
 
 		environmentPanel.clearGui();
