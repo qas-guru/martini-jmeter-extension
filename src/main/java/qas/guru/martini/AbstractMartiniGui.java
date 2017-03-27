@@ -17,6 +17,7 @@ limitations under the License.
 package qas.guru.martini;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Image;
 import java.beans.BeanDescriptor;
 import java.beans.BeanInfo;
@@ -24,6 +25,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 
 import javax.swing.ImageIcon;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import org.apache.jmeter.gui.AbstractJMeterGuiComponent;
@@ -126,5 +128,13 @@ public abstract class AbstractMartiniGui extends AbstractJMeterGuiComponent {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
+	}
+
+	protected void setMaximumSize(JComponent field) {
+		Dimension preferredSize = field.getPreferredSize();
+		double height = preferredSize.getHeight();
+		int maximumHeight = new Double(height).intValue();
+		Dimension maximumSize = new Dimension(Integer.MAX_VALUE, maximumHeight);
+		field.setMaximumSize(maximumSize);
 	}
 }

@@ -16,10 +16,17 @@ limitations under the License.
 
 package qas.guru.martini.jmeter.control.gui;
 
+import java.awt.BorderLayout;
 import java.util.Collection;
 import java.util.Collections;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 
 import org.apache.jmeter.gui.util.MenuFactory;
 import org.apache.jmeter.testelement.TestElement;
@@ -32,9 +39,41 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 
 	private static final long serialVersionUID = -1197223648762160415L;
 
+	protected final JTextArea filterField;
+
 	public MartiniControllerGui() throws Exception {
 		super();
+		filterField = new JTextArea(2, 1);
+		filterField.setAlignmentX(0);
 		initGui();
+	}
+
+	protected void initGui() {
+		initTitlePanel();
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		JPanel filterPanel = getFilterPanel();
+		mainPanel.add(filterPanel, BorderLayout.CENTER);
+		add(mainPanel, BorderLayout.CENTER);
+	}
+
+	protected JPanel getFilterPanel() {
+		JPanel panel = new JPanel();
+		BoxLayout boxLayout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+		panel.setLayout(boxLayout);
+
+		setMaximumSize(filterField);
+
+		Box box = Box.createVerticalBox();
+		String label = super.getDescriptorValue("label.filter");
+		String tooltip = super.getDescriptorValue("tooltip.filter");
+		JLabel jLabel = new JLabel(label, SwingConstants.LEFT);
+		jLabel.setToolTipText(tooltip);
+		jLabel.setLabelFor(filterField);
+		box.add(jLabel);
+		box.add(filterField);
+
+		panel.add(box);
+		return panel;
 	}
 
 	@Override

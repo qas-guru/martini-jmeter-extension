@@ -23,6 +23,7 @@ import java.util.Collections;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -85,14 +86,6 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 		return getBox(label, tooltip, contextLocationsField);
 	}
 
-	protected void setMaximumSize(JTextField field) {
-		Dimension preferredSize = field.getPreferredSize();
-		double height = preferredSize.getHeight();
-		int maximumHeight = new Double(height).intValue();
-		Dimension maximumSize = new Dimension(Integer.MAX_VALUE, maximumHeight);
-		field.setMaximumSize(maximumSize);
-	}
-
 	protected Box getProfilesBox() {
 		setMaximumSize(profilesField);
 		String label = super.getDescriptorValue("label.profiles");
@@ -103,6 +96,7 @@ public class MartiniSpringConfigurationGui extends AbstractMartiniGui {
 	protected Box getBox(String label, String tooltip, JTextField field) {
 		JLabel jLabel = new JLabel(label);
 		jLabel.setToolTipText(tooltip);
+		jLabel.setLabelFor(field);
 		return getBox(jLabel, field);
 	}
 
