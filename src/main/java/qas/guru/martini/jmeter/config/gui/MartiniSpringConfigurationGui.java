@@ -17,13 +17,11 @@ limitations under the License.
 package qas.guru.martini.jmeter.config.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.util.Collection;
 import java.util.Collections;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;

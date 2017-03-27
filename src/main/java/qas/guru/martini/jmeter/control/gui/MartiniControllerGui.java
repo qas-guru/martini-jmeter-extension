@@ -84,11 +84,6 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 	}
 
 	@Override
-	public void modifyTestElement(TestElement element) {
-		super.configureTestElement(element);
-	}
-
-	@Override
 	public JPopupMenu createPopupMenu() {
 		return MenuFactory.getDefaultControllerMenu();
 	}
@@ -96,5 +91,28 @@ public class MartiniControllerGui extends AbstractMartiniGui {
 	@Override
 	public Collection<String> getMenuCategories() {
 		return Collections.singleton(MenuFactory.CONTROLLERS);
+	}
+
+	@Override
+	public void configure(TestElement element) {
+		super.configureTestElement(element);
+		MartiniController controller = MartiniController.class.cast(element);
+		String filter = controller.getFilter();
+		filterField.setText(filter);
+	}
+
+	@Override
+	public void modifyTestElement(TestElement element) {
+		configureTestElement(element);
+
+		MartiniController controller = MartiniController.class.cast(element);
+		String filter = filterField.getText();
+		controller.setFilter(filter);
+	}
+
+	@Override
+	public void clearGui() {
+		super.clearGui();
+		filterField.setText("");
 	}
 }

@@ -49,6 +49,10 @@ import qas.guru.martini.MartiniConstants;
 @SuppressWarnings("WeakerAccess")
 public class MartiniController extends GenericController implements Serializable, TestStateListener, TestIterationListener {
 
+	private static final long serialVersionUID = -597642778070067543L;
+
+	protected static final String PROPERTY_FILTER = "spelFilter";
+
 	protected volatile transient Monitor monitor;
 	protected volatile transient AtomicReference<ImmutableList<Martini>> martinisRef;
 	protected volatile transient AtomicReference<Iterator<Martini>> iteratorRef;
@@ -62,9 +66,17 @@ public class MartiniController extends GenericController implements Serializable
 		index = new HashMap<>();
 	}
 
+	public void setFilter(String text) {
+		String trimmed = null == text ? "" : text.trim();
+		setProperty(PROPERTY_FILTER, trimmed);
+	}
+
+	public String getFilter() {
+		return getPropertyAsString(PROPERTY_FILTER);
+	}
+
 	@Override
 	public Object clone() {
-
 		Object o = super.clone();
 		MartiniController clone = MartiniController.class.cast(o);
 		clone.monitor = monitor;
@@ -117,7 +129,8 @@ public class MartiniController extends GenericController implements Serializable
 		Collection<Martini> martinis = null;
 		try {
 			Mixologist mixologist = context.getBean(Mixologist.class);
-			martinis = mixologist.getMartinis();
+			String filter = getFilter();
+			martinis = filter.isEmpty() ? mixologist.getMartinis() : mixologist.getMartinis(filter);
 		}
 		catch (Exception e) {
 			String message = String.format("%s unable to obtain Martini objects from Spring application context", getName());

@@ -25,8 +25,6 @@ import java.util.ResourceBundle;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 
-import qas.guru.martini.jmeter.config.gui.MartiniSpringConfigurationGui;
-
 import static qas.guru.martini.MartiniConstants.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
