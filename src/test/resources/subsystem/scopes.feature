@@ -15,7 +15,7 @@
 
 # This is a comment.
 
-@Classification("Scopes")
+@Category("Scopes")
 @Meta("Spring")
 Feature: Spring Scenario Scope
 

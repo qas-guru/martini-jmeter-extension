@@ -16,12 +16,16 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
+import java.util.List;
+
+import org.apache.http.HttpEntity;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.JMeterContext;
 
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.AfterStepEvent;
+import guru.qas.martini.event.Status;
 
 @SuppressWarnings("WeakerAccess")
 public class DefaultAfterStepEvent extends AbstractStepEvent implements AfterStepEvent {
@@ -43,8 +47,18 @@ public class DefaultAfterStepEvent extends AbstractStepEvent implements AfterSte
 	}
 
 	@Override
-	public boolean isSuccessful() {
-		return result.isSuccessful();
+	public Status getStatus() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Exception getException() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<HttpEntity> getEmbeddedEntitites() {
+		throw new UnsupportedOperationException();
 	}
 
 	public DefaultAfterStepEvent(Martini martini, Step step, JMeterContext context, SampleResult result) {

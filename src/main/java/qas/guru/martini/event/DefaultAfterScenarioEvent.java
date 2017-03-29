@@ -16,11 +16,15 @@ limitations under the License.
 
 package qas.guru.martini.event;
 
+import java.util.List;
+
+import org.apache.http.HttpEntity;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.JMeterContext;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.AfterScenarioEvent;
+import guru.qas.martini.event.Status;
 
 @SuppressWarnings("WeakerAccess")
 public class DefaultAfterScenarioEvent extends AbstractScenarioEvent implements AfterScenarioEvent {
@@ -30,6 +34,21 @@ public class DefaultAfterScenarioEvent extends AbstractScenarioEvent implements 
 	@Override
 	public Martini getMartini() {
 		return super.getMartini();
+	}
+
+	@Override
+	public Status getStatus() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Exception getException() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<HttpEntity> getEmbeddedEntitites() {
+		throw new UnsupportedOperationException();
 	}
 
 	public SampleResult getSampleResult() {
@@ -43,10 +62,5 @@ public class DefaultAfterScenarioEvent extends AbstractScenarioEvent implements 
 	) {
 		super(result.getEndTime(), martini, context);
 		this.result = result;
-	}
-
-	@Override
-	public boolean isSuccessful() {
-		return result.isSuccessful();
 	}
 }

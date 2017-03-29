@@ -20,9 +20,15 @@ import org.apache.jmeter.threads.JMeterContext;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.BeforeScenarioEvent;
+import guru.qas.martini.event.ScenarioIdentifier;
 
 @SuppressWarnings("WeakerAccess")
 public class DefaultBeforeScenarioEvent extends AbstractScenarioEvent implements BeforeScenarioEvent {
+
+	@Override
+	public ScenarioIdentifier getScenarioIdentifier() {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public Martini getMartini() {

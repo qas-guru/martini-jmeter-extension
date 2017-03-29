@@ -19,10 +19,16 @@ package qas.guru.martini.event;
 import org.apache.jmeter.threads.JMeterContext;
 
 import guru.qas.martini.event.BeforeSuiteEvent;
+import guru.qas.martini.event.SuiteIdentifier;
 
 public class DefaultAfterSuiteEvent extends AbstractMartiniEvent implements BeforeSuiteEvent {
 
 	public DefaultAfterSuiteEvent(long timestamp, JMeterContext context) {
 		super(timestamp, context);
+	}
+
+	@Override
+	public SuiteIdentifier getSuiteIdentifier() {
+		throw new UnsupportedOperationException();
 	}
 }

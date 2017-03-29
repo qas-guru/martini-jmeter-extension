@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.jmeter.assertions.AssertionResult;
-import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
@@ -42,6 +41,8 @@ import gherkin.ast.Feature;
 import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
+import guru.qas.martini.event.MartiniEvent;
+import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.step.StepImplementation;
 
@@ -72,11 +73,6 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	@Override
-	public boolean applies(ConfigTestElement configElement) {
-		return super.applies(configElement);
-	}
-
-	@Override
 	public SampleResult sample(Entry entry) {
 		Martini martini = getMartini();
 		publishBeforeEvent(martini);
@@ -95,17 +91,21 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected void publishBeforeEvent(Martini martini) {
-		ApplicationContext applicationContext = getApplicationContext();
 		JMeterContext threadContext = super.getThreadContext();
 		DefaultBeforeScenarioEvent event = new DefaultBeforeScenarioEvent(martini, threadContext);
-		applicationContext.publishEvent(event);
+		publish(event);
+	}
+
+	protected void publish(MartiniEvent event) {
+		ApplicationContext applicationContext = getApplicationContext();
+		MartiniEventPublisher publisher = applicationContext.getBean(MartiniEventPublisher.class);
+		publisher.publish(event);
 	}
 
 	protected void publishAfterEvent(Martini martini, SampleResult sampleResult) {
 		JMeterContext threadContext = super.getThreadContext();
 		DefaultAfterScenarioEvent event = new DefaultAfterScenarioEvent(martini, threadContext, sampleResult);
-		ApplicationContext applicationContext = getApplicationContext();
-		applicationContext.publishEvent(event);
+		publish(event);
 	}
 
 	protected ApplicationContext getApplicationContext() {
@@ -239,15 +239,13 @@ public class MartiniSampler extends AbstractSampler {
 	protected void publishBeforeStep(Martini martini, Step step) {
 		JMeterContext context = super.getThreadContext();
 		DefaultBeforeStepEvent event = new DefaultBeforeStepEvent(martini, step, context);
-		ApplicationContext applicationContext = this.getApplicationContext();
-		applicationContext.publishEvent(event);
+		publish(event);
 	}
 
 	protected void publishAfterStep(Martini martini, Step step, SampleResult result) {
 		JMeterContext context = super.getThreadContext();
 		DefaultAfterStepEvent event = new DefaultAfterStepEvent(martini, step, context, result);
-		ApplicationContext applicationContext = this.getApplicationContext();
-		applicationContext.publishEvent(event);
+		publish(event);
 	}
 
 	protected SampleResult getSkipped(Step step) {

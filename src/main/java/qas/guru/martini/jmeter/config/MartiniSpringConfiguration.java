@@ -42,6 +42,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import com.google.common.util.concurrent.Monitor;
 
+import guru.qas.martini.event.MartiniEvent;
+import guru.qas.martini.event.MartiniEventPublisher;
 import qas.guru.martini.event.DefaultAfterSuiteEvent;
 import qas.guru.martini.event.DefaultBeforeSuiteEvent;
 
@@ -145,7 +147,12 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 	protected void publishTestStarted(ApplicationContext context) {
 		JMeterContext threadContext = getThreadContext();
 		DefaultBeforeSuiteEvent event = new DefaultBeforeSuiteEvent(System.currentTimeMillis(), threadContext);
-		context.publishEvent(event);
+		publish(context, event);
+	}
+
+	protected void publish(ApplicationContext context, MartiniEvent event) {
+		MartiniEventPublisher publisher = context.getBean(MartiniEventPublisher.class);
+		publisher.publish(event);
 	}
 
 	@Override
@@ -169,7 +176,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 	protected void testIterationStart(AbstractThreadGroup threadGroup) {
 		JMeterProperty property = threadGroup.getProperty(PROPERTY_SPRING_CONTEXT);
 		if (NullProperty.class.isInstance(property)) {
-			ConfigurableApplicationContext context = contextRef.get();
+			ApplicationContext context = contextRef.get();
 			if (null == context) {
 				threadGroup.stop();
 			}
@@ -188,7 +195,8 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 			if (contextInitialized.compareAndSet(true, false)) {
 				ConfigurableApplicationContext context = contextRef.getAndSet(null);
 				if (null != context) {
-					testEnded(context);
+					publishTestEnded(context);
+					context.close();
 				}
 			}
 		}
@@ -197,12 +205,11 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 		}
 	}
 
-	protected void testEnded(ConfigurableApplicationContext context) {
+	protected void publishTestEnded(ApplicationContext context) {
 		JMeterContext threadContext = getThreadContext();
 		long now = System.currentTimeMillis();
 		DefaultAfterSuiteEvent event = new DefaultAfterSuiteEvent(now, threadContext);
-		context.publishEvent(event);
-		context.close();
+		publish(context, event);
 	}
 
 	@Override
