@@ -26,11 +26,11 @@
         <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <qas.guru.martini.jmeter.modifiers.MartiniPreProcessor guiclass="qas.guru.martini.jmeter.modifiers.gui.MartiniPreProcessorGui" testclass="qas.guru.martini.jmeter.modifiers.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
+        <guru.qas.martini.jmeter.modifiers.MartiniPreProcessor guiclass="guru.qas.martini.jmeter.modifiers.gui.MartiniPreProcessorGui" testclass="guru.qas.martini.jmeter.modifiers.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
           <stringProp name="martini_spring_configuration">bogusContext.xml</stringProp>
           <stringProp name="text">Stirred, not shaken.</stringProp>
           <stringProp name="contextConfiguration">bogus.xml</stringProp>
-        </qas.guru.martini.jmeter.modifiers.MartiniPreProcessor>
+        </guru.qas.martini.jmeter.modifiers.MartiniPreProcessor>
         <hashTree/>
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Martini" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
