@@ -16,15 +16,23 @@ limitations under the License.
 
 package guru.qas.martini.event;
 
+import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.JMeterContext;
 
+import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 
 public interface EventManager {
 
-	void publishBeforeSuite(Object source, JMeterContext threadContext);
+	void publishBeforeSuite(Object source, JMeterContext context);
 
-	void publishAfterSuite(Object source, JMeterContext threadContext);
+	void publishAfterSuite(Object source, JMeterContext context);
 
-	void publishBeforeScenario(Object source, JMeterContext threadContext, Martini martini);
+	void publishBeforeScenario(Object source, JMeterContext context, Martini martini);
+
+	void publishAfterScenario(Object source, JMeterContext context, Martini martini, SampleResult result);
+
+	void publishBeforeStep(Object source, JMeterContext context, Martini martini, Step step);
+
+	void publishAfterStep(Object source, JMeterContext context, Martini martini, Step step, SampleResult result);
 }

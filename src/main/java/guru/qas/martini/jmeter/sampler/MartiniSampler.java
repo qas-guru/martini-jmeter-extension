@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.jmeter.assertions.AssertionResult;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
@@ -42,6 +41,7 @@ import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.EventManager;
+import guru.qas.martini.event.Status;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.step.StepImplementation;
 
@@ -85,17 +85,20 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected void publishBeforeScenario(Martini martini) {
-		ApplicationContext applicationContext = this.getApplicationContext();
-		EventManager eventManager = applicationContext.getBean(EventManager.class);
+		EventManager eventManager = getEventManager();
 		JMeterContext threadContext = getThreadContext();
 		eventManager.publishBeforeScenario(this, threadContext, martini);
 	}
 
+	protected EventManager getEventManager() {
+		ApplicationContext applicationContext = this.getApplicationContext();
+		return applicationContext.getBean(EventManager.class);
+	}
+
 	protected void publishAfterScenario(Martini martini, SampleResult sampleResult) {
-		System.out.println("breakpoint");
-//		EventManager eventManager = context.getBean(EventManager.class);
-//		JMeterContext threadContext = getThreadContext();
-//		eventManager.publishAfterSuite(this, threadContext);
+		EventManager eventManager = getEventManager();
+		JMeterContext threadContext = getThreadContext();
+		eventManager.publishAfterScenario(this, threadContext, martini, sampleResult);
 	}
 
 	protected ApplicationContext getApplicationContext() {
@@ -113,11 +116,12 @@ public class MartiniSampler extends AbstractSampler {
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(null == martini ? "UNKNOWN" : getLabel(martini));
 		sampleResult.setSuccessful(false);
-		AssertionResult assertResult = new AssertionResult("Martini Execution Error");
-		assertResult.setError(true);
-		assertResult.setFailure(true);
-		assertResult.setFailureMessage(e.getMessage());
-		sampleResult.addAssertionResult(assertResult);
+
+		JMeterContext threadContext = super.getThreadContext();
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		samplerContext.put("status", Status.FAILED);
+		samplerContext.put("exception", e);
+
 		return sampleResult;
 	}
 
@@ -245,19 +249,15 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected void publishBeforeStep(Martini martini, Step step) {
-		System.out.println("breakpoint");
-
-//		EventManager eventManager = context.getBean(EventManager.class);
-//		JMeterContext threadContext = getThreadContext();
-//		eventManager.publishAfterSuite(this, threadContext);
+		EventManager eventManager = getEventManager();
+		JMeterContext threadContext = getThreadContext();
+		eventManager.publishBeforeStep(this, threadContext, martini, step);
 	}
 
 	protected void publishAfterStep(Martini martini, Step step, SampleResult result) {
-		System.out.println("breakpoint");
-
-//		EventManager eventManager = context.getBean(EventManager.class);
-//		JMeterContext threadContext = getThreadContext();
-//		eventManager.publishAfterSuite(this, threadContext);
+		EventManager eventManager = getEventManager();
+		JMeterContext threadContext = getThreadContext();
+		eventManager.publishAfterStep(this, threadContext, martini, step, result);
 	}
 
 	protected SampleResult getSkipped(Step step) {
