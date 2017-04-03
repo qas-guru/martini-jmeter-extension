@@ -17,7 +17,7 @@ limitations under the License.
 package guru.qas.martini.jmeter.config;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.JMeter;
@@ -34,14 +34,17 @@ import org.apache.jmeter.testelement.property.NullProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterVariables;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.google.common.util.concurrent.Monitor;
-
+import guru.qas.martini.event.DefaultMartiniSuiteIdentifier;
 import guru.qas.martini.event.EventManager;
+import guru.qas.martini.event.MartiniSuiteIdentifier;
 
 import static guru.qas.martini.MartiniConstants.PROPERTY_SPRING_CONTEXT;
 
@@ -54,14 +57,10 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 	protected static final String PROPERTY_PROFILES = "springProfiles";
 	protected static final String PROPERTY_ENVIRONMENT = "environment";
 
-	protected transient volatile Monitor monitor;
-	protected transient volatile AtomicBoolean contextInitialized;
-	protected transient volatile AtomicReference<ConfigurableApplicationContext> contextRef;
+	protected final transient AtomicReference<ConfigurableApplicationContext> contextRef;
 
 	public MartiniSpringConfiguration() {
 		super();
-		monitor = new Monitor();
-		contextInitialized = new AtomicBoolean(false);
 		contextRef = new AtomicReference<>();
 	}
 
@@ -94,16 +93,32 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 
 	@Override
 	public void testStarted() {
-		monitor.enter();
-		try {
-			if (contextInitialized.compareAndSet(false, true)) {
-				ConfigurableApplicationContext context = initializeContext();
-				contextRef.set(context);
-				publishTestStarted(context);
+		synchronized (contextRef) {
+			ConfigurableApplicationContext context = initializeContext();
+			ConfigurableApplicationContext previous = contextRef.getAndSet(context);
+			if (null != previous) {
+				previous.close();
 			}
-		}
-		finally {
-			monitor.leave();
+
+			String hostname = JMeterUtils.getLocalHostName();
+			JMeterContext threadContext = super.getThreadContext();
+			JMeterVariables variables = threadContext.getVariables();
+			long timestamp = Long.valueOf(variables.get("TESTSTART.MS"));
+			String name = super.getName();
+			UUID id = UUID.randomUUID();
+
+			MartiniSuiteIdentifier identifier = DefaultMartiniSuiteIdentifier.builder()
+				.setHostname(hostname)
+				.setTimetamp(timestamp)
+				.setSuiteName(name)
+				.setId(id)
+				.build();
+
+			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+			beanFactory.registerSingleton("martiniSuiteIdentifier", identifier); // TODO: constant
+
+			EventManager eventManager = context.getBean(EventManager.class);
+			eventManager.publishBeforeSuite(this, identifier);
 		}
 	}
 
@@ -140,28 +155,16 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 		}
 	}
 
-	protected void publishTestStarted(ApplicationContext context) {
-		EventManager eventManager = context.getBean(EventManager.class);
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishBeforeSuite(this, threadContext);
-	}
-
 	@Override
 	public void testStarted(String host) {
 	}
 
 	@Override
 	public void testIterationStart(LoopIterationEvent event) {
-		monitor.enter();
-		try {
-			TestElement source = event.getSource();
-			JMeterContext threadContext = source.getThreadContext();
-			AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
-			testIterationStart(threadGroup);
-		}
-		finally {
-			monitor.leave();
-		}
+		TestElement source = event.getSource();
+		JMeterContext threadContext = source.getThreadContext();
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		testIterationStart(threadGroup);
 	}
 
 	protected void testIterationStart(AbstractThreadGroup threadGroup) {
@@ -181,25 +184,19 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 
 	@Override
 	public void testEnded() {
-		monitor.enter();
-		try {
-			if (contextInitialized.compareAndSet(true, false)) {
-				ConfigurableApplicationContext context = contextRef.getAndSet(null);
-				if (null != context) {
-					publishTestEnded(context);
-					context.close();
-				}
+		synchronized (contextRef) {
+			ConfigurableApplicationContext context = contextRef.getAndSet(null);
+			if (null != context) {
+				publishTestEnded(context);
+				context.close();
 			}
-		}
-		finally {
-			monitor.leave();
 		}
 	}
 
 	protected void publishTestEnded(ApplicationContext context) {
+		MartiniSuiteIdentifier identifier = context.getBean(MartiniSuiteIdentifier.class);
 		EventManager eventManager = context.getBean(EventManager.class);
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishAfterSuite(this, threadContext);
+		eventManager.publishAfterSuite(this, identifier);
 	}
 
 	@Override

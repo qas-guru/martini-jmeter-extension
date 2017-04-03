@@ -18,10 +18,15 @@ package guru.qas.martini.jmeter.sampler;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
+import org.apache.http.HttpEntity;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
@@ -41,9 +46,14 @@ import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.EventManager;
+import guru.qas.martini.event.MartiniSuiteIdentifier;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.gherkin.Recipe;
+import guru.qas.martini.result.DefaultMartiniResult;
+import guru.qas.martini.result.DefaultStepResult;
+import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.step.StepImplementation;
+import guru.qas.martini.tag.Categories;
 
 import static com.google.common.base.Preconditions.checkState;
 import static guru.qas.martini.MartiniConstants.*;
@@ -53,7 +63,7 @@ public class MartiniSampler extends AbstractSampler {
 
 	private static final long serialVersionUID = -5644094193554791266L;
 
-	protected Logger logger;
+	protected transient Logger logger;
 
 	public MartiniSampler() {
 		super();
@@ -68,26 +78,62 @@ public class MartiniSampler extends AbstractSampler {
 
 	@Override
 	public SampleResult sample(Entry entry) {
-		Martini martini = getMartini();
-		publishBeforeScenario(martini);
 
+		Martini martini = null;
+		DefaultMartiniResult martiniResult = null;
 		SampleResult sampleResult;
+
 		try {
-			sampleResult = sample(martini);
+			martini = getMartini();
+			martiniResult = getMartiniResult(martini);
+			publishBeforeScenario(martiniResult);
+			sampleResult = sample(martiniResult);
 		}
 		catch (Exception e) {
 			logger.error("unable to execute Martini sample", e);
 			sampleResult = getError(martini, e);
 		}
-
-		publishAfterScenario(martini, sampleResult);
+		finally {
+			publishAfterScenario(martiniResult);
+		}
 		return sampleResult;
 	}
 
-	protected void publishBeforeScenario(Martini martini) {
+	protected DefaultMartiniResult getMartiniResult(Martini martini) {
+		String threadGroupName = getThreadGroupName();
+		String threadName = getThreadName();
+		Set<String> categorizations = getCategorizations(martini);
+		MartiniSuiteIdentifier suiteIdentifier = getSuiteIdentifier();
+
+		return DefaultMartiniResult.builder()
+			.setMartiniSuiteIdentifier(suiteIdentifier)
+			.setMartini(martini)
+			.setThreadGroupName(threadGroupName)
+			.setThreadName(threadName)
+			.setCategorizations(categorizations)
+			.build();
+	}
+
+	protected String getThreadGroupName() {
+		JMeterContext threadContext = super.getThreadContext();
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		return threadGroup.getName();
+	}
+
+	protected Set<String> getCategorizations(Martini martini) {
+		ApplicationContext applicationContext = this.getApplicationContext();
+		Categories categories = applicationContext.getBean(Categories.class);
+		return categories.getCategorizations(martini);
+	}
+
+	protected MartiniSuiteIdentifier getSuiteIdentifier() {
+		ApplicationContext context = this.getApplicationContext();
+		return context.getBean(MartiniSuiteIdentifier.class);
+	}
+
+	protected void publishBeforeScenario(MartiniResult result) {
 		EventManager eventManager = getEventManager();
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishBeforeScenario(this, threadContext, martini);
+		eventManager.publishBeforeScenario(this, result);
 	}
 
 	protected EventManager getEventManager() {
@@ -95,10 +141,11 @@ public class MartiniSampler extends AbstractSampler {
 		return applicationContext.getBean(EventManager.class);
 	}
 
-	protected void publishAfterScenario(Martini martini, SampleResult sampleResult) {
-		EventManager eventManager = getEventManager();
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishAfterScenario(this, threadContext, martini, sampleResult);
+	protected void publishAfterScenario(MartiniResult result) {
+		if (null != result) {
+			EventManager eventManager = getEventManager();
+			eventManager.publishAfterScenario(this, result);
+		}
 	}
 
 	protected ApplicationContext getApplicationContext() {
@@ -112,7 +159,7 @@ public class MartiniSampler extends AbstractSampler {
 		return ApplicationContext.class.cast(o);
 	}
 
-	protected SampleResult getError(Martini martini, Exception e) {
+	protected SampleResult getError(@Nullable Martini martini, Exception e) {
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(null == martini ? "UNKNOWN" : getLabel(martini));
 		sampleResult.setSuccessful(false);
@@ -136,7 +183,8 @@ public class MartiniSampler extends AbstractSampler {
 		return String.format("%s (%s)", pickleName, featureName);
 	}
 
-	protected SampleResult sample(Martini martini) {
+	protected SampleResult sample(DefaultMartiniResult martiniResult) {
+		Martini martini = martiniResult.getMartini();
 		Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
 
 		String label = getLabel(martini);
@@ -147,12 +195,29 @@ public class MartiniSampler extends AbstractSampler {
 
 		for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
 			Step step = mapEntry.getKey();
+			DefaultStepResult stepResult = new DefaultStepResult(step);
+			martiniResult.add(stepResult);
+			publishBeforeStep(martiniResult);
+
 			StepImplementation implementation = mapEntry.getValue();
 
-			SampleResult subResult = sampleResult.isSuccessful() ?
-				getSubResult(martini, step, implementation) : getSkipped(step);
+			SampleResult subResult;
+			if (sampleResult.isSuccessful()) {
+				JMeterContext threadContext = super.getThreadContext();
+				SamplerContext samplerContext = new SamplerContext(threadContext);
+				samplerContext.clear();
+
+				subResult = getSubResult(step, implementation);
+				update(stepResult, subResult, samplerContext);
+			}
+			else {
+				subResult = getSkipped(step);
+				stepResult.setStatus(Status.SKIPPED);
+			}
+
 			sampleResult.addSubResult(subResult);
 			sampleResult.setSuccessful(sampleResult.isSuccessful() && subResult.isSuccessful());
+			publishAfterStep(martiniResult);
 		}
 
 		return sampleResult;
@@ -179,21 +244,20 @@ public class MartiniSampler extends AbstractSampler {
 		return Martini.class.cast(o);
 	}
 
-	protected SampleResult getSubResult(Martini martini, Step step, StepImplementation implementation) {
+	protected SampleResult getSubResult(Step step, StepImplementation implementation) {
 		Method method = implementation.getMethod();
-		return null == method ? getUnimplementedSubResult(step) : getSubResult(martini, step, method, implementation.getPattern());
+		return null == method ? getUnimplementedSubResult(step) : getSubResult(step, method, implementation.getPattern());
 	}
 
-	protected SampleResult getSubResult(Martini martini, Step step, Method method, Pattern pattern) {
-		publishBeforeStep(martini, step);
-
+	protected SampleResult getSubResult(Step step, Method method, Pattern pattern) {
 		String label = getLabel(step);
 		SampleResult result = new SampleResult();
 		result.setSuccessful(true);
 		result.sampleStart();
 
-		try {
+		SamplerContext samplerContext = new SamplerContext(super.getThreadContext());
 
+		try {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			Parameter[] parameters = method.getParameters();
 			Object[] arguments = new Object[parameters.length];
@@ -216,24 +280,32 @@ public class MartiniSampler extends AbstractSampler {
 				}
 			}
 
+			samplerContext.setStatus(Status.PASSED);
 			Class<?> declaringClass = method.getDeclaringClass();
 			Object bean = applicationContext.getBean(declaringClass);
-			method.invoke(bean, arguments);
-
+			Object returnValue = method.invoke(bean, arguments);
+			if (HttpEntity.class.isInstance(returnValue)) {
+				HttpEntity entity = HttpEntity.class.cast(returnValue);
+				samplerContext.setHttpEntities(Collections.singleton(entity));
+			}
 		}
 		catch (Exception e) {
+			samplerContext.setStatus(Status.FAILED);
+			samplerContext.setException(e);
 			result.setSuccessful(false);
 			label = "FAIL: " + label;
 		}
 		finally {
 			result.sampleEnd();
 			result.setSampleLabel(label);
-			publishAfterStep(martini, step, result);
 		}
 		return result;
 	}
 
 	protected SampleResult getUnimplementedSubResult(Step step) {
+		SamplerContext samplerContext = new SamplerContext(super.getThreadContext());
+		samplerContext.setStatus(Status.SKIPPED);
+
 		SampleResult result = new SampleResult();
 		result.setSuccessful(false);
 		String label = getLabel(step);
@@ -248,19 +320,32 @@ public class MartiniSampler extends AbstractSampler {
 		return normalizedKeyword.isEmpty() ? text : String.format("%s %s", normalizedKeyword, text);
 	}
 
-	protected void publishBeforeStep(Martini martini, Step step) {
+	protected void publishBeforeStep(MartiniResult result) {
 		EventManager eventManager = getEventManager();
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishBeforeStep(this, threadContext, martini, step);
+		eventManager.publishBeforeStep(this, result);
 	}
 
-	protected void publishAfterStep(Martini martini, Step step, SampleResult result) {
+	protected void publishAfterStep(MartiniResult result) {
 		EventManager eventManager = getEventManager();
-		JMeterContext threadContext = getThreadContext();
-		eventManager.publishAfterStep(this, threadContext, martini, step, result);
+		eventManager.publishAfterStep(this, result);
+	}
+
+	protected void update(DefaultStepResult stepResult, SampleResult result, SamplerContext context) {
+		long startTime = result.getStartTime();
+		stepResult.setStartTimestamp(startTime);
+
+		long endTime = result.getEndTime();
+		stepResult.setEndTimestamp(endTime);
+
+		stepResult.setException(context.getException());
+		stepResult.setStatus(context.getStatus());
+		stepResult.addAll(context.getHttpEntities());
 	}
 
 	protected SampleResult getSkipped(Step step) {
+		SamplerContext samplerContext = new SamplerContext(super.getThreadContext());
+		samplerContext.setStatus(Status.SKIPPED);
+
 		SampleResult result = new SampleResult();
 		result.setSuccessful(false);
 		String keyword = step.getKeyword();
