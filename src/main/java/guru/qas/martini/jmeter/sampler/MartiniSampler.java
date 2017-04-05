@@ -16,9 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -41,6 +44,11 @@ import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.gson.stream.JsonWriter;
+
 import gherkin.ast.Feature;
 import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
@@ -54,6 +62,7 @@ import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.Categories;
+import guru.qas.martini.tag.MartiniTag;
 
 import static com.google.common.base.Preconditions.checkState;
 import static guru.qas.martini.MartiniConstants.*;
@@ -96,6 +105,7 @@ public class MartiniSampler extends AbstractSampler {
 		finally {
 			publishAfterScenario(martiniResult);
 		}
+
 		return sampleResult;
 	}
 
@@ -215,11 +225,87 @@ public class MartiniSampler extends AbstractSampler {
 				stepResult.setStatus(Status.SKIPPED);
 			}
 
+			try {
+				StringWriter writer = new StringWriter();
+				try (JsonWriter jsonWriter = new JsonWriter(writer)) {
+					jsonWriter.setHtmlSafe(true);
+					jsonWriter.setLenient(true);
+					jsonWriter.setSerializeNulls(true);
+					jsonWriter.beginObject();
+
+					jsonWriter.name("status").value(stepResult.getStatus().name());
+					Exception exception = stepResult.getException();
+					String stacktrace = null == exception ? "" : Throwables.getStackTraceAsString(exception);
+					jsonWriter.name("exception").value(stacktrace);
+					// TODO: include HttpEntity
+					jsonWriter.endObject();
+				}
+
+				String response = writer.toString();
+				subResult.setDataType(SampleResult.TEXT);
+				subResult.setResponseHeaders("Content-Type: application/json");
+				subResult.setResponseData(response, "UTF-8");
+			} catch (Exception e) {
+				logger.error("unable to marshall StepResult", e);
+			}
+
 			sampleResult.addSubResult(subResult);
 			sampleResult.setSuccessful(sampleResult.isSuccessful() && subResult.isSuccessful());
 			publishAfterStep(martiniResult);
 		}
 
+		try {
+			StringWriter writer = new StringWriter();
+			try (JsonWriter jsonWriter = new JsonWriter(writer)) {
+				jsonWriter.setHtmlSafe(true);
+				jsonWriter.setLenient(true);
+				jsonWriter.setSerializeNulls(true);
+				jsonWriter.beginObject();
+
+				MartiniSuiteIdentifier martiniSuiteIdentifier = martiniResult.getMartiniSuiteIdentifier();
+				String asString = String.format("%s.%s.%s.%s", martiniSuiteIdentifier.getHostname(),
+					martiniSuiteIdentifier.getSuiteName(), martiniSuiteIdentifier.getTimestamp(),
+					martiniSuiteIdentifier.getId());
+				jsonWriter.name("martiniSuiteIdentifier").value(asString);
+
+				jsonWriter.name("threadGroup").value(martiniResult.getThreadGroupName());
+				jsonWriter.name("thread").value(martiniResult.getThreadName());
+
+				jsonWriter.name("martini").value(martini.getId());
+				Recipe recipe = martini.getRecipe();
+				asString = recipe.getSource().getURI().toString();
+				jsonWriter.name("resource").value(asString);
+
+				Set<String> categorizations = martiniResult.getCategorizations();
+				asString = null == categorizations ? "" : Joiner.on(',').join(categorizations);
+				jsonWriter.name("categorizations").value(asString);
+
+				Collection<MartiniTag> tags = martini.getTags();
+				if (null != tags) {
+					List<String> tagNames = Lists.newArrayListWithExpectedSize(tags.size());
+					for (MartiniTag tag : tags) {
+						String name = tag.getName();
+						String argument = tag.getArgument();
+						String tagName = null == argument || argument.trim().isEmpty() ?
+							String.format("@%s", name) : String.format("@%s(%s)", name, argument);
+						tagNames.add(tagName);
+					}
+					asString = Joiner.on(',').join(tagNames);
+					jsonWriter.name("tags").value(asString);
+				}
+
+				jsonWriter.name("status").value(martiniResult.getStatus().name());
+				jsonWriter.endObject();
+			}
+			String response = writer.toString();
+
+			sampleResult.setDataType(SampleResult.TEXT);
+			sampleResult.setResponseHeaders("Content-Type: application/json");
+			sampleResult.setResponseData(response, "UTF-8");
+		}
+		catch (Exception e) {
+			logger.error("unable to marshall MartiniResult", e);
+		}
 		return sampleResult;
 	}
 
