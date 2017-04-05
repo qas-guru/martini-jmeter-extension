@@ -69,5 +69,11 @@
 			<version>${jmeter.version}</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<dependency>
+		    <groupId>net.sf.stax</groupId>
+		    <artifactId>stax</artifactId>
+		    <version>1.0</version>
+		</dependency>
 	</dependencies>
 </project>
