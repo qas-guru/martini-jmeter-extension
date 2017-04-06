@@ -76,7 +76,6 @@ public class Meh {
 			} else {
 				Gson gson = new GsonBuilder().setPrettyPrinting().create();
 				String json = gson.toJson(sample);
-				// TODO: better handling of json
 				System.out.println(json);
 			}
 		}

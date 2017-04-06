@@ -16,24 +16,24 @@ limitations under the License.
 
 package guru.qas.martini.report;
 
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 @SuppressWarnings("WeakerAccess")
 public class Sample {
 
-	protected Date timestamp;
+	protected Long timestamp;
 	protected Long timeElapsed;
 	protected String json;
 	protected ImmutableList<Sample> subSamples;
 
-	protected Sample(Date timestamp, Long timeElapsed, String json, ImmutableList<Sample> subSamples) {
+	protected Sample(Long timestamp, Long timeElapsed, String json, ImmutableList<Sample> subSamples) {
 		this.timestamp = timestamp;
 		this.timeElapsed = timeElapsed;
 		this.json = json;
@@ -86,10 +86,11 @@ public class Sample {
 		}
 
 		public Sample build() {
-			Long asLong = null == timestamp ? null : Long.valueOf(timestamp);
-			Date date = asLong == null ? null : Date.from(Instant.ofEpochMilli(Long.valueOf(timestamp)));
+			Long timestampAsLong = null == timestamp ? null : Long.valueOf(timestamp);
 			Long interval = null == timeElapsed ? null : Long.valueOf(timeElapsed);
-			return new Sample(date, interval, json, ImmutableList.copyOf(subSamples));
+//			JsonObject jsonObject = new Gson().fromJson(json, JsonObject.class);
+//			System.out.println("breakpoint");
+			return new Sample(timestampAsLong, interval, json, ImmutableList.copyOf(subSamples));
 		}
 	}
 }

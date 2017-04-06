@@ -16,14 +16,18 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,20 +42,27 @@ import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.threads.JMeterVariables;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.jorphan.util.JMeterStopThreadException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.io.Resource;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonWriter;
 
 import gherkin.ast.Feature;
+import gherkin.ast.Location;
+import gherkin.ast.ScenarioDefinition;
 import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleLocation;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.EventManager;
 import guru.qas.martini.event.MartiniSuiteIdentifier;
@@ -233,11 +244,53 @@ public class MartiniSampler extends AbstractSampler {
 					jsonWriter.setSerializeNulls(true);
 					jsonWriter.beginObject();
 
+					String keyword = implementation.getKeyword();
+					jsonWriter.name("keyword").value(keyword);
+
+					String text = step.getText();
+					jsonWriter.name("text").value(text);
+
+					Location location = step.getLocation();
+					int line = location.getLine();
+					jsonWriter.name("line").value(line);
+
+					Method method = implementation.getMethod();
+					if (null != method) {
+						Class<?> clazz = method.getDeclaringClass();
+						String methodName = method.getName();
+						Class<?>[] parameterTypes = method.getParameterTypes();
+						parameterTypes = null == parameterTypes ? new Class<?>[0] : parameterTypes;
+						jsonWriter.name("className").value(clazz.getName());
+						jsonWriter.name("methodName").value(methodName);
+						jsonWriter.name("parameters").value(Joiner.on(", ").join(parameterTypes));
+
+						Pattern pattern = implementation.getPattern();
+						jsonWriter.name("pattern").value(pattern.pattern());
+					}
+
 					jsonWriter.name("status").value(stepResult.getStatus().name());
 					Exception exception = stepResult.getException();
 					String stacktrace = null == exception ? "" : Throwables.getStackTraceAsString(exception);
 					jsonWriter.name("exception").value(stacktrace);
-					// TODO: include HttpEntity
+
+					List<HttpEntity> embedded = stepResult.getEmbedded();
+					if (null != embedded && !embedded.isEmpty()) {
+						jsonWriter.beginArray();
+
+						for (HttpEntity entity : embedded) {
+
+							StringWriter stringWriter = new StringWriter();
+							OutputStream outputStream = BaseEncoding.base64().encodingStream(stringWriter);
+							entity.writeTo(outputStream);
+							stringWriter.flush();
+							StringBuffer buffer = stringWriter.getBuffer();
+
+							jsonWriter.beginObject();
+							jsonWriter.name("httpEntity").value(buffer.toString());
+							jsonWriter.endObject();
+						}
+						jsonWriter.endArray();
+					}
 					jsonWriter.endObject();
 				}
 
@@ -245,7 +298,8 @@ public class MartiniSampler extends AbstractSampler {
 				subResult.setDataType(SampleResult.TEXT);
 				subResult.setResponseHeaders("Content-Type: application/json");
 				subResult.setResponseData(response, "UTF-8");
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("unable to marshall StepResult", e);
 			}
 
@@ -256,45 +310,100 @@ public class MartiniSampler extends AbstractSampler {
 
 		try {
 			StringWriter writer = new StringWriter();
-			try (JsonWriter jsonWriter = new JsonWriter(writer)) {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+			try (JsonWriter jsonWriter = gson.newJsonWriter(writer)) {
 				jsonWriter.setHtmlSafe(true);
 				jsonWriter.setLenient(true);
 				jsonWriter.setSerializeNulls(true);
 				jsonWriter.beginObject();
 
-				MartiniSuiteIdentifier martiniSuiteIdentifier = martiniResult.getMartiniSuiteIdentifier();
-				String asString = String.format("%s.%s.%s.%s", martiniSuiteIdentifier.getHostname(),
-					martiniSuiteIdentifier.getSuiteName(), martiniSuiteIdentifier.getTimestamp(),
-					martiniSuiteIdentifier.getId());
-				jsonWriter.name("martiniSuiteIdentifier").value(asString);
+				jsonWriter.name("id").value(martini.getId());
+				Recipe recipe = martini.getRecipe();
+
+				Resource resource = recipe.getSource();
+				URL url = null == resource ? null : resource.getURL();
+				String path = null == url ? null : url.getPath();
+				jsonWriter.name("resource").value(path);
+
+				Integer i = null == path ? null : path.lastIndexOf('!');
+				jsonWriter.name("file").value(null == i || i < 0 ? path : path.substring(i + 1));
+
+				PickleLocation location = recipe.getLocation();
+				Integer line = null == location ? null : location.getLine();
+				jsonWriter.name("line").value(line);
+
+				ScenarioDefinition scenario = recipe.getScenarioDefinition();
+				jsonWriter.name("name").value(scenario.getName());
+				jsonWriter.name("description").value(scenario.getDescription().trim());
+
+				jsonWriter.name("categories");
+				jsonWriter.beginArray();
+				Set<String> categories = martiniResult.getCategorizations();
+				if (null != categories) {
+					for (String category : categories) {
+						jsonWriter.value(category);
+					}
+				}
+				jsonWriter.endArray();
+
+				jsonWriter.name("tags");
+				jsonWriter.beginArray();
+				Collection<MartiniTag> tags = martini.getTags();
+				if (null != tags) {
+					for (MartiniTag tag : tags) {
+						jsonWriter.beginObject();
+						jsonWriter.name("name").value(tag.getName());
+						jsonWriter.name("argument").value(tag.getArgument());
+						jsonWriter.endObject();
+					}
+				}
+				jsonWriter.endArray();
+
+				jsonWriter.name("feature");
+				jsonWriter.beginObject();
+				Feature feature = recipe.getFeature();
+				jsonWriter.name("name").value(feature.getName());
+				jsonWriter.name("description").value(feature.getDescription().trim());
+				jsonWriter.endObject();
+
+				long startTime = sampleResult.getStartTime();
+				jsonWriter.name("startTimestamp").value(sampleResult.getStartTime());
+				jsonWriter.name("startDate").value(new Date(startTime).toString());
+
+				long endTime = sampleResult.getEndTime();
+				jsonWriter.name("endTimestamp").value(endTime);
+				jsonWriter.name("endDate").value(new Date(endTime).toString());
+
+				jsonWriter.name("timeElapsedMs").value(sampleResult.getTime());
+
+				Status status = martiniResult.getStatus();
+				jsonWriter.name("status").value(null == status ? null : status.name());
+
+				jsonWriter.name("suite");
+				jsonWriter.beginObject();
+
+				MartiniSuiteIdentifier identifier = martiniResult.getMartiniSuiteIdentifier();
+				UUID id = identifier.getId();
+				jsonWriter.name("id").value(null == id ? null : id.toString());
+				jsonWriter.name("name").value(identifier.getSuiteName());
+				long timestamp = identifier.getTimestamp();
+				jsonWriter.name("timestamp").value(timestamp);
+				jsonWriter.name("date").value(new Date(timestamp).toString());
+
+				jsonWriter.name("host");
+				jsonWriter.beginObject();
+				jsonWriter.name("name").value(JMeterUtils.getLocalHostName());
+				jsonWriter.name("ip").value(JMeterUtils.getLocalHostIP());
+				jsonWriter.endObject();
 
 				jsonWriter.name("threadGroup").value(martiniResult.getThreadGroupName());
 				jsonWriter.name("thread").value(martiniResult.getThreadName());
+				jsonWriter.endObject();
 
-				jsonWriter.name("martini").value(martini.getId());
-				Recipe recipe = martini.getRecipe();
-				asString = recipe.getSource().getURI().toString();
-				jsonWriter.name("resource").value(asString);
-
-				Set<String> categorizations = martiniResult.getCategorizations();
-				asString = null == categorizations ? "" : Joiner.on(',').join(categorizations);
-				jsonWriter.name("categorizations").value(asString);
-
-				Collection<MartiniTag> tags = martini.getTags();
-				if (null != tags) {
-					List<String> tagNames = Lists.newArrayListWithExpectedSize(tags.size());
-					for (MartiniTag tag : tags) {
-						String name = tag.getName();
-						String argument = tag.getArgument();
-						String tagName = null == argument || argument.trim().isEmpty() ?
-							String.format("@%s", name) : String.format("@%s(%s)", name, argument);
-						tagNames.add(tagName);
-					}
-					asString = Joiner.on(',').join(tagNames);
-					jsonWriter.name("tags").value(asString);
-				}
-
-				jsonWriter.name("status").value(martiniResult.getStatus().name());
+				jsonWriter.name("steps");
+				jsonWriter.beginArray();
+				jsonWriter.endArray();
 				jsonWriter.endObject();
 			}
 			String response = writer.toString();
