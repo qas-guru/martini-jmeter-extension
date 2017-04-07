@@ -81,7 +81,6 @@ public class DefaultMartiniResultMarshaller implements MartiniResultMarshaller {
 	protected void addFeature(JsonWriter writer, MartiniResult result) throws IOException {
 		FeatureMarshaller delegate =
 			FeatureMarshaller.builder().setJsonWriter(writer).setMartiniResult(result).build();
-
 		writer.name("feature");
 		writer.beginObject();
 		delegate.addName();

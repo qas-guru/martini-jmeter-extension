@@ -16,12 +16,9 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
-import java.io.OutputStream;
-import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -44,20 +41,13 @@ import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-import com.google.common.io.BaseEncoding;
-import com.google.gson.stream.JsonWriter;
+import com.google.common.collect.ImmutableList;
 
-import gherkin.ast.Feature;
-import gherkin.ast.Location;
 import gherkin.ast.Step;
-import gherkin.pickles.Pickle;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.EventManager;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
@@ -73,7 +63,8 @@ public class MartiniSampler extends AbstractSampler {
 	private static final long serialVersionUID = -5644094193554791266L;
 
 	protected transient Logger logger;
-	protected transient MartiniResultMarshaller marshaller;
+	protected transient MartiniResultMarshaller martiniMarshaller;
+	protected transient StepResultMarshaller stepMarshaller;
 
 	public MartiniSampler() {
 		super();
@@ -84,7 +75,8 @@ public class MartiniSampler extends AbstractSampler {
 		Class<? extends MartiniSampler> implementation = getClass();
 		String category = implementation.getName();
 		logger = LoggingManager.getLoggerFor(category);
-		marshaller = DefaultMartiniResultMarshaller.getInstance();
+		martiniMarshaller = DefaultMartiniResultMarshaller.getInstance();
+		stepMarshaller = DefaultStepResultMarshaller.getInstance();
 	}
 
 	@Override
@@ -173,7 +165,7 @@ public class MartiniSampler extends AbstractSampler {
 
 	protected SampleResult getError(@Nullable Martini martini, Exception e) {
 		SampleResult sampleResult = new SampleResult();
-		sampleResult.setSampleLabel(null == martini ? "UNKNOWN" : getLabel(martini));
+		sampleResult.setSampleLabel(null == martini ? "UNKNOWN" : martini.getScenarioName());
 		sampleResult.setSuccessful(false);
 
 		JMeterContext threadContext = super.getThreadContext();
@@ -184,22 +176,11 @@ public class MartiniSampler extends AbstractSampler {
 		return sampleResult;
 	}
 
-	protected String getLabel(Martini martini) {
-		Recipe recipe = martini.getRecipe();
-
-		Feature feature = recipe.getFeature();
-		String featureName = feature.getName();
-
-		Pickle pickle = recipe.getPickle();
-		String pickleName = pickle.getName();
-		return String.format("%s (%s)", pickleName, featureName);
-	}
-
 	protected SampleResult sample(DefaultMartiniResult martiniResult) {
 		Martini martini = martiniResult.getMartini();
 		Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
 
-		String label = getLabel(martini);
+		String label = martini.getScenarioName();
 		SampleResult sampleResult = new SampleResult();
 		sampleResult.setSampleLabel(label);
 		sampleResult.setSuccessful(true);
@@ -207,11 +188,10 @@ public class MartiniSampler extends AbstractSampler {
 
 		for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
 			Step step = mapEntry.getKey();
-			DefaultStepResult stepResult = new DefaultStepResult(step);
+			StepImplementation implementation = mapEntry.getValue();
+			DefaultStepResult stepResult = new DefaultStepResult(step, implementation);
 			martiniResult.add(stepResult);
 			publishBeforeStep(martiniResult);
-
-			StepImplementation implementation = mapEntry.getValue();
 
 			SampleResult subResult;
 			if (sampleResult.isSuccessful()) {
@@ -228,67 +208,10 @@ public class MartiniSampler extends AbstractSampler {
 			}
 
 			try {
-				StringWriter writer = new StringWriter();
-				try (JsonWriter jsonWriter = new JsonWriter(writer)) {
-					jsonWriter.setHtmlSafe(true);
-					jsonWriter.setLenient(true);
-					jsonWriter.setSerializeNulls(true);
-					jsonWriter.beginObject();
-
-					String keyword = implementation.getKeyword();
-					jsonWriter.name("keyword").value(keyword);
-
-					String text = step.getText();
-					jsonWriter.name("text").value(text);
-
-					Location location = step.getLocation();
-					int line = location.getLine();
-					jsonWriter.name("line").value(line);
-
-					Method method = implementation.getMethod();
-					if (null != method) {
-						Class<?> clazz = method.getDeclaringClass();
-						String methodName = method.getName();
-						Class<?>[] parameterTypes = method.getParameterTypes();
-						parameterTypes = null == parameterTypes ? new Class<?>[0] : parameterTypes;
-						jsonWriter.name("className").value(clazz.getName());
-						jsonWriter.name("methodName").value(methodName);
-						jsonWriter.name("parameters").value(Joiner.on(", ").join(parameterTypes));
-
-						Pattern pattern = implementation.getPattern();
-						jsonWriter.name("pattern").value(pattern.pattern());
-					}
-
-					jsonWriter.name("status").value(stepResult.getStatus().name());
-					Exception exception = stepResult.getException();
-					String stacktrace = null == exception ? "" : Throwables.getStackTraceAsString(exception);
-					jsonWriter.name("exception").value(stacktrace);
-
-					List<HttpEntity> embedded = stepResult.getEmbedded();
-					if (null != embedded && !embedded.isEmpty()) {
-						jsonWriter.beginArray();
-
-						for (HttpEntity entity : embedded) {
-
-							StringWriter stringWriter = new StringWriter();
-							OutputStream outputStream = BaseEncoding.base64().encodingStream(stringWriter);
-							entity.writeTo(outputStream);
-							stringWriter.flush();
-							StringBuffer buffer = stringWriter.getBuffer();
-
-							jsonWriter.beginObject();
-							jsonWriter.name("httpEntity").value(buffer.toString());
-							jsonWriter.endObject();
-						}
-						jsonWriter.endArray();
-					}
-					jsonWriter.endObject();
-				}
-
-				String response = writer.toString();
+				String json = stepMarshaller.getJson(stepResult);
 				subResult.setDataType(SampleResult.TEXT);
 				subResult.setResponseHeaders("Content-Type: application/json");
-				subResult.setResponseData(response, "UTF-8");
+				subResult.setResponseData(json, "UTF-8");
 			}
 			catch (Exception e) {
 				logger.error("unable to marshall StepResult", e);
@@ -304,7 +227,7 @@ public class MartiniSampler extends AbstractSampler {
 			martiniResult.setEndTimestamp(sampleResult.getEndTime());
 			martiniResult.setExecutionTimeMs(sampleResult.getTime());
 
-			String json = marshaller.getJson(martiniResult);
+			String json = martiniMarshaller.getJson(martiniResult);
 			sampleResult.setDataType(SampleResult.TEXT);
 			sampleResult.setResponseHeaders("Content-Type: application/json");
 			sampleResult.setResponseData(json, "UTF-8");
@@ -431,7 +354,12 @@ public class MartiniSampler extends AbstractSampler {
 
 		stepResult.setException(context.getException());
 		stepResult.setStatus(context.getStatus());
-		stepResult.addAll(context.getHttpEntities());
+		ImmutableList<HttpEntity> httpEntities = context.getHttpEntities();
+		if (null != httpEntities) {
+			for (HttpEntity entity : httpEntities) {
+				stepResult.add(entity);
+			}
+		}
 	}
 
 	protected SampleResult getSkipped(Step step) {

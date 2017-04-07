@@ -16,45 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
-import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
 import guru.qas.martini.result.StepResult;
 
-@SuppressWarnings("WeakerAccess")
-final class StepResultMarshaller {
+public interface StepResultMarshaller {
 
-	protected final JsonWriter writer;
-	protected final StepResult result;
-
-	protected StepResultMarshaller(JsonWriter writer, StepResult result) {
-		this.writer = writer;
-		this.result = result;
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		protected JsonWriter writer;
-		protected StepResult result;
-
-		protected Builder() {
-		}
-
-		protected Builder setJsonWriter(JsonWriter writer) {
-			this.writer = writer;
-			return this;
-		}
-
-		protected Builder setStepResult(StepResult stepResult) {
-			this.result = result;
-			return this;
-		}
-
-		protected StepResultMarshaller build() {
-			return new StepResultMarshaller(writer, result);
-		}
-	}
+	String getJson(StepResult result) throws IOException;
 }
