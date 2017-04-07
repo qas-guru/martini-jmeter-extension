@@ -23,28 +23,51 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 @SuppressWarnings("WeakerAccess")
 public class Sample {
 
-	protected Long timestamp;
-	protected Long timeElapsed;
-	protected String json;
-	protected ImmutableList<Sample> subSamples;
+	protected final Gson gson;
+	protected final String json;
+	protected final ImmutableList<Sample> subSamples;
 
-	protected Sample(Long timestamp, Long timeElapsed, String json, ImmutableList<Sample> subSamples) {
-		this.timestamp = timestamp;
-		this.timeElapsed = timeElapsed;
+	protected Sample(Gson gson, String json, ImmutableList<Sample> subSamples) {
+		this.gson = gson;
 		this.json = json;
 		this.subSamples = subSamples;
+	}
+
+	protected String getJson() {
+		JsonObject container = gson.fromJson(json, JsonObject.class);
+		if (container.has("martini")) {
+			JsonElement element = container.get("martini");
+			JsonObject object = element.getAsJsonObject();
+			JsonArray stepArray = getStepArray();
+			object.add("steps", stepArray);
+		} else if (container.has("step")) {
+			container = container.get("step").getAsJsonObject();
+		}
+		return gson.toJson(container);
+
+	}
+
+	protected JsonArray getStepArray() {
+		JsonArray stepArray = new JsonArray();
+		for (Sample sample : subSamples) {
+			String json = sample.getJson();
+			JsonObject object = gson.fromJson(json, JsonObject.class);
+			stepArray.add(object);
+		}
+		return stepArray;
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-			.add("timestamp", timestamp)
-			.add("timeElapsed", timeElapsed)
 			.add("json", json)
 			.add("subSamples", Joiner.on(",").skipNulls().join(subSamples))
 			.toString();
@@ -55,24 +78,13 @@ public class Sample {
 	}
 
 	public static class Builder {
+		protected static final Gson GSON =  new GsonBuilder().setPrettyPrinting().create();
 
-		protected String timeElapsed;
-		protected String timestamp;
 		protected String json;
 		protected List<Sample> subSamples;
 
 		protected Builder() {
 			this.subSamples = Lists.newArrayList();
-		}
-
-		public Builder setTimeElapsed(String s) {
-			this.timeElapsed = s;
-			return this;
-		}
-
-		public Builder setTimestamp(String s) {
-			this.timestamp = s;
-			return this;
 		}
 
 		public Builder setResponseData(String s) {
@@ -86,11 +98,7 @@ public class Sample {
 		}
 
 		public Sample build() {
-			Long timestampAsLong = null == timestamp ? null : Long.valueOf(timestamp);
-			Long interval = null == timeElapsed ? null : Long.valueOf(timeElapsed);
-//			JsonObject jsonObject = new Gson().fromJson(json, JsonObject.class);
-//			System.out.println("breakpoint");
-			return new Sample(timestampAsLong, interval, json, ImmutableList.copyOf(subSamples));
+			return new Sample(GSON, json, ImmutableList.copyOf(subSamples));
 		}
 	}
 }

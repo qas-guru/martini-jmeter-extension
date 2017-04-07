@@ -67,6 +67,8 @@ final class DefaultStepResultMarshaller implements StepResultMarshaller {
 			jsonWriter.beginObject();
 
 			Delegate delegate = new Delegate(result, jsonWriter);
+			delegate.addStartTimestamp();
+			delegate.addEndTimestamp();
 			delegate.addKeyword();
 			delegate.addText();
 			delegate.addLine();
@@ -100,6 +102,16 @@ final class DefaultStepResultMarshaller implements StepResultMarshaller {
 			Class<? extends Delegate> implementation = getClass();
 			String category = implementation.getName();
 			logger = LoggingManager.getLoggerFor(category);
+		}
+
+		void addStartTimestamp() throws IOException {
+			Long timestamp = result.getStartTimestamp();
+			writer.name("startTimestamp").value(timestamp);
+		}
+
+		void addEndTimestamp() throws IOException {
+			Long timestamp = result.getEndTimestamp();
+			writer.name("endTimestamp").value(timestamp);
 		}
 
 		void addKeyword() throws IOException {

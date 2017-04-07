@@ -29,20 +29,18 @@ import javax.xml.stream.XMLStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import static com.google.common.base.Preconditions.checkState;
 
 @SuppressWarnings("WeakerAccess")
-public class Meh {
+public class JtlParser {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Meh.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JtlParser.class);
 
 	protected final XMLStreamReader reader;
 	protected final Stack<Sample.Builder> stack;
 
-	protected Meh(XMLStreamReader reader) {
+	protected JtlParser(XMLStreamReader reader) {
 		this.reader = reader;
 		this.stack = new Stack<>();
 	}
@@ -73,9 +71,9 @@ public class Meh {
 			if (!stack.isEmpty()) {
 				Sample.Builder parent = stack.peek();
 				parent.addSub(sample);
-			} else {
-				Gson gson = new GsonBuilder().setPrettyPrinting().create();
-				String json = gson.toJson(sample);
+			}
+			else {
+				String json = sample.getJson();
 				System.out.println(json);
 			}
 		}
@@ -118,9 +116,7 @@ public class Meh {
 	}
 
 	protected void handleSample() {
-		String timeElapsed = reader.getAttributeValue(null, "t");// time elapsed in ms
-		String timestamp = reader.getAttributeValue(null, "ts"); // timestamp
-		Sample.Builder builder = Sample.builder().setTimeElapsed(timeElapsed).setTimestamp(timestamp);
+		Sample.Builder builder = Sample.builder();
 		stack.push(builder);
 	}
 
@@ -137,44 +133,26 @@ public class Meh {
 		return new Builder();
 	}
 
-@SuppressWarnings("WeakerAccess")
-public static class Builder {
+	@SuppressWarnings("WeakerAccess")
+	public static class Builder {
 
-	protected Builder() {
+		protected Builder() {
+		}
+
+		public JtlParser build(String path) throws FileNotFoundException, XMLStreamException {
+			File file = new File(path);
+			FileInputStream in = new FileInputStream(file);
+			XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+			XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
+			return new JtlParser(xmlStreamReader);
+		}
+
 	}
 
-	public Meh build(String path) throws FileNotFoundException, XMLStreamException {
-		File file = new File(path);
-		FileInputStream in = new FileInputStream(file);
-		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
-		XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
-		return new Meh(xmlStreamReader);
-	}
-
-}
-
-	/*
-	ATTRIBUTE
-	CDATA
-	CHARACTERS
-	COMMENT
-	DTD
-	END_DOCUMENT
-	END_ELEMENT
-	ENTITY_DECLARATION
-	ENTITY_REFERENCE
-	NAMESPACE
-	NOTATION_DECLARATION
-	PROCESSING_INSTRUCTION
-	SPACE
-	START_DOCUMENT
-	START_ELEMENT
-	 */
 	public static void main(String[] args) throws XMLStreamException, FileNotFoundException {
-
 		checkState(1 == args.length, "specify a single argument filename");
 		String path = args[0];
-		Meh application = Meh.builder().build(path);
+		JtlParser application = JtlParser.builder().build(path);
 		application.doSomething();
 	}
 }
