@@ -151,7 +151,7 @@ final class DefaultStepResultMarshaller implements StepResultMarshaller {
 
 		void addClass(Method method) throws IOException {
 			Class<?> clazz = null == method ? null : method.getDeclaringClass();
-			writer.name("class").value(null == clazz ? null : clazz.toString());
+			writer.name("class").value(null == clazz ? null : clazz.getName());
 		}
 
 		void addName(Method method) throws IOException {

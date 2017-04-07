@@ -17,7 +17,8 @@ limitations under the License.
 package guru.qas.martini.jmeter.config;
 
 import java.io.Serializable;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.JMeter;
@@ -40,6 +41,9 @@ import org.apache.log.Logger;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+
+import com.google.common.collect.Lists;
 
 import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.EventManager;
@@ -102,13 +106,25 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 			String hostname = JMeterUtils.getLocalHostName();
 			String ip = JMeterUtils.getLocalHostIP();
 			String name = super.getName();
-			UUID id = UUID.randomUUID();
+			String id = context.getId();
+			long startupDate = context.getStartupDate();
+			String username = System.getProperty("user.name");
+
+			ConfigurableEnvironment environment = context.getEnvironment();
+			String[] activeProfiles = environment.getActiveProfiles();
+			ArrayList<String> profiles = Lists.newArrayList(activeProfiles);
+
+			Map<String, String> environmentVariables = this.getEnvironmentProperties().getArgumentsAsMap();
 
 			SuiteIdentifier identifier = DefaultSuiteIdentifier.builder()
 				.setId(id)
+				.setStartupTimestamp(startupDate)
 				.setName(name)
 				.setHostname(hostname)
 				.setHostAddress(ip)
+				.setUsername(username)
+				.setProfiles(profiles)
+				.setEnvironmentVariables(environmentVariables)
 				.build();
 
 			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();

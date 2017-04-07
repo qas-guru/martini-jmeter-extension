@@ -94,8 +94,11 @@ public class DefaultMartiniResultMarshaller implements MartiniResultMarshaller {
 		writer.name("suite");
 		writer.beginObject();
 		delegate.addId();
+		delegate.addStartTimestamp();
 		delegate.addName();
 		delegate.addHost();
+		delegate.addProfiles();
+		delegate.addEnvironmentVariables();
 		writer.endObject();
 	}
 

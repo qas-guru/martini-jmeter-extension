@@ -27,6 +27,7 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.util.AlternativeJdkIdGenerator;
 
 import com.google.common.base.Splitter;
 
@@ -82,6 +83,8 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(locations, false);
 		setProfiles(context);
 		setEnvironment(context);
+		String id = new AlternativeJdkIdGenerator().generateId().toString();
+		context.setId(id);
 		context.refresh();
 		return context;
 	}

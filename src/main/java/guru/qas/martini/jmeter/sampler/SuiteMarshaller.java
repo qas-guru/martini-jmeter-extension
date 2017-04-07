@@ -17,7 +17,8 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.util.Collection;
+import java.util.Map;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -36,9 +37,13 @@ final class SuiteMarshaller {
 	}
 
 	protected void addId() throws IOException {
-		UUID uuid = null == identifier ? null : identifier.getId();
-		String id = null == uuid ? null : uuid.toString();
-		writer.name("id").value(id);
+		String id = identifier.getId();
+		writer.name("id").value(null == id ? null : id.trim());
+	}
+
+	protected void addStartTimestamp() throws IOException {
+		Long timestamp = identifier.getStartTimestamp();
+		writer.name("startTimestamp").value(timestamp);
 	}
 
 	protected void addName() throws IOException {
@@ -51,6 +56,7 @@ final class SuiteMarshaller {
 		writer.beginObject();
 		addHostname();
 		addHostAddress();
+		addUsername();
 		writer.endObject();
 	}
 
@@ -64,6 +70,39 @@ final class SuiteMarshaller {
 		writer.name("ip").value(ip);
 	}
 
+	protected void addUsername() throws IOException {
+		String username = identifier.getUsername();
+		writer.name("username").value(null == username ? null : username.trim());
+	}
+
+	protected void addProfiles() throws IOException {
+		writer.name("profiles");
+		writer.beginArray();
+		Collection<String> profiles = identifier.getProfiles();
+		if (null != profiles) {
+			for (String profile : profiles) {
+				writer.value(profile.trim());
+			}
+		}
+		writer.endArray();
+	}
+
+	protected void addEnvironmentVariables() throws IOException {
+		writer.name("environmentVariables");
+		writer.beginObject();
+		Map<String, String> environmentVariables = identifier.getEnvironmentVariables();
+		if (null != environmentVariables) {
+			for (Map.Entry<String, String> mapEntry : environmentVariables.entrySet()) {
+				String key = mapEntry.getKey();
+				String trimmed = null == key ? null : key.trim();
+				if (null != trimmed && !trimmed.isEmpty()) {
+					String value = mapEntry.getValue();
+					writer.name(trimmed).value(null == value ? null : value.trim());
+				}
+			}
+		}
+		writer.endObject();
+	}
 
 	protected static Builder builder() {
 		return new Builder();

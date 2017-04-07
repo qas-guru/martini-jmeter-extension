@@ -16,9 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.report;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
+import java.net.URL;
 import java.util.Stack;
 
 import javax.xml.stream.XMLInputFactory;
@@ -29,7 +31,6 @@ import javax.xml.stream.XMLStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import static com.google.common.base.Preconditions.checkState;
 
 @SuppressWarnings("WeakerAccess")
@@ -38,16 +39,18 @@ public class JtlParser {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JtlParser.class);
 
 	protected final XMLStreamReader reader;
+	protected final Writer writer;
 	protected final Stack<Sample.Builder> stack;
 
-	protected JtlParser(XMLStreamReader reader) {
+	protected JtlParser(XMLStreamReader reader, Writer writer) {
 		this.reader = reader;
+		this.writer = writer;
 		this.stack = new Stack<>();
 	}
 
-	public void doSomething() throws XMLStreamException {
+	public void parse() throws XMLStreamException, IOException {
 		while (reader.hasNext()) {
-			int next = reader.next();
+			reader.next();
 			int event = reader.getEventType();
 			switch (event) {
 				case XMLStreamConstants.START_ELEMENT:
@@ -60,9 +63,10 @@ public class JtlParser {
 					break;
 			}
 		}
+		writer.flush();
 	}
 
-	protected void handleEndElement() {
+	protected void handleEndElement() throws IOException {
 		String localName = reader.getLocalName();
 		if (localName.equals("sample")) {
 			Sample.Builder builder = stack.pop();
@@ -74,7 +78,7 @@ public class JtlParser {
 			}
 			else {
 				String json = sample.getJson();
-				System.out.println(json);
+				writer.append(json).append(System.lineSeparator());
 			}
 		}
 	}
@@ -91,8 +95,6 @@ public class JtlParser {
 			case "responseData":
 				handleResponseData();
 				break;
-			default:
-				handleOtherElement(name);
 		}
 
 	}
@@ -104,16 +106,6 @@ public class JtlParser {
 		}
 	}
 
-	protected void handleOtherElement(String name) {
-		System.out.println("element localname: " + name);
-		int attributeCount = reader.getAttributeCount();
-		for (int i = 0; i < attributeCount; i++) {
-			String attributeLocalName = reader.getAttributeLocalName(i);
-			System.out.println("attribute localname: " + attributeLocalName);
-			String attributeValue = reader.getAttributeValue(i);
-			System.out.println("attribute value: " + attributeValue);
-		}
-	}
 
 	protected void handleSample() {
 		Sample.Builder builder = Sample.builder();
@@ -136,23 +128,40 @@ public class JtlParser {
 	@SuppressWarnings("WeakerAccess")
 	public static class Builder {
 
+		String inputLocation;
+		String outputPath;
+
 		protected Builder() {
 		}
 
-		public JtlParser build(String path) throws FileNotFoundException, XMLStreamException {
-			File file = new File(path);
-			FileInputStream in = new FileInputStream(file);
+		Builder setInputLocation(String s) {
+			this.inputLocation = s;
+			return this;
+		}
+
+		Builder setOutputPath(String s) {
+			this.outputPath = s;
+			return this;
+		}
+
+		public JtlParser build() throws IOException, XMLStreamException {
+			checkState(null != inputLocation, "input URL not specified");
+			checkState(null != outputPath, "output path not specified");
+
+			URL url = new URL(inputLocation);
+			InputStream in = url.openStream();
 			XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 			XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
-			return new JtlParser(xmlStreamReader);
+
+			FileWriter writer = new FileWriter(outputPath, false);
+			return new JtlParser(xmlStreamReader, writer);
 		}
 
 	}
 
-	public static void main(String[] args) throws XMLStreamException, FileNotFoundException {
-		checkState(1 == args.length, "specify a single argument filename");
-		String path = args[0];
-		JtlParser application = JtlParser.builder().build(path);
-		application.doSomething();
+	public static void main(String[] args) throws IOException, XMLStreamException {
+		checkState(2 == args.length, "specify an input URL and an output File");
+		JtlParser application = JtlParser.builder().setInputLocation(args[0]).setOutputPath(args[1]).build();
+		application.parse();
 	}
 }
