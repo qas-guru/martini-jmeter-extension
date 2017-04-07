@@ -34,7 +34,6 @@ import org.apache.jmeter.testelement.property.NullProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
@@ -42,11 +41,11 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import guru.qas.martini.event.DefaultMartiniSuiteIdentifier;
+import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.EventManager;
-import guru.qas.martini.event.MartiniSuiteIdentifier;
+import guru.qas.martini.event.SuiteIdentifier;
 
-import static guru.qas.martini.MartiniConstants.PROPERTY_SPRING_CONTEXT;
+import static guru.qas.martini.MartiniConstants.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniSpringConfiguration extends ConfigTestElement
@@ -101,21 +100,19 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 			}
 
 			String hostname = JMeterUtils.getLocalHostName();
-			JMeterContext threadContext = super.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-			long timestamp = Long.valueOf(variables.get("TESTSTART.MS"));
+			String ip = JMeterUtils.getLocalHostIP();
 			String name = super.getName();
 			UUID id = UUID.randomUUID();
 
-			MartiniSuiteIdentifier identifier = DefaultMartiniSuiteIdentifier.builder()
-				.setHostname(hostname)
-				.setTimetamp(timestamp)
-				.setSuiteName(name)
+			SuiteIdentifier identifier = DefaultSuiteIdentifier.builder()
 				.setId(id)
+				.setName(name)
+				.setHostname(hostname)
+				.setHostAddress(ip)
 				.build();
 
 			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-			beanFactory.registerSingleton("martiniSuiteIdentifier", identifier); // TODO: constant
+			beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, identifier);
 
 			EventManager eventManager = context.getBean(EventManager.class);
 			eventManager.publishBeforeSuite(this, identifier);
@@ -194,7 +191,7 @@ public class MartiniSpringConfiguration extends ConfigTestElement
 	}
 
 	protected void publishTestEnded(ApplicationContext context) {
-		MartiniSuiteIdentifier identifier = context.getBean(MartiniSuiteIdentifier.class);
+		SuiteIdentifier identifier = context.getBean(SuiteIdentifier.class);
 		EventManager eventManager = context.getBean(EventManager.class);
 		eventManager.publishAfterSuite(this, identifier);
 	}

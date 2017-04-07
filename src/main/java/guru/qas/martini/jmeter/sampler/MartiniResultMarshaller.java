@@ -14,21 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.event;
+package guru.qas.martini.jmeter.sampler;
+
+import java.io.IOException;
 
 import guru.qas.martini.result.MartiniResult;
 
-public interface EventManager {
+public interface MartiniResultMarshaller {
 
-	void publishBeforeSuite(Object source, SuiteIdentifier identifier);
-
-	void publishAfterSuite(Object source, SuiteIdentifier identifier);
-
-	void publishBeforeScenario(Object source, MartiniResult result);
-
-	void publishAfterScenario(Object source, MartiniResult result);
-
-	void publishBeforeStep(Object source, MartiniResult result);
-
-	void publishAfterStep(Object source, MartiniResult result);
+	String getJson(MartiniResult result) throws IOException;
 }

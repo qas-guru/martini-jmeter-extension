@@ -20,8 +20,5 @@ public interface MartiniConstants {
 
 	String RESOURCE_BUNDLE_TITLE = "title";
 	String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
-	String PROPERTY_SUITE_IDENTIFIER = "martini.suite.identifier";
-	String VARIABLE_STATUS = "status";
-	String VARIABLE_EXCEPTION = "exception";
-	String VARIABLE_EMBEDDED = "embedded";
+	String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
 }

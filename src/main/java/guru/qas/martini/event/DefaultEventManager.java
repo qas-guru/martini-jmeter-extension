@@ -33,13 +33,13 @@ public class DefaultEventManager implements EventManager {
 	}
 
 	@Override
-	public void publishBeforeSuite(Object source, MartiniSuiteIdentifier suiteIdentifier) {
+	public void publishBeforeSuite(Object source, SuiteIdentifier suiteIdentifier) {
 		BeforeSuiteEvent event = new BeforeSuiteEvent(source, suiteIdentifier);
 		publisher.publish(event);
 	}
 
 	@Override
-	public void publishAfterSuite(Object source, MartiniSuiteIdentifier suiteIdentifier) {
+	public void publishAfterSuite(Object source, SuiteIdentifier suiteIdentifier) {
 		AfterSuiteEvent event = new AfterSuiteEvent(source, suiteIdentifier);
 		publisher.publish(event);
 	}

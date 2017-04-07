@@ -20,14 +20,10 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.net.URL;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,38 +38,31 @@ import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.jorphan.util.JMeterStopThreadException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.io.Resource;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonWriter;
 
 import gherkin.ast.Feature;
 import gherkin.ast.Location;
-import gherkin.ast.ScenarioDefinition;
 import gherkin.ast.Step;
 import gherkin.pickles.Pickle;
-import gherkin.pickles.PickleLocation;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.EventManager;
-import guru.qas.martini.event.MartiniSuiteIdentifier;
 import guru.qas.martini.event.Status;
+import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.Categories;
-import guru.qas.martini.tag.MartiniTag;
 
 import static com.google.common.base.Preconditions.checkState;
 import static guru.qas.martini.MartiniConstants.*;
@@ -84,6 +73,7 @@ public class MartiniSampler extends AbstractSampler {
 	private static final long serialVersionUID = -5644094193554791266L;
 
 	protected transient Logger logger;
+	protected transient MartiniResultMarshaller marshaller;
 
 	public MartiniSampler() {
 		super();
@@ -94,6 +84,7 @@ public class MartiniSampler extends AbstractSampler {
 		Class<? extends MartiniSampler> implementation = getClass();
 		String category = implementation.getName();
 		logger = LoggingManager.getLoggerFor(category);
+		marshaller = DefaultMartiniResultMarshaller.getInstance();
 	}
 
 	@Override
@@ -124,10 +115,10 @@ public class MartiniSampler extends AbstractSampler {
 		String threadGroupName = getThreadGroupName();
 		String threadName = getThreadName();
 		Set<String> categorizations = getCategorizations(martini);
-		MartiniSuiteIdentifier suiteIdentifier = getSuiteIdentifier();
+		SuiteIdentifier identifier = getSuiteIdentifier();
 
 		return DefaultMartiniResult.builder()
-			.setMartiniSuiteIdentifier(suiteIdentifier)
+			.setMartiniSuiteIdentifier(identifier)
 			.setMartini(martini)
 			.setThreadGroupName(threadGroupName)
 			.setThreadName(threadName)
@@ -147,9 +138,9 @@ public class MartiniSampler extends AbstractSampler {
 		return categories.getCategorizations(martini);
 	}
 
-	protected MartiniSuiteIdentifier getSuiteIdentifier() {
+	protected SuiteIdentifier getSuiteIdentifier() {
 		ApplicationContext context = this.getApplicationContext();
-		return context.getBean(MartiniSuiteIdentifier.class);
+		return context.getBean(SuiteIdentifier.class);
 	}
 
 	protected void publishBeforeScenario(MartiniResult result) {
@@ -309,111 +300,17 @@ public class MartiniSampler extends AbstractSampler {
 		}
 
 		try {
-			StringWriter writer = new StringWriter();
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			martiniResult.setStartTimestamp(sampleResult.getStartTime());
+			martiniResult.setEndTimestamp(sampleResult.getEndTime());
+			martiniResult.setExecutionTimeMs(sampleResult.getTime());
 
-			try (JsonWriter jsonWriter = gson.newJsonWriter(writer)) {
-				jsonWriter.setHtmlSafe(true);
-				jsonWriter.setLenient(true);
-				jsonWriter.setSerializeNulls(true);
-				jsonWriter.beginObject();
-
-				jsonWriter.name("id").value(martini.getId());
-				Recipe recipe = martini.getRecipe();
-
-				Resource resource = recipe.getSource();
-				URL url = null == resource ? null : resource.getURL();
-				String path = null == url ? null : url.getPath();
-				jsonWriter.name("resource").value(path);
-
-				Integer i = null == path ? null : path.lastIndexOf('!');
-				jsonWriter.name("file").value(null == i || i < 0 ? path : path.substring(i + 1));
-
-				PickleLocation location = recipe.getLocation();
-				Integer line = null == location ? null : location.getLine();
-				jsonWriter.name("line").value(line);
-
-				ScenarioDefinition scenario = recipe.getScenarioDefinition();
-				jsonWriter.name("name").value(scenario.getName());
-				jsonWriter.name("description").value(scenario.getDescription().trim());
-
-				jsonWriter.name("categories");
-				jsonWriter.beginArray();
-				Set<String> categories = martiniResult.getCategorizations();
-				if (null != categories) {
-					for (String category : categories) {
-						jsonWriter.value(category);
-					}
-				}
-				jsonWriter.endArray();
-
-				jsonWriter.name("tags");
-				jsonWriter.beginArray();
-				Collection<MartiniTag> tags = martini.getTags();
-				if (null != tags) {
-					for (MartiniTag tag : tags) {
-						jsonWriter.beginObject();
-						jsonWriter.name("name").value(tag.getName());
-						jsonWriter.name("argument").value(tag.getArgument());
-						jsonWriter.endObject();
-					}
-				}
-				jsonWriter.endArray();
-
-				jsonWriter.name("feature");
-				jsonWriter.beginObject();
-				Feature feature = recipe.getFeature();
-				jsonWriter.name("name").value(feature.getName());
-				jsonWriter.name("description").value(feature.getDescription().trim());
-				jsonWriter.endObject();
-
-				long startTime = sampleResult.getStartTime();
-				jsonWriter.name("startTimestamp").value(sampleResult.getStartTime());
-				jsonWriter.name("startDate").value(new Date(startTime).toString());
-
-				long endTime = sampleResult.getEndTime();
-				jsonWriter.name("endTimestamp").value(endTime);
-				jsonWriter.name("endDate").value(new Date(endTime).toString());
-
-				jsonWriter.name("timeElapsedMs").value(sampleResult.getTime());
-
-				Status status = martiniResult.getStatus();
-				jsonWriter.name("status").value(null == status ? null : status.name());
-
-				jsonWriter.name("suite");
-				jsonWriter.beginObject();
-
-				MartiniSuiteIdentifier identifier = martiniResult.getMartiniSuiteIdentifier();
-				UUID id = identifier.getId();
-				jsonWriter.name("id").value(null == id ? null : id.toString());
-				jsonWriter.name("name").value(identifier.getSuiteName());
-				long timestamp = identifier.getTimestamp();
-				jsonWriter.name("timestamp").value(timestamp);
-				jsonWriter.name("date").value(new Date(timestamp).toString());
-
-				jsonWriter.name("host");
-				jsonWriter.beginObject();
-				jsonWriter.name("name").value(JMeterUtils.getLocalHostName());
-				jsonWriter.name("ip").value(JMeterUtils.getLocalHostIP());
-				jsonWriter.endObject();
-
-				jsonWriter.name("threadGroup").value(martiniResult.getThreadGroupName());
-				jsonWriter.name("thread").value(martiniResult.getThreadName());
-				jsonWriter.endObject();
-
-				jsonWriter.name("steps");
-				jsonWriter.beginArray();
-				jsonWriter.endArray();
-				jsonWriter.endObject();
-			}
-			String response = writer.toString();
-
+			String json = marshaller.getJson(martiniResult);
 			sampleResult.setDataType(SampleResult.TEXT);
 			sampleResult.setResponseHeaders("Content-Type: application/json");
-			sampleResult.setResponseData(response, "UTF-8");
+			sampleResult.setResponseData(json, "UTF-8");
 		}
 		catch (Exception e) {
-			logger.error("unable to marshall MartiniResult", e);
+			logger.error("unable to marshall MartiniResult; will not include ResponseData", e);
 		}
 		return sampleResult;
 	}
