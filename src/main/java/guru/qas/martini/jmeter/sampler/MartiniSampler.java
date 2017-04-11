@@ -16,8 +16,10 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +42,7 @@ import org.apache.jorphan.util.JMeterStopThreadException;
 import org.apache.log.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.io.Resource;
 
 import com.google.common.collect.ImmutableList;
 
@@ -204,6 +207,9 @@ public class MartiniSampler extends AbstractSampler {
 			}
 			else {
 				subResult = getSkipped(step);
+				Exception exception = getUnimplementedStepException(martini, step);
+				exception.fillInStackTrace();
+				stepResult.setException(exception);
 				stepResult.setStatus(Status.SKIPPED);
 			}
 
@@ -236,6 +242,28 @@ public class MartiniSampler extends AbstractSampler {
 			logger.error("unable to marshall MartiniResult; will not include ResponseData", e);
 		}
 		return sampleResult;
+	}
+
+	protected Exception getUnimplementedStepException(Martini martini, Step step) {
+		Resource source = martini.getRecipe().getSource();
+
+		String relative;
+		try {
+			URL url = source.getURL();
+			String externalForm = url.toExternalForm();
+			int i = externalForm.lastIndexOf('!');
+			relative = i > 0 && externalForm.length() > i + 1 ? externalForm.substring(i + 1) : externalForm;
+		}
+		catch (IOException e) {
+			logger.warn("unable to obtain URL from Resource " + source, e);
+			relative = source.toString();
+		}
+
+		int line = step.getLocation().getLine();
+		String message = String.format("unimplemented step: %s line %s", relative, line);
+		Exception exception = new Exception(message);
+		exception.fillInStackTrace();
+		return exception;
 	}
 
 	/**
