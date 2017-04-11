@@ -1,1 +1,1 @@
-# martini-jmeter-plugin
+# Martini JMeter Extension
