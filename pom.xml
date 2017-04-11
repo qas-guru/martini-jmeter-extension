@@ -37,9 +37,9 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git://github.com/qas-guru/martini-jmeter-plugin.git</connection>
-		<developerConnection>scm:git:ssh://github.com:qas-guru/martini-jmeter-plugin.git</developerConnection>
-		<url>https://github.com/qas-guru/martini-jmeter-plugin/tree/master</url>
+		<connection>scm:git:git://github.com/qas-guru/martini-jmeter-extension.git</connection>
+		<developerConnection>scm:git:ssh://github.com:qas-guru/martini-jmeter-extension.git</developerConnection>
+		<url>https://github.com/qas-guru/martini-jmeter-extension/tree/master</url>
 		<tag>HEAD</tag>
 	</scm>
 
