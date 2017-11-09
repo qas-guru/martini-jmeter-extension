@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-jmeter</artifactId>
-	<version>1.0.1</version>
+	<version>1.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -46,7 +46,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
-		<jmeter.version>3.1</jmeter.version>
+		<jmeter.version>3.3</jmeter.version>
 	</properties>
 
 	<distributionManagement>
@@ -154,10 +154,9 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>1.0.1</version>
+			<version>1.1.1-SNAPSHOT</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.apache.jmeter/ApacheJMeter_components -->
 		<dependency>
 			<groupId>org.apache.jmeter</groupId>
 			<artifactId>ApacheJMeter_components</artifactId>
@@ -165,19 +164,11 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.apache.jmeter/ApacheJMeter_java -->
 		<dependency>
 			<groupId>org.apache.jmeter</groupId>
 			<artifactId>ApacheJMeter_java</artifactId>
 			<version>${jmeter.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
-		<dependency>
-		    <groupId>net.sf.stax</groupId>
-		    <artifactId>stax</artifactId>
-		    <version>1.0</version>
-		</dependency>
-
 	</dependencies>
 </project>
