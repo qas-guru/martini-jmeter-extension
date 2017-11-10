@@ -35,6 +35,7 @@ public final class SpringPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	private void init() {
+		super.setName(getStaticLabel());
 		super.setComment("Spring ClassPathXmlApplicationContext Configuration");
 		setBorder(makeBorder());
 		setLayout(new VerticalLayout(5, 3));

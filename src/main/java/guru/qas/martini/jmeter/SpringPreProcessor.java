@@ -45,7 +45,7 @@ public final class SpringPreProcessor extends AbstractTestElement
 	private static final long serialVersionUID = 5513210063612854545L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(SpringPreProcessor.class);
 	public static final String KEY_CONFIG_LOCATIONS = "config.locations";
-	public static final String DEFAULT_CONFIG_LOCATIONS = "classpath*:**/applicationContext.xml";
+	public static final String DEFAULT_CONFIG_LOCATIONS = "classpath*:martiniJmeterContext.xml";
 	public static final String KEY_APPLICATION_CONTEXT = "spring.application.context";
 
 	private transient AtomicReference<ClassPathXmlApplicationContext> ref;
