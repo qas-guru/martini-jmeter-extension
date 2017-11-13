@@ -42,6 +42,7 @@ import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.jmeter.spring.MartiniResultMarshaller;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.runtime.event.EventManager;
@@ -57,7 +58,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 	protected static final String PARAMETER = "generate.json.response";
 	protected static final String PARAMETER_DEFAULT = Boolean.FALSE.toString();
 
-	protected transient boolean generatingJson;
+	protected transient MartiniResultMarshaller marshaller;
 	protected transient EventManager eventManager;
 	protected transient SuiteIdentifier suiteIdentifier;
 	protected transient String threadGroupName;
@@ -91,7 +92,10 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		threadName = thread.getThreadName();
 
 		String parameter = context.getParameter(PARAMETER, PARAMETER_DEFAULT).trim();
-		generatingJson = Boolean.valueOf(parameter);
+		boolean generatingJson = Boolean.valueOf(parameter);
+		if (generatingJson) {
+			marshaller = SpringPreProcessor.getBean(MartiniResultMarshaller.class);
+		}
 	}
 
 	@Override
@@ -108,7 +112,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 			sampleResult.setSuccessful(true);
 			sampleStart = martiniResult.getStartTimestamp();
 			sampleEnd = martiniResult.getEndTimestamp();
-			setResponse();
+			setResponse(sampleResult);
 		}
 		catch (Exception e) {
 			super.getNewLogger().warn("unable to execute Martini", e);
@@ -271,10 +275,10 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		checkState(null == e, "scenario failed: %s", message);
 	}
 
-	protected void setResponse() {
-		if (this.generatingJson) {
+	protected void setResponse(SampleResult sampleResult) {
+		if (null != marshaller) {
 			try {
-				super.getNewLogger().info("would generate JSON here");
+				marshaller.setJsonResponse(sampleResult, martiniResult);
 			}
 			catch (Exception e) {
 				super.getNewLogger().warn("unable to generate JSON", e);
