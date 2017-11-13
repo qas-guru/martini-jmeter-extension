@@ -18,11 +18,8 @@ package guru.qas.martini.jmeter.gui;
 
 import javax.swing.JCheckBox;
 
-import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
-import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jorphan.gui.JLabeledTextField;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
@@ -31,13 +28,18 @@ import guru.qas.martini.jmeter.MartiniPreProcessor;
 import static guru.qas.martini.jmeter.MartiniPreProcessor.*;
 
 @SuppressWarnings("unused") // Referenced by JMeter.
-public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
+public final class MartiniPreProcessorGui extends AbstractMartiniPreProcessorGui {
 
 	private final JCheckBox cyclicCheckbox;
 	private final JCheckBox shuffledCheckbox;
 	private final JLabeledTextField spelFilterField;
 
 	public MartiniPreProcessorGui() {
+		super(
+			"martini_pre_processor_label",
+			"Martini Scenario PreProcessor",
+			"Martini Scenario Configuration",
+			MartiniPreProcessor.class);
 		cyclicCheckbox = new JCheckBox("Cyclic Iteration");
 		shuffledCheckbox = new JCheckBox("Shuffled Iteration");
 		spelFilterField = new JLabeledTextField("SpEL Filter");
@@ -54,37 +56,17 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		add(spelFilterField);
 	}
 
-	@Override
-	public String getStaticLabel() {
-		return "Martini Scenario PreProcessor";
-	}
-
-	@Override
-	public String getLabelResource() {
-		return "martini_pre_processor_label";
-	}
 
 	@Override
 	public TestElement createTestElement() {
-		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
-		preProcessor.setName(getStaticLabel());
-		preProcessor.setComment("Martini Scenario Configuration");
-		super.configureTestElement(preProcessor);
-
 		Arguments defaults = MartiniPreProcessor.getDefaultArguments();
-		for (JMeterProperty property : defaults) {
-			Object o = property.getObjectValue();
-			Argument argument = Argument.class.cast(o);
-			String name = argument.getName();
-			String value = argument.getValue();
-			preProcessor.setProperty(name, value);
-		}
-		configure(preProcessor);
-		return preProcessor;
+		return super.createTestElement(defaults);
 	}
 
 	@Override
 	public void modifyTestElement(TestElement testElement) {
+		super.modifyTestElement(testElement);
+
 		boolean cyclic = cyclicCheckbox.isSelected();
 		testElement.setProperty(ARGUMENT_CYCLIC_ITERATOR, cyclic);
 
@@ -107,11 +89,6 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 		String spelFilter = element.getPropertyAsString(ARGUMENT_SPEL_FILTER);
 		spelFilterField.setText(spelFilter);
-	}
-
-	@Override
-	public void clearGui() {
-		super.clearGui();
 	}
 }
 

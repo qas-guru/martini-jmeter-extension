@@ -16,27 +16,31 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.gui;
 
-import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jorphan.gui.JLabeledTextField;
+import org.apache.jorphan.gui.JLabeledTextArea;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import guru.qas.martini.jmeter.SpringPreProcessor;
 
-@SuppressWarnings("unused") // Referenced by JMeter.
-public final class SpringPreProcessorGui extends AbstractPreProcessorGui {
+import static guru.qas.martini.jmeter.SpringPreProcessor.ARGUMENT_LOCATIONS;
 
-	private final JLabeledTextField configLocationsField;
+@SuppressWarnings("unused") // Referenced by JMeter.
+public final class SpringPreProcessorGui extends AbstractMartiniPreProcessorGui {
+
+	private final JLabeledTextArea configLocationsField;
 
 	public SpringPreProcessorGui() {
-		configLocationsField = new JLabeledTextField("configLocations (comma delimited)");
-		configLocationsField.setText(SpringPreProcessor.DEFAULT_CONFIG_LOCATIONS);
+		super("martini_spring_pre_processor_label",
+			"Martini Spring PreProcessor",
+			"Martini Spring Configuration",
+			SpringPreProcessor.class);
+
+		configLocationsField = new JLabeledTextArea("configLocations (comma delimited)");
 		init();
 	}
 
 	private void init() {
-		super.setName(getStaticLabel());
-		super.setComment("Spring ClassPathXmlApplicationContext Configuration");
 		setBorder(makeBorder());
 		setLayout(new VerticalLayout(5, 3));
 		add(makeTitlePanel());
@@ -44,41 +48,23 @@ public final class SpringPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	@Override
-	public String getStaticLabel() {
-		return "Martini Spring PreProcessor";
-	}
-
-	@Override
-	public String getLabelResource() {
-		return "spring_pre_processor_label";
-	}
-
-	@Override
 	public TestElement createTestElement() {
-		SpringPreProcessor preProcessor = new SpringPreProcessor();
-		modifyTestElement(preProcessor);
-		return preProcessor;
+		Arguments defaults = SpringPreProcessor.getDefaultArguments();
+		return super.createTestElement(defaults);
 	}
 
 	@Override
 	public void modifyTestElement(TestElement testElement) {
-		if (SpringPreProcessor.class.isInstance(testElement)) {
-			SpringPreProcessor preProcessor = SpringPreProcessor.class.cast(testElement);
-			modifyTestElement(preProcessor);
-		}
-		configureTestElement(testElement);
-	}
-
-	private void modifyTestElement(SpringPreProcessor preProcessor) {
-		String configLocations = configLocationsField.getText();
-		preProcessor.setProperty(SpringPreProcessor.KEY_CONFIG_LOCATIONS, configLocations);
+		super.modifyTestElement(testElement);
+		String locations = configLocationsField.getText();
+		testElement.setProperty(ARGUMENT_LOCATIONS, locations);
 	}
 
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
-		String configLocations = element.getPropertyAsString(SpringPreProcessor.KEY_CONFIG_LOCATIONS, "");
-		configLocationsField.setText(configLocations);
+		String locations = element.getPropertyAsString(ARGUMENT_LOCATIONS);
+		configLocationsField.setText(locations);
 	}
 }
 

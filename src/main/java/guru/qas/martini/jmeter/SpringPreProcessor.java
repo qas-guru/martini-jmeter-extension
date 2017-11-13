@@ -18,9 +18,9 @@ package guru.qas.martini.jmeter;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.engine.util.NoThreadClone;
@@ -29,14 +29,19 @@ import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.base.Splitter;
 
-import static com.google.common.base.Preconditions.checkState;
+import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.runtime.event.EventManager;
+
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"unused", "WeakerAccess"}) // Referenced by JMeter.
 public final class SpringPreProcessor extends AbstractTestElement
@@ -44,49 +49,51 @@ public final class SpringPreProcessor extends AbstractTestElement
 
 	private static final long serialVersionUID = 5513210063612854545L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(SpringPreProcessor.class);
-	public static final String KEY_CONFIG_LOCATIONS = "config.locations";
-	public static final String DEFAULT_CONFIG_LOCATIONS = "classpath*:martiniJmeterContext.xml";
-	public static final String KEY_APPLICATION_CONTEXT = "spring.application.context";
+	public static final String VARIABLE = "spring.application.context";
+
+	public static final String ARGUMENT_LOCATIONS = "martini.spring.config.locations";
+	private static final String DEFAULT_LOCATIONS = "classpath*:/martiniJmeterContext.xml";
+
+	private static final Arguments ARGUMENTS = new Arguments();
+
+	static {
+		ARGUMENTS.addArgument(ARGUMENT_LOCATIONS, DEFAULT_LOCATIONS, null,
+			"Spring XML application configuration file locations, comma-separated");
+	}
 
 	private transient AtomicReference<ClassPathXmlApplicationContext> ref;
+	private transient SuiteIdentifier suiteIdentifier;
+	private transient EventManager eventManager;
 
 	public SpringPreProcessor() {
 		super();
-		super.setProperty(KEY_CONFIG_LOCATIONS, DEFAULT_CONFIG_LOCATIONS);
 	}
 
 	@Override
 	public void testStarted() {
+		// TODO: are we creating an output file?
 		ref = new AtomicReference<>();
-		String[] configLocations = getConfigLocations();
-		testStarted(configLocations);
+		String[] locations = getLocations();
+		testStarted(locations);
 	}
 
-	private String[] getConfigLocations() {
-		String property = super.getPropertyAsString(KEY_CONFIG_LOCATIONS, "").trim();
-		checkState(!property.isEmpty(), "no configLocations set");
-		return getConfigLocations(property);
-	}
-
-	private static String[] getConfigLocations(String property) {
-		List<String> split = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(property);
-		checkState(!split.isEmpty(), "no configLocations set");
-		return getConfigLocations(split);
-	}
-
-	private static String[] getConfigLocations(List<String> configLocations) {
-		Set<String> unique = new LinkedHashSet<>(configLocations);
-		return unique.toArray(new String[unique.size()]);
+	private String[] getLocations() {
+		String property = super.getPropertyAsString(ARGUMENT_LOCATIONS).trim();
+		List<String> locations = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(property);
+		LinkedHashSet<String> locationSet = new LinkedHashSet<>(locations);
+		checkState(!locationSet.isEmpty(), "no Spring configuration locations provided");
+		return locationSet.toArray(new String[locationSet.size()]);
 	}
 
 	private void testStarted(String[] configLocations) {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(configLocations);
 		context.registerShutdownHook();
-		testStarted(context);
-	}
-
-	private void testStarted(ClassPathXmlApplicationContext context) {
 		context.refresh();
+
+		eventManager = context.getBean(EventManager.class);
+		suiteIdentifier = context.getBean(SuiteIdentifier.class);
+		eventManager.publishBeforeSuite(this, suiteIdentifier);
+
 		ref.set(context);
 	}
 
@@ -104,9 +111,9 @@ public final class SpringPreProcessor extends AbstractTestElement
 	}
 
 	private void iterationStart(JMeterVariables variables) {
-		Object object = variables.getObject(KEY_APPLICATION_CONTEXT);
+		Object object = variables.getObject(VARIABLE);
 		if (null == object) {
-			variables.putObject(KEY_APPLICATION_CONTEXT, ref.get());
+			variables.putObject(VARIABLE, ref.get());
 		}
 	}
 
@@ -114,13 +121,28 @@ public final class SpringPreProcessor extends AbstractTestElement
 	public void process() {
 	}
 
+	public static ApplicationContext getApplicationContext() {
+		JMeterContext context = JMeterContextService.getContext();
+		JMeterVariables variables = context.getVariables();
+		Object o = variables.getObject(VARIABLE);
+		checkNotNull(o, "variable %s not found", VARIABLE);
+		return ApplicationContext.class.cast(o);
+	}
+
+	public static <T> T getBean(Class<T> implementation) {
+		checkNotNull(implementation, "null Class");
+		ApplicationContext applicationContext = getApplicationContext();
+		return applicationContext.getBean(implementation);
+	}
+
 	@Override
 	public void testEnded() {
 		ClassPathXmlApplicationContext applicationContext = ref.get();
-		ref = null;
-		if (null != applicationContext) {
+		if (null != eventManager && null != suiteIdentifier) {
+			eventManager.publishAfterSuite(this, suiteIdentifier);
 			close(applicationContext);
 		}
+		ref = null;
 	}
 
 	@Override
@@ -135,5 +157,9 @@ public final class SpringPreProcessor extends AbstractTestElement
 		catch (Exception e) {
 			LOGGER.warn("unable to close ClassPathXmlApplicationContext", e);
 		}
+	}
+
+	public static Arguments getDefaultArguments() {
+		return ARGUMENTS;
 	}
 }

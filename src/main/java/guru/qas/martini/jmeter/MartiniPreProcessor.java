@@ -49,8 +49,7 @@ public class MartiniPreProcessor extends AbstractTestElement
 
 	private static final long serialVersionUID = -1836250604581459661L;
 
-	private static final String LABEL = "Martini PreProcessor";
-	private static final String DEFAULT_COMMENT = "Selects Martini scenarios.";
+	public static final String VARIABLE = "martini";
 
 	public static final String ARGUMENT_SPEL_FILTER = "spel.filter";
 	private static final String DEFAULT_SPEL_FILTER = "!isWIP()";
@@ -72,10 +71,6 @@ public class MartiniPreProcessor extends AbstractTestElement
 			"true to randomly shuffle scenarios");
 	}
 
-	public static String getLabel() {
-		return LABEL;
-	}
-
 	public static Arguments getDefaultArguments() {
 		return ARGUMENTS;
 	}
@@ -85,7 +80,6 @@ public class MartiniPreProcessor extends AbstractTestElement
 
 	public MartiniPreProcessor() {
 		super();
-		super.setComment(DEFAULT_COMMENT);
 	}
 
 	@Override
@@ -102,18 +96,25 @@ public class MartiniPreProcessor extends AbstractTestElement
 	@Override
 	public void iterationStart(LoopIterationEvent loopIterationEvent) {
 		JMeterContext context = JMeterContextService.getContext();
-		JMeterVariables variables = context.getVariables();
 
 		MartiniResult result;
 		Martini next = getNext();
+
+		JMeterVariables variables = context.getVariables();
 		if (null == next) {
-			context.getThread().stop();
+			variables.remove(VARIABLE);
 		}
 		else {
-			variables.putObject("martini", next);
+			variables.putObject(VARIABLE, next);
 		}
 	}
 
+	static Martini getMartini() {
+		JMeterContext context = JMeterContextService.getContext();
+		JMeterVariables variables = context.getVariables();
+		Object o = variables.getObject(VARIABLE);
+		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+	}
 
 	private Martini getNext() {
 		monitor.enter();
@@ -129,29 +130,33 @@ public class MartiniPreProcessor extends AbstractTestElement
 	private Iterator<Martini> getIterator() {
 		Iterator<Martini> i = ref.get();
 		if (null == i) {
-			JMeterContext threadContext = super.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-			ApplicationContext springContext = SpringUtils.getApplicationContext(variables);
-
-			boolean cyclic = super.getPropertyAsBoolean(ARGUMENT_CYCLIC_ITERATOR, Boolean.valueOf(DEFAULT_CYCLIC_ITERATOR));
-			boolean shuffled = super.getPropertyAsBoolean(ARGUMENT_SHUFFLED_ITERATION, Boolean.valueOf(DEFAULT_SHUFFLED_ITERATION));
-			String spelFilter = super.getPropertyAsString(ARGUMENT_SPEL_FILTER, DEFAULT_SPEL_FILTER).trim();
-
-			Mixologist mixologist = springContext.getBean(Mixologist.class);
-			Collection<Martini> martiniCollection = spelFilter.isEmpty() ? mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
-			List<Martini> martinis = new ArrayList<>(martiniCollection);
-
-			if (shuffled) {
-				SecureRandom random = new SecureRandom();
-				Collections.shuffle(martinis, random);
-			}
-
-			i = cyclic ? Iterators.cycle(martinis) : Iterators.consumingIterator(martinis.iterator());
+			Mixologist mixologist = getMixologist();
+			i = getIterator(mixologist);
 			ref.set(i);
 		}
 		return i;
 	}
 
+	private static Mixologist getMixologist() {
+		ApplicationContext springContext = SpringPreProcessor.getApplicationContext();
+		return springContext.getBean(Mixologist.class);
+	}
+
+	private Iterator<Martini> getIterator(Mixologist mixologist) {
+		String spelFilter = super.getPropertyAsString(ARGUMENT_SPEL_FILTER).trim();
+		Collection<Martini> martiniCollection =
+			spelFilter.isEmpty() ? mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
+		List<Martini> martinis = new ArrayList<>(martiniCollection);
+
+		boolean shuffled = super.getPropertyAsBoolean(ARGUMENT_SHUFFLED_ITERATION);
+		if (shuffled) {
+			SecureRandom random = new SecureRandom();
+			Collections.shuffle(martinis, random);
+		}
+
+		boolean cyclic = super.getPropertyAsBoolean(ARGUMENT_CYCLIC_ITERATOR);
+		return cyclic ? Iterators.cycle(martinis) : Iterators.consumingIterator(martinis.iterator());
+	}
 
 	@Override
 	public void process() {
