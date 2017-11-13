@@ -1,5 +1,3 @@
-# Martini JMeter Extension
-
 1. Obtain jmeter jar, e.g. martini-jmeter-1.1.1.jar
 2. Obtain jmeter dependencies zip, e.g. martini-jmeter-1.1.1-runtime-dependencies.zip
 3. Create directory to hold runtime dependencies in e.g. $JMETER_HOME/lib/martini
