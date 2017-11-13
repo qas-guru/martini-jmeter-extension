@@ -28,6 +28,7 @@ import org.apache.http.HttpEntity;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
+import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
@@ -53,11 +54,13 @@ import guru.qas.martini.tag.Categories;
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
-public class MartiniSamplerClient extends AbstractJavaSamplerClient {
+public class MartiniSamplerClient extends AbstractJavaSamplerClient implements Interruptible {
 
 	protected static final String PARAMETER = "generate.json.response";
 	protected static final String PARAMETER_DEFAULT = Boolean.FALSE.toString();
 
+	protected transient volatile boolean interrupted;
+	protected transient volatile boolean executing;
 	protected transient MartiniResultMarshaller marshaller;
 	protected transient EventManager eventManager;
 	protected transient SuiteIdentifier suiteIdentifier;
@@ -80,22 +83,35 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 	 */
 	@Override
 	public void setupTest(JavaSamplerContext context) {
-		super.setupTest(context);
-		eventManager = SpringPreProcessor.getBean(EventManager.class);
-		suiteIdentifier = SpringPreProcessor.getBean(SuiteIdentifier.class);
+		try {
+			assertNotInterrupted();
+			executing = true;
+			super.setupTest(context);
 
-		JMeterContext jmeterContext = JMeterContextService.getContext();
-		AbstractThreadGroup threadGroup = jmeterContext.getThreadGroup();
-		threadGroupName = threadGroup.getName();
+			JMeterContext jmeterContext = JMeterContextService.getContext();
+			AbstractThreadGroup threadGroup = jmeterContext.getThreadGroup();
+			threadGroupName = threadGroup.getName();
 
-		JMeterThread thread = jmeterContext.getThread();
-		threadName = thread.getThreadName();
+			JMeterThread thread = jmeterContext.getThread();
+			threadName = thread.getThreadName();
 
-		String parameter = context.getParameter(PARAMETER, PARAMETER_DEFAULT).trim();
-		boolean generatingJson = Boolean.valueOf(parameter);
-		if (generatingJson) {
-			marshaller = SpringPreProcessor.getBean(MartiniResultMarshaller.class);
+			String parameter = context.getParameter(PARAMETER, PARAMETER_DEFAULT).trim();
+			boolean generatingJson = Boolean.valueOf(parameter);
+
+			assertNotInterrupted();
+			if (generatingJson) {
+				marshaller = SpringPreProcessor.getBean(MartiniResultMarshaller.class);
+			}
+			eventManager = SpringPreProcessor.getBean(EventManager.class);
+			suiteIdentifier = SpringPreProcessor.getBean(SuiteIdentifier.class);
 		}
+		finally {
+			executing = false;
+		}
+	}
+
+	protected void assertNotInterrupted() {
+		checkState(!interrupted, "executing interrupted");
 	}
 
 	@Override
@@ -105,6 +121,8 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		long sampleEnd = 0;
 
 		try {
+			assertNotInterrupted();
+			executing = true;
 			setup();
 			setSampleLabel(sampleResult);
 			execute();
@@ -123,6 +141,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		finally {
 			sampleResult.setStampAndTime(sampleStart, sampleEnd);
 			teardown();
+			executing = false;
 		}
 		return sampleResult;
 	}
@@ -133,13 +152,8 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		setup(martini);
 	}
 
-	protected void setSampleLabel(SampleResult sample) {
-		Martini martini = martiniResult.getMartini();
-		String id = martini.getId();
-		sample.setSampleLabel(id);
-	}
-
 	protected void setup(Martini martini) {
+		assertNotInterrupted();
 		martiniResult = getMartiniResult(martini);
 		eventManager.publishBeforeScenario(this, martiniResult);
 	}
@@ -154,13 +168,21 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		return builder.build();
 	}
 
+	protected void setSampleLabel(SampleResult sample) {
+		Martini martini = martiniResult.getMartini();
+		String id = martini.getId();
+		sample.setSampleLabel(id);
+	}
+
 	protected void setCategorizations(Martini martini, DefaultMartiniResult.Builder builder) {
+		assertNotInterrupted();
 		Categories categories = SpringPreProcessor.getBean(Categories.class);
 		Set<String> categorizations = categories.getCategorizations(martini);
 		builder.setCategorizations(categorizations);
 	}
 
 	public void execute() throws InvocationTargetException, IllegalAccessException {
+		assertNotInterrupted();
 		try {
 			Martini martini = martiniResult.getMartini();
 			Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
@@ -168,7 +190,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 
 			DefaultStepResult lastResult = null;
 			for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
-
+				assertNotInterrupted();
 				Step step = mapEntry.getKey();
 				eventManager.publishBeforeStep(this, martiniResult);
 
@@ -189,8 +211,8 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		}
 	}
 
-	protected DefaultStepResult execute(Step step, StepImplementation implementation)
-		throws InvocationTargetException, IllegalAccessException {
+	protected DefaultStepResult execute(Step step, StepImplementation implementation) {
+		assertNotInterrupted();
 		getNewLogger().info("executing @{} {}", step.getKeyword().trim(), step.getText().trim());
 
 		DefaultStepResult result = new DefaultStepResult(step, implementation);
@@ -288,7 +310,7 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 
 	private void teardown() {
 		try {
-			if (null != martiniResult && null != eventManager) {
+			if (null != martiniResult && null != eventManager && !interrupted) {
 				eventManager.publishAfterScenario(this, martiniResult);
 			}
 		}
@@ -310,5 +332,11 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 	public void teardownTest(JavaSamplerContext context) {
 		eventManager = null;
 		super.teardownTest(context);
+	}
+
+	@Override
+	public boolean interrupt() {
+		interrupted = true;
+		return executing;
 	}
 }
