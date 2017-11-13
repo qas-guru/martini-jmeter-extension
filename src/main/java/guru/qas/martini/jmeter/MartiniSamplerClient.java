@@ -19,15 +19,13 @@ package guru.qas.martini.jmeter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -46,95 +44,121 @@ import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
-import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.step.UnimplementedStepException;
 import guru.qas.martini.tag.Categories;
 
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 
-	private DefaultMartiniResult martiniResult;
-	private EventManager eventManager;
+	protected static final String PARAMETER = "generate.json.response";
+	protected static final String PARAMETER_DEFAULT = Boolean.FALSE.toString();
 
-	private void doSetup() {
-		Martini martini = MartiniPreProcessor.getMartini();
-		if (null != martini) {
-			eventManager = SpringPreProcessor.getBean(EventManager.class);
-			SuiteIdentifier suiteIdentifier = SpringPreProcessor.getBean(SuiteIdentifier.class);
-			Categories categories = SpringPreProcessor.getBean(Categories.class);
+	protected transient boolean generatingJson;
+	protected transient EventManager eventManager;
+	protected transient SuiteIdentifier suiteIdentifier;
+	protected transient String threadGroupName;
+	protected transient String threadName;
+	protected transient DefaultMartiniResult martiniResult;
 
-			Set<String> categorizations = categories.getCategorizations(martini);
+	@Override
+	public Arguments getDefaultParameters() {
+		Arguments defaults = new Arguments();
+		defaults.addArgument(PARAMETER, PARAMETER_DEFAULT, null, "true to include Martini JSON results in response");
+		return defaults;
+	}
 
-			JMeterContext jmeterContext = JMeterContextService.getContext();
-			AbstractThreadGroup threadGroup = jmeterContext.getThreadGroup();
-			JMeterThread thread = jmeterContext.getThread();
+	/**
+	 * This is executed once per instantiation of this class. Nothing specific to an
+	 * individual test run should appear in this method.
+	 *
+	 * @param context ignored
+	 */
+	@Override
+	public void setupTest(JavaSamplerContext context) {
+		super.setupTest(context);
+		eventManager = SpringPreProcessor.getBean(EventManager.class);
+		suiteIdentifier = SpringPreProcessor.getBean(SuiteIdentifier.class);
 
-			martiniResult = DefaultMartiniResult.builder()
-				.setMartini(martini)
-				.setMartiniSuiteIdentifier(suiteIdentifier)
-				.setCategorizations(categorizations)
-				.setThreadGroupName(threadGroup.getName())
-				.setThreadName(thread.getThreadName())
-				.build();
-			eventManager.publishBeforeScenario(this, martiniResult);
-		}
+		JMeterContext jmeterContext = JMeterContextService.getContext();
+		AbstractThreadGroup threadGroup = jmeterContext.getThreadGroup();
+		threadGroupName = threadGroup.getName();
+
+		JMeterThread thread = jmeterContext.getThread();
+		threadName = thread.getThreadName();
+
+		String parameter = context.getParameter(PARAMETER, PARAMETER_DEFAULT).trim();
+		generatingJson = Boolean.valueOf(parameter);
 	}
 
 	@Override
 	public SampleResult runTest(JavaSamplerContext javaSamplerContext) {
 		SampleResult sampleResult = new SampleResult();
-		doSetup();
+		long sampleStart = 0;
+		long sampleEnd = 0;
+
 		try {
-			if (null == martiniResult) {
-				sampleResult.setSuccessful(false);
-				sampleResult.setResponseMessage("no Martini available");
-			}
-			else {
-				try {
-					sampleResult.sampleStart();
-					executeMartini();
-					sampleResult.sampleEnd();
-
-					if (Status.PASSED != martiniResult.getStatus()) {
-						sampleResult.setSuccessful(false);
-						List<StepResult> stepResults = martiniResult.getStepResults();
-
-						Exception e = null;
-						for (Iterator<StepResult> i = stepResults.iterator(); null == e && i.hasNext(); ) {
-							StepResult stepResult = i.next();
-							e = stepResult.getException();
-						}
-						if (null != e) {
-							String message = Throwables.getStackTraceAsString(e);
-							sampleResult.setResponseMessage(message);
-						}
-					}
-					else {
-						sampleResult.setSuccessful(true);
-					}
-				}
-				catch (Exception e) {
-					sampleResult.sampleEnd();
-					sampleResult.setSuccessful(false);
-					String stackTrace = Throwables.getStackTraceAsString(e);
-					sampleResult.setResponseMessage("unable to execute Martini: " + stackTrace);
-				}
-			}
+			setup();
+			setSampleLabel(sampleResult);
+			execute();
+			assertSuccess();
+			sampleResult.setSuccessful(true);
+			sampleStart = martiniResult.getStartTimestamp();
+			sampleEnd = martiniResult.getEndTimestamp();
+			setResponse();
+		}
+		catch (Exception e) {
+			super.getNewLogger().warn("unable to execute Martini", e);
+			sampleResult.setSuccessful(false);
+			String message = Throwables.getStackTraceAsString(e);
+			sampleResult.setResponseMessage(message);
 		}
 		finally {
-			doTeardown();
+			sampleResult.setStampAndTime(sampleStart, sampleEnd);
+			teardown();
 		}
-
 		return sampleResult;
 	}
 
-	public void executeMartini() throws InvocationTargetException, IllegalAccessException {
+	protected void setup() {
+		Martini martini = MartiniPreProcessor.getMartini();
+		checkNotNull(martini, "no Martini available");
+		setup(martini);
+	}
+
+	protected void setSampleLabel(SampleResult sample) {
 		Martini martini = martiniResult.getMartini();
+		String id = martini.getId();
+		sample.setSampleLabel(id);
+	}
+
+	protected void setup(Martini martini) {
+		martiniResult = getMartiniResult(martini);
+		eventManager.publishBeforeScenario(this, martiniResult);
+	}
+
+	protected DefaultMartiniResult getMartiniResult(Martini martini) {
+		DefaultMartiniResult.Builder builder = DefaultMartiniResult.builder()
+			.setMartini(martini)
+			.setMartiniSuiteIdentifier(suiteIdentifier)
+			.setThreadGroupName(threadGroupName)
+			.setThreadName(threadName);
+		setCategorizations(martini, builder);
+		return builder.build();
+	}
+
+	protected void setCategorizations(Martini martini, DefaultMartiniResult.Builder builder) {
+		Categories categories = SpringPreProcessor.getBean(Categories.class);
+		Set<String> categorizations = categories.getCategorizations(martini);
+		builder.setCategorizations(categorizations);
+	}
+
+	public void execute() throws InvocationTargetException, IllegalAccessException {
 		try {
+			Martini martini = martiniResult.getMartini();
 			Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
 			martiniResult.setStartTimestamp(System.currentTimeMillis());
 
@@ -158,20 +182,6 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		}
 		finally {
 			martiniResult.setEndTimestamp(System.currentTimeMillis());
-			List<StepResult> stepResults = martiniResult.getStepResults();
-
-			Long executionTime = null;
-			for (StepResult stepResult : stepResults) {
-				Long elapsed = stepResult.getExecutionTime(TimeUnit.MILLISECONDS);
-				if (null == executionTime) {
-					executionTime = elapsed;
-				}
-				else if (null != elapsed) {
-					executionTime += elapsed;
-				}
-			}
-			martiniResult.setExecutionTimeMs(executionTime);
-			eventManager.publishAfterScenario(this, martiniResult);
 		}
 	}
 
@@ -218,7 +228,6 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		Object[] arguments = new Object[parameters.length];
 
 		if (parameters.length > 0) {
-
 			String text = step.getText();
 			Pattern pattern = implementation.getPattern();
 			Matcher matcher = pattern.matcher(text);
@@ -255,11 +264,47 @@ public class MartiniSamplerClient extends AbstractJavaSamplerClient {
 		return method.invoke(bean, arguments);
 	}
 
-	private void doTeardown() {
-		if (null != martiniResult && null != eventManager) {
-			eventManager.publishAfterScenario(this, martiniResult);
+	protected void assertSuccess() {
+		Status status = martiniResult.getStatus();
+		Exception e = Status.PASSED != status ? martiniResult.getException() : null;
+		String message = null == e ? null : Throwables.getStackTraceAsString(e);
+		checkState(null == e, "scenario failed: %s", message);
+	}
+
+	protected void setResponse() {
+		if (this.generatingJson) {
+			try {
+				super.getNewLogger().info("would generate JSON here");
+			}
+			catch (Exception e) {
+				super.getNewLogger().warn("unable to generate JSON", e);
+			}
 		}
-		martiniResult = null;
+	}
+
+	private void teardown() {
+		try {
+			if (null != martiniResult && null != eventManager) {
+				eventManager.publishAfterScenario(this, martiniResult);
+			}
+		}
+		catch (Exception e) {
+			super.getNewLogger().warn("unable to perform Martini teardown", e);
+		}
+		finally {
+			martiniResult = null;
+		}
+	}
+
+	/**
+	 * Executes once during test lifetime, per thread. Nothing specific to an individual
+	 * Martini run should be in this method.
+	 *
+	 * @param context ignored
+	 */
+	@Override
+	public void teardownTest(JavaSamplerContext context) {
 		eventManager = null;
+		super.teardownTest(context);
 	}
 }
