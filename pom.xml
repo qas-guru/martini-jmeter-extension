@@ -59,35 +59,6 @@
 	<build>
 		<plugins>
 			<plugin>
-			<artifactId>maven-toolchains-plugin</artifactId>
-			<configuration>
-				<toolchains>
-				<jdk>
-					<version>1.9</version>
-					<vendor>oracle</vendor>
-				</jdk>
-				</toolchains>
-			</configuration>
-			<executions>
-				<execution>
-					<goals>
-						<goal>toolchain</goal>
-					</goals>
-				</execution>
-			</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
-				<configuration>
-					<fork>true</fork>
-					<executable>javac9</executable>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
-				</configuration>
-			</plugin>
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
 				<version>3.0.1</version>

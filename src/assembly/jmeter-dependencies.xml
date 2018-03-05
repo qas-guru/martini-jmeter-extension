@@ -12,9 +12,7 @@
 			<outputDirectory>/</outputDirectory>
 			<excludes>
 				<exclude>guru.qas:martini-jmeter</exclude>
-				<exclude>commons-logging:commons-logging</exclude>
 				<exclude>org.slf4j:slf4j-api</exclude>
-				<exclude>org.apache.httpcomponents:httpcore</exclude>
 			</excludes>
 		</dependencySet>
 	</dependencySets>
