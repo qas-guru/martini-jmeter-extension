@@ -19,7 +19,6 @@ package guru.qas.martini.jmeter.processor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.processor.PreProcessor;
@@ -29,18 +28,25 @@ import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
+import org.apache.jmeter.threads.JMeterContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertySource;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 
 @SuppressWarnings("WeakerAccess")
 public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
-	protected static final String PROPERTY_ENVIRONMENT = "martini.system.environment";
+	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
 	private static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniPreProcessor.class);
@@ -51,16 +57,18 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 
 	public void process() {
 		LOGGER.debug("in process()");
-		ClassPathXmlApplicationContext context = getClassPathXmlApplicationContext().orElse(null);
-		if (null == context) {
-			System.out.println("breakpoint");
-		}
-		else {
-			System.out.println("breakpoint");
-		}
+		JMeterContext threadContext = super.getThreadContext();
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		samplerContext.computeIfAbsent(PROPERTY_SPRING_CONTEXT, s -> {
+			ClassPathXmlApplicationContext context = getSpringContext().orElse(null);
+			if (null == context) {
+				LOGGER.warn("Spring context not set");
+			}
+			return context;
+		});
 	}
 
-	private Optional<ClassPathXmlApplicationContext> getClassPathXmlApplicationContext() {
+	private Optional<ClassPathXmlApplicationContext> getSpringContext() {
 		JMeterProperty property = this.getProperty(PROPERTY_SPRING_CONTEXT);
 		Object o = property.getObjectValue();
 		ClassPathXmlApplicationContext context = ClassPathXmlApplicationContext.class.isInstance(o) ?
@@ -72,13 +80,11 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		LOGGER.debug("in testStarted()");
 
 		try {
-			setUpEnvironment();
-			String joined = getConfigLocations();
-			List<String> locations = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
-			String[] locationArray = locations.toArray(new String[locations.size()]);
-			ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(locationArray);
-			ObjectProperty property = new ObjectProperty(PROPERTY_SPRING_CONTEXT, context);
-			this.setTemporary(property);
+			PropertySource propertySource = getEnvironmentPropertySource();
+			ConfigurableApplicationContext context = setUpSpring(propertySource);
+			JMeterProperty property = new ObjectProperty(PROPERTY_SPRING_CONTEXT, context);
+			super.setProperty(property);
+			super.setTemporary(property);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
@@ -89,28 +95,40 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		LOGGER.debug("in testStarted({})", host);
 	}
 
-	protected void setUpEnvironment() {
-		Arguments environment = getEnvironment();
-		Map<String, String> variables = environment.getArgumentsAsMap();
-		if (!variables.isEmpty()) {
-			Properties systemProperties = System.getProperties();
-			variables.forEach((key, value) -> {
-				if (!systemProperties.containsKey(key)) {
-					systemProperties.setProperty(key, value);
-				}
-			});
-		}
+	protected PropertySource getEnvironmentPropertySource() {
+		Arguments environmentArguments = getEnvironment();
+		Map<String, String> variables = environmentArguments.getArgumentsAsMap();
+		Map<String, Object> cast = ImmutableMap.<String, Object>builder().putAll(variables).build();
+		return new MapPropertySource(PROPERTY_SYSTEM_PROPERTIES, cast);
+	}
+
+	protected ConfigurableApplicationContext setUpSpring(PropertySource propertySource) {
+		String joined = getConfigLocations();
+		List<String> locations = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
+		String[] locationArray = locations.toArray(new String[locations.size()]);
+		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(locationArray, false);
+
+		ConfigurableEnvironment environment = context.getEnvironment();
+		MutablePropertySources propertySources = environment.getPropertySources();
+		propertySources.addFirst(propertySource);
+
+		context.refresh();
+		context.registerShutdownHook();
+		return context;
 	}
 
 	public void testEnded() {
 		LOGGER.debug("in testEnded()");
-		JMeterProperty property = this.getProperty(PROPERTY_SPRING_CONTEXT);
-		Object o = property.getObjectValue();
-		if (ClassPathXmlApplicationContext.class.isInstance(o)) {
-			ClassPathXmlApplicationContext applicationContext = ClassPathXmlApplicationContext.class.cast(o);
-			applicationContext.close();
-		}
+		ClassPathXmlApplicationContext context = getSpringContext().orElse(null);
 		this.removeProperty(PROPERTY_SPRING_CONTEXT);
+		if (null != context) {
+			try {
+				context.close();
+			}
+			catch (Exception e) {
+				LOGGER.warn("unable to close Spring context", e);
+			}
+		}
 	}
 
 	public void testEnded(String host) {
@@ -126,12 +144,12 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	}
 
 	public void setEnvironment(Arguments environment) {
-		TestElementProperty property = new TestElementProperty(PROPERTY_ENVIRONMENT, environment);
+		TestElementProperty property = new TestElementProperty(PROPERTY_SYSTEM_PROPERTIES, environment);
 		setProperty(property);
 	}
 
 	public Arguments getEnvironment() {
-		JMeterProperty property = getProperty(PROPERTY_ENVIRONMENT);
+		JMeterProperty property = getProperty(PROPERTY_SYSTEM_PROPERTIES);
 		Arguments arguments = null;
 		if (TestElementProperty.class.isInstance(property)) {
 			TestElementProperty testElementProperty = TestElementProperty.class.cast(property);
