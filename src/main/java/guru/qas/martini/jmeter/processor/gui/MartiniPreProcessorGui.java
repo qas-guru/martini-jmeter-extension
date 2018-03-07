@@ -113,9 +113,4 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		configLocationsField.setText(DEFAULT);
 		super.clearGui();
 	}
-
-	/*
-    public static void error(Exception e, JComponent thrower) {
-        JOptionPane.showMessageDialog(thrower, e, "Error", JOptionPane.ERROR_MESSAGE);
-	 */
 }

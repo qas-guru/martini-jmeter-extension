@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
@@ -48,7 +50,7 @@ import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.runtime.event.EventManager;
 
 @SuppressWarnings("WeakerAccess")
-public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
+public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
@@ -63,9 +65,14 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		super();
 	}
 
-	public void process() {
-		LOGGER.debug("in process()");
-		JMeterContext threadContext = super.getThreadContext();
+	@Override
+	public void iterationStart(LoopIterationEvent event) {
+		TestElement source = event.getSource();
+		JMeterContext threadContext = source.getThreadContext();
+		setSpringContext(threadContext);
+	}
+
+	private void setSpringContext(JMeterContext threadContext) {
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
 		samplerContext.computeIfAbsent(PROPERTY_SPRING_CONTEXT, s -> {
 			ConfigurableApplicationContext context = getSpringContext().orElse(null);
@@ -74,6 +81,13 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			}
 			return context;
 		});
+
+	}
+
+	public void process() {
+		LOGGER.debug("in process()");
+		JMeterContext threadContext = super.getThreadContext();
+		setSpringContext(threadContext);
 	}
 
 	private Optional<ConfigurableApplicationContext> getSpringContext() {
