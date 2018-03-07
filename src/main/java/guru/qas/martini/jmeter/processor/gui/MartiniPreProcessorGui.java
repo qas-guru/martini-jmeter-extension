@@ -16,26 +16,32 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor.gui;
 
-import javax.swing.Box;
+import java.awt.Font;
+
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import guru.qas.martini.jmeter.processor.MartiniPreProcessor;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 
 	private static final long serialVersionUID = 4447406345771389792L;
 
 	protected static final String DEFAULT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
 
-	protected JTextField configLocationsField;
+	protected final JTextField configLocationsField;
+	protected final EnvironmentPanel environmentPanel;
 
 	public MartiniPreProcessorGui() {
+		configLocationsField = new JTextField(6);
+		environmentPanel = new EnvironmentPanel(null, true);
 		init();
 	}
 
@@ -45,15 +51,24 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		setBorder(makeBorder());
 		add(makeTitlePanel());
 
-		Box panel = Box.createHorizontalBox();
-		JLabel label = new JLabel("Spring Configuration Locations ");
-		panel.add(label);
+		VerticalPanel springPanel = new VerticalPanel();
+		JLabel springLabel = new JLabel("Spring Configuration Locations");
+		Font springLabelFont = springLabel.getFont();
+		springLabel.setFont(springLabelFont.deriveFont((float) springLabelFont.getSize() + 2));
+		springPanel.add(springLabel);
 
-		configLocationsField = new JTextField(6);
 		configLocationsField.setText(DEFAULT);
-		panel.add(configLocationsField);
+		springPanel.add(configLocationsField);
+		add(springPanel);
 
-		add(panel);
+		VerticalPanel environmentDisplayPanel = new VerticalPanel();
+		JLabel environmentLabel = new JLabel("System Environment Variables");
+		Font environmentLabelFont = environmentLabel.getFont();
+		environmentLabel.setFont(environmentLabelFont.deriveFont((float) environmentLabelFont.getSize() + 2));
+		environmentDisplayPanel.add(environmentLabel);
+
+		environmentDisplayPanel.add(environmentPanel);
+		add(environmentDisplayPanel);
 	}
 
 	@Override
@@ -76,6 +91,8 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		String setting = configLocationsField.getText();
 		MartiniPreProcessor preProcessor = MartiniPreProcessor.class.cast(element);
 		preProcessor.setConfigLocations(setting);
+		Arguments arguments = Arguments.class.cast(environmentPanel.createTestElement());
+		preProcessor.setEnvironment(arguments);
 	}
 
 	@Override
@@ -84,10 +101,15 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		MartiniPreProcessor preProcessor = MartiniPreProcessor.class.cast(element);
 		String setting = preProcessor.getConfigLocations();
 		configLocationsField.setText(setting);
+		Arguments arguments = preProcessor.getEnvironment();
+		if (null != arguments) {
+			environmentPanel.configure(arguments);
+		}
 	}
 
 	@Override
 	public void clearGui() {
+		environmentPanel.clear();
 		configLocationsField.setText(DEFAULT);
 		super.clearGui();
 	}

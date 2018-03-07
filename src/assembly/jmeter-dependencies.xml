@@ -7,11 +7,14 @@
 	<baseDirectory>/</baseDirectory>
 	<dependencySets>
 		<dependencySet>
+			<useTransitiveDependencies>true</useTransitiveDependencies>
 			<unpack>false</unpack>
 			<scope>runtime</scope>
 			<outputDirectory>/</outputDirectory>
 			<excludes>
+				<exclude>guru.qas:martini-jmeter</exclude>
 				<exclude>org.slf4j:slf4j-api</exclude>
+				<exclude>org.apache.httpcomponents:httpcore</exclude>
 			</excludes>
 		</dependencySet>
 	</dependencySets>

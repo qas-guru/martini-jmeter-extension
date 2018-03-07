@@ -7,13 +7,28 @@
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
-        <collectionProp name="Arguments.arguments"/>
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="spring.profiles.active" elementType="Argument">
+            <stringProp name="Argument.name">spring.profiles.active</stringProp>
+            <stringProp name="Argument.value">alpha,provisional,chromium</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
       </elementProp>
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
       <guru.qas.martini.jmeter.processor.MartiniPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
-        <stringProp name="configLocations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
+        <stringProp name="martini.config.locations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
+        <elementProp name="martini.system.environment" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="spring.profiles.active" elementType="Argument">
+              <stringProp name="Argument.name">spring.profiles.active</stringProp>
+              <stringProp name="Argument.value">alpha,provisional,chromium</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </elementProp>
       </guru.qas.martini.jmeter.processor.MartiniPreProcessor>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
