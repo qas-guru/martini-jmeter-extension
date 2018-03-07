@@ -19,7 +19,6 @@ package guru.qas.martini.jmeter.processor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.jmeter.threads.JMeterContext;
@@ -135,8 +134,7 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 			checkNotNull(springContext, "null SpringContext");
 			UUID id = UUID.randomUUID();
 
-			Properties jmeterProperties = jmeterContext.getProperties();
-			String name = "aName";
+			String name = springContext.getDisplayName();
 
 			long timestamp = springContext.getStartupDate();
 			String hostname = JMeterUtils.getLocalHostName();

@@ -30,6 +30,7 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -69,7 +70,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		samplerContext.computeIfAbsent(PROPERTY_SPRING_CONTEXT, s -> {
 			ConfigurableApplicationContext context = getSpringContext().orElse(null);
 			if (null == context) {
-				LOGGER.warn("Spring context not set");
+				JMeterUtils.reportErrorToUser("Spring context not set.", "Martini Error");
 			}
 			return context;
 		});
@@ -89,6 +90,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		try {
 			PropertySource propertySource = getEnvironmentPropertySource();
 			ConfigurableApplicationContext context = setUpSpring(propertySource);
+
 			SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
 				.setJMeterContext(getThreadContext())
 				.setConfigurableApplicationContext(context)
@@ -105,12 +107,14 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			eventManager.publishBeforeSuite(this, suiteIdentifier);
 		}
 		catch (Exception e) {
+			JMeterUtils.reportErrorToUser("Unable to create Spring context.", "Martini Error", e);
 			LOGGER.error("unable to create Spring context", e);
 		}
 	}
 
 	public void testStarted(String host) {
 		LOGGER.debug("in testStarted({})", host);
+		testStarted();
 	}
 
 	protected PropertySource getEnvironmentPropertySource() {
@@ -157,6 +161,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 				context.close();
 			}
 			catch (Exception e) {
+				JMeterUtils.reportErrorToUser("Unable to close Spring context.", "Martini Error", e);
 				LOGGER.warn("unable to close Spring context", e);
 			}
 		}
@@ -164,6 +169,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 
 	public void testEnded(String host) {
 		LOGGER.debug("in testEnded({})", host);
+		testEnded();
 	}
 
 	public void setConfigLocations(String configLocations) {
