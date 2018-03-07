@@ -16,6 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -41,13 +43,18 @@ import org.springframework.core.env.PropertySource;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
+import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.runtime.event.EventManager;
+
 @SuppressWarnings("WeakerAccess")
 public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
 	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
-	private static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
+	protected static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
+	protected static final String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
+	protected static final String CONFIG_LOCATION = "classpath*:/martiniJmeterContext.xml";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniPreProcessor.class);
 
@@ -60,7 +67,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		JMeterContext threadContext = super.getThreadContext();
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
 		samplerContext.computeIfAbsent(PROPERTY_SPRING_CONTEXT, s -> {
-			ClassPathXmlApplicationContext context = getSpringContext().orElse(null);
+			ConfigurableApplicationContext context = getSpringContext().orElse(null);
 			if (null == context) {
 				LOGGER.warn("Spring context not set");
 			}
@@ -68,11 +75,11 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		});
 	}
 
-	private Optional<ClassPathXmlApplicationContext> getSpringContext() {
+	private Optional<ConfigurableApplicationContext> getSpringContext() {
 		JMeterProperty property = this.getProperty(PROPERTY_SPRING_CONTEXT);
 		Object o = property.getObjectValue();
-		ClassPathXmlApplicationContext context = ClassPathXmlApplicationContext.class.isInstance(o) ?
-			ClassPathXmlApplicationContext.class.cast(o) : null;
+		ConfigurableApplicationContext context = ConfigurableApplicationContext.class.isInstance(o) ?
+			ConfigurableApplicationContext.class.cast(o) : null;
 		return Optional.ofNullable(context);
 	}
 
@@ -82,9 +89,20 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		try {
 			PropertySource propertySource = getEnvironmentPropertySource();
 			ConfigurableApplicationContext context = setUpSpring(propertySource);
+			SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
+				.setJMeterContext(getThreadContext())
+				.setConfigurableApplicationContext(context)
+				.build();
+
+			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+			beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
+
 			JMeterProperty property = new ObjectProperty(PROPERTY_SPRING_CONTEXT, context);
 			super.setProperty(property);
 			super.setTemporary(property);
+
+			EventManager eventManager = context.getBean(EventManager.class);
+			eventManager.publishBeforeSuite(this, suiteIdentifier);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
@@ -103,10 +121,8 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	}
 
 	protected ConfigurableApplicationContext setUpSpring(PropertySource propertySource) {
-		String joined = getConfigLocations();
-		List<String> locations = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
-		String[] locationArray = locations.toArray(new String[locations.size()]);
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(locationArray, false);
+		String[] locations = getRuntimeConfigurationLocations();
+		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(locations, false);
 
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources propertySources = environment.getPropertySources();
@@ -117,12 +133,27 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		return context;
 	}
 
+	private String[] getRuntimeConfigurationLocations() {
+		LinkedHashSet<String> locations = new LinkedHashSet<>();
+		locations.add(CONFIG_LOCATION);
+
+		String joined = getConfigLocations();
+		List<String> configured = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
+		locations.addAll(configured);
+
+		return locations.toArray(new String[locations.size()]);
+	}
+
 	public void testEnded() {
 		LOGGER.debug("in testEnded()");
-		ClassPathXmlApplicationContext context = getSpringContext().orElse(null);
+
+		ConfigurableApplicationContext context = getSpringContext().orElse(null);
 		this.removeProperty(PROPERTY_SPRING_CONTEXT);
 		if (null != context) {
 			try {
+				EventManager eventManager = context.getBean(EventManager.class);
+				SuiteIdentifier suiteIdentifier = context.getBean(SuiteIdentifier.class);
+				eventManager.publishAfterSuite(this, suiteIdentifier);
 				context.close();
 			}
 			catch (Exception e) {
