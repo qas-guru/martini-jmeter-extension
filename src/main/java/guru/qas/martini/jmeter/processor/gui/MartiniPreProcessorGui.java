@@ -62,7 +62,7 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		add(springPanel);
 
 		VerticalPanel environmentDisplayPanel = new VerticalPanel();
-		JLabel environmentLabel = new JLabel("System Environment Variables");
+		JLabel environmentLabel = new JLabel("System Properties");
 		Font environmentLabelFont = environmentLabel.getFont();
 		environmentLabel.setFont(environmentLabelFont.deriveFont((float) environmentLabelFont.getSize() + 2));
 		environmentDisplayPanel.add(environmentLabel);

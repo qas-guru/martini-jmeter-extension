@@ -24,7 +24,12 @@
           <collectionProp name="Arguments.arguments">
             <elementProp name="spring.profiles.active" elementType="Argument">
               <stringProp name="Argument.name">spring.profiles.active</stringProp>
-              <stringProp name="Argument.value">alpha,provisional,chromium</stringProp>
+              <stringProp name="Argument.value">provisional,chromium</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="tripod.env" elementType="Argument">
+              <stringProp name="Argument.name">tripod.env</stringProp>
+              <stringProp name="Argument.value">alpha</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
           </collectionProp>

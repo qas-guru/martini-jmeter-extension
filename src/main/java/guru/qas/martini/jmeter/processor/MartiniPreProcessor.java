@@ -17,7 +17,9 @@ limitations under the License.
 package guru.qas.martini.jmeter.processor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.processor.PreProcessor;
@@ -39,6 +41,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	private static final long serialVersionUID = 6143536078921717477L;
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
 	protected static final String PROPERTY_ENVIRONMENT = "martini.system.environment";
+	private static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniPreProcessor.class);
 
@@ -69,6 +72,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		LOGGER.debug("in testStarted()");
 
 		try {
+			setUpEnvironment();
 			String joined = getConfigLocations();
 			List<String> locations = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
 			String[] locationArray = locations.toArray(new String[locations.size()]);
@@ -85,7 +89,18 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		LOGGER.debug("in testStarted({})", host);
 	}
 
-	private static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
+	protected void setUpEnvironment() {
+		Arguments environment = getEnvironment();
+		Map<String, String> variables = environment.getArgumentsAsMap();
+		if (!variables.isEmpty()) {
+			Properties systemProperties = System.getProperties();
+			variables.forEach((key, value) -> {
+				if (!systemProperties.containsKey(key)) {
+					systemProperties.setProperty(key, value);
+				}
+			});
+		}
+	}
 
 	public void testEnded() {
 		LOGGER.debug("in testEnded()");
@@ -95,6 +110,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			ClassPathXmlApplicationContext applicationContext = ClassPathXmlApplicationContext.class.cast(o);
 			applicationContext.close();
 		}
+		this.removeProperty(PROPERTY_SPRING_CONTEXT);
 	}
 
 	public void testEnded(String host) {
