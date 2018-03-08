@@ -46,8 +46,11 @@ import org.springframework.core.env.PropertySource;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
+import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.runtime.event.EventManager;
+
+import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
 @SuppressWarnings("WeakerAccess")
 public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
@@ -55,7 +58,6 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	private static final long serialVersionUID = 6143536078921717477L;
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
 	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
-	protected static final String PROPERTY_SPRING_CONTEXT = "martini.spring.context";
 	protected static final String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
 	protected static final String CONFIG_LOCATION = "classpath*:/martiniJmeterContext.xml";
 
@@ -74,9 +76,10 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 
 	private void setSpringContext(JMeterContext threadContext) {
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.computeIfAbsent(PROPERTY_SPRING_CONTEXT, s -> {
+		samplerContext.computeIfAbsent(KEY_SPRING_CONTEXT, s -> {
 			ConfigurableApplicationContext context = getSpringContext().orElse(null);
 			if (null == context) {
+				LOGGER.error("Spring context not set");
 				JMeterUtils.reportErrorToUser("Spring context not set.", "Martini Error");
 			}
 			return context;
@@ -89,7 +92,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	}
 
 	private Optional<ConfigurableApplicationContext> getSpringContext() {
-		JMeterProperty property = this.getProperty(PROPERTY_SPRING_CONTEXT);
+		JMeterProperty property = this.getProperty(KEY_SPRING_CONTEXT);
 		Object o = property.getObjectValue();
 		ConfigurableApplicationContext context = ConfigurableApplicationContext.class.isInstance(o) ?
 			ConfigurableApplicationContext.class.cast(o) : null;
@@ -111,16 +114,19 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
 			beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
 
-			JMeterProperty property = new ObjectProperty(PROPERTY_SPRING_CONTEXT, context);
+			JMeterProperty property = new ObjectProperty(KEY_SPRING_CONTEXT, context);
 			super.setProperty(property);
 			super.setTemporary(property);
 
 			EventManager eventManager = context.getBean(EventManager.class);
 			eventManager.publishBeforeSuite(this, suiteIdentifier);
 		}
+		catch (MartiniException e) {
+			JMeterUtils.reportErrorToUser(e.getMessage(), "Martini Error", e);
+		}
 		catch (Exception e) {
-			JMeterUtils.reportErrorToUser("Unable to create Spring context.", "Martini Error", e);
 			LOGGER.error("unable to create Spring context", e);
+			JMeterUtils.reportErrorToUser("Unable to create Spring context.", "Martini Error", e);
 		}
 	}
 
@@ -164,7 +170,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		LOGGER.debug("in testEnded()");
 
 		ConfigurableApplicationContext context = getSpringContext().orElse(null);
-		this.removeProperty(PROPERTY_SPRING_CONTEXT);
+		this.removeProperty(KEY_SPRING_CONTEXT);
 		if (null != context) {
 			try {
 				EventManager eventManager = context.getBean(EventManager.class);
@@ -173,8 +179,8 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 				context.close();
 			}
 			catch (Exception e) {
-				JMeterUtils.reportErrorToUser("Unable to close Spring context.", "Martini Error", e);
 				LOGGER.warn("unable to close Spring context", e);
+				JMeterUtils.reportErrorToUser("Unable to close Spring context.", "Martini Error", e);
 			}
 		}
 	}
