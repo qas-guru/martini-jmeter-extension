@@ -65,9 +65,6 @@ public class MartiniController extends GenericController implements LoopIteratio
 			JMeterContext threadContext = super.getThreadContext();
 			JMeterVariables variables = threadContext.getVariables();
 			variables.putObject(PROPERTY_MARTINI_ITERATOR, i);
-//			JMeterProperty property = new ObjectProperty(PROPERTY_MARTINI_ITERATOR, i);
-//			super.setProperty(property);
-//			super.setTemporary(property);
 		}
 		catch (MartiniException e) {
 			JMeterUtils.reportErrorToUser(e.getMessage(), "Martini Error", e);
@@ -120,12 +117,15 @@ public class MartiniController extends GenericController implements LoopIteratio
 		Sampler sampler = super.next();
 		Martini martini = null == sampler ? getNextMartini() : getCurrentMartini();
 
-		if (null == sampler) {
+		if (null == martini) {
+			sampler = null;
+		}
+		else if (null == sampler) {
 			super.reInitialize(); // TODO: reset iterator?
 			sampler = super.next();
 		}
 
-		if (null == martini || null == sampler) {
+		if (null == sampler) {
 			setDone(true);
 		}
 		else {
