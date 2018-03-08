@@ -16,13 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler.gui;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
+import guru.qas.martini.jmeter.Il8n;
 import guru.qas.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -42,10 +40,7 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public String getStaticLabel() {
-		Locale locale = Locale.getDefault(Locale.Category.DISPLAY);
-		ResourceBundle bundle = ResourceBundle.getBundle("guru.qas.martini.sampler.gui.MartiniSampler", locale);
-		String key = getLabelResource();
-		return bundle.getString(key);
+		return Il8n.getInstance().getStaticLabel(this);
 	}
 
 	@Override
