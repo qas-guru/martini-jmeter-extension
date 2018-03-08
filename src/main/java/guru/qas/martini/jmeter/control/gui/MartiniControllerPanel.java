@@ -33,30 +33,6 @@ import guru.qas.martini.jmeter.control.MartiniController;
 @SuppressWarnings("WeakerAccess")
 public class MartiniControllerPanel extends AbstractControllerGui {
 
-	/*
-	    /**
-     * Create a new LoopControlPanel as a standalone component.
-     *
-    public ForeachControlPanel() {
-        this(true);
-    }
-
-    /**
-     * Create a new LoopControlPanel as either a standalone or an embedded
-     * component.
-     *
-     * @param displayName
-     *            indicates whether or not this component should display its
-     *            name. If true, this is a standalone component. If false, this
-     *            component is intended to be used as a subpanel for another
-     *            component.
-     *
-    public ForeachControlPanel(boolean displayName) {
-        this.displayName = displayName;
-        init();
-    }
-	 */
-
 	private final boolean standalone;
 	private final JTextArea textArea;
 

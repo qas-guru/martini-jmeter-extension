@@ -39,37 +39,21 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">2</stringProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
-          <boolProp name="LoopController.continue_forever">true</boolProp>
-          <stringProp name="LoopController.loops">2</stringProp>
-        </LoopController>
+        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller" enabled="true">
+          <stringProp name="martini.spel.filter">isSmoke()</stringProp>
+        </guru.qas.martini.jmeter.control.MartiniController>
         <hashTree>
-          <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller" enabled="true">
-            <stringProp name="martini.spel.filter">isSmoke()</stringProp>
-          </guru.qas.martini.jmeter.control.MartiniController>
-          <hashTree>
-            <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
-              <boolProp name="LoopController.continue_forever">true</boolProp>
-              <stringProp name="LoopController.loops">2</stringProp>
-            </LoopController>
-            <hashTree>
-              <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler 1" enabled="true">
-                <boolProp name="displayJMeterProperties">true</boolProp>
-                <boolProp name="displayJMeterVariables">true</boolProp>
-                <boolProp name="displaySystemProperties">true</boolProp>
-              </DebugSampler>
-              <hashTree/>
-            </hashTree>
-          </hashTree>
+          <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="true"/>
+          <hashTree/>
         </hashTree>
       </hashTree>
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
