@@ -16,11 +16,16 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.control;
 
+import java.util.Map;
+
 import org.apache.jmeter.control.GenericController;
+import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
+import org.apache.jmeter.threads.JMeterContext;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController {
+public class MartiniController extends GenericController implements LoopIterationListener {
 
 	private static final long serialVersionUID = 2700570246170278883L;
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
@@ -35,6 +40,18 @@ public class MartiniController extends GenericController {
 	}
 
 	@Override
+	public void iterationStart(LoopIterationEvent event) {
+		JMeterContext threadContext = super.getThreadContext();
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		System.out.println("breakpoint");
+	}
+
+	@Override
+	public void triggerEndOfLoop() {
+		super.triggerEndOfLoop();
+	}
+
+	@Override
 	public Sampler next() {
 		return super.next();
 	}
@@ -43,6 +60,8 @@ public class MartiniController extends GenericController {
 	public boolean isDone() {
 		return super.isDone();
 	}
+
+
 
 	/*
 	 private static final Logger log = LoggerFactory.getLogger(ForeachController.class);

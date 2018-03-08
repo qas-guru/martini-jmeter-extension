@@ -86,8 +86,6 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 
 	public void process() {
 		LOGGER.debug("in process()");
-		JMeterContext threadContext = super.getThreadContext();
-		setSpringContext(threadContext);
 	}
 
 	private Optional<ConfigurableApplicationContext> getSpringContext() {
