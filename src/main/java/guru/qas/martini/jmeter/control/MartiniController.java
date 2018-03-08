@@ -121,14 +121,12 @@ public class MartiniController extends GenericController implements LoopIteratio
 			sampler = null;
 		}
 		else if (null == sampler) {
-			super.reInitialize(); // TODO: reset iterator?
+			resetCurrent();
+			recoverRunningVersion();
 			sampler = super.next();
 		}
 
-		if (null == sampler) {
-			setDone(true);
-		}
-		else {
+		if (null != sampler) {
 			JMeterContext threadContext = sampler.getThreadContext();
 			Map<String, Object> samplerContext = threadContext.getSamplerContext();
 			samplerContext.put(PROPERTY_CURRENT_MARTINI, martini);
