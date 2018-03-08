@@ -25,9 +25,8 @@ import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
-import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,9 +62,12 @@ public class MartiniController extends GenericController implements LoopIteratio
 	public void iterationStart(LoopIterationEvent event) {
 		try {
 			Iterator<Martini> i = getNewIterator();
-			JMeterProperty property = new ObjectProperty(PROPERTY_MARTINI_ITERATOR, i);
-			super.setProperty(property);
-			super.setTemporary(property);
+			JMeterContext threadContext = super.getThreadContext();
+			JMeterVariables variables = threadContext.getVariables();
+			variables.putObject(PROPERTY_MARTINI_ITERATOR, i);
+//			JMeterProperty property = new ObjectProperty(PROPERTY_MARTINI_ITERATOR, i);
+//			super.setProperty(property);
+//			super.setTemporary(property);
 		}
 		catch (MartiniException e) {
 			JMeterUtils.reportErrorToUser(e.getMessage(), "Martini Error", e);
@@ -81,8 +83,8 @@ public class MartiniController extends GenericController implements LoopIteratio
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
 		Object o = samplerContext.getOrDefault(KEY_SPRING_CONTEXT, null);
 		if (null == o) {
-			throw new MartiniException(
-				"Spring context not set; is there a Martini PreProcessor configured at the Test Plan level?");
+			String message = String.format("Spring context not set; %s samplers will not be executed.", getName());
+			throw new MartiniException(message);
 		}
 		return getNewIterator(ConfigurableApplicationContext.class.cast(o));
 	}
@@ -90,15 +92,18 @@ public class MartiniController extends GenericController implements LoopIteratio
 	protected Iterator<Martini> getNewIterator(ConfigurableApplicationContext context) {
 		Mixologist mixologist = context.getBean(Mixologist.class);
 		String spelFilter = getSpelFilter();
-		Collection<Martini> martinis = spelFilter.isEmpty() ? mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
+		Collection<Martini> martinis = spelFilter.isEmpty() ?
+			mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
 		return getNewIterator(martinis);
 	}
 
 	protected Iterator<Martini> getNewIterator(Collection<Martini> martinis) {
 		if (martinis.isEmpty()) {
+			String action = String.format("%s samplers will not be executed", getName());
 			String spelFilter = getSpelFilter();
 			String message = spelFilter.isEmpty() ?
-				"No Martinis found." : String.format("No Martinis found matching filter '%s'.", spelFilter);
+				String.format("No Martini found; %s.", action) :
+				String.format("No Martini found matching filter %s; %s.", spelFilter, action);
 			throw new MartiniException(message);
 		}
 		return martinis.iterator();
@@ -112,60 +117,57 @@ public class MartiniController extends GenericController implements LoopIteratio
 	@SuppressWarnings("unchecked")
 	@Override
 	public Sampler next() {
-		Martini martini = getCurrentMartini().orElseGet(() -> {
-			Iterator<Martini> i = getIterator().orElse(null);
-			Martini next = null != i && i.hasNext() ? i.next() : null;
-			setCurrent(next);
-			return next;
-		});
+		Sampler sampler = super.next();
+		Martini martini = null == sampler ? getNextMartini() : getCurrentMartini();
 
-		Sampler sampler = null;
-		if (null == martini) {
+		if (null == sampler) {
+			super.reInitialize(); // TODO: reset iterator?
+			sampler = super.next();
+		}
+
+		if (null == martini || null == sampler) {
 			setDone(true);
 		}
 		else {
-			sampler = super.next();
-			if (null == sampler) {
-				super.reInitialize();
-				sampler = super.next();
-			}
+			JMeterContext threadContext = sampler.getThreadContext();
+			Map<String, Object> samplerContext = threadContext.getSamplerContext();
+			samplerContext.put(PROPERTY_CURRENT_MARTINI, martini);
 		}
-
-		updateSamplerContext(martini, sampler);
 		return sampler;
 	}
 
-	private void updateSamplerContext(Martini martini, Sampler sampler) {
-		if (null != sampler) {
-			JMeterContext threadContext = sampler.getThreadContext();
-			Map<String, Object> samplerContext = threadContext.getSamplerContext();
-			if (null == martini) {
-				samplerContext.remove(PROPERTY_CURRENT_MARTINI);
-			}
-			else {
-				samplerContext.put(PROPERTY_CURRENT_MARTINI, martini);
-			}
-		}
+	private Martini getCurrentMartini() {
+		JMeterContext threadContext = getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(PROPERTY_CURRENT_MARTINI);
+		Martini martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+		return null == martini ? getNextMartini() : martini;
+	}
+
+	private Martini getNextMartini() {
+		Iterator<Martini> i = this.getIterator().orElse(null);
+		Martini next = null != i && i.hasNext() ? i.next() : null;
+		this.setCurrent(next);
+		return next;
 	}
 
 	@SuppressWarnings("unchecked")
 	private Optional<Iterator<Martini>> getIterator() {
-		JMeterProperty property = super.getProperty(PROPERTY_MARTINI_ITERATOR);
-		Object o = property.getObjectValue();
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(PROPERTY_MARTINI_ITERATOR);
 		Iterator<Martini> i = Iterator.class.isInstance(o) ? (Iterator<Martini>) o : null;
 		return Optional.ofNullable(i);
 	}
 
-	private Optional<Martini> getCurrentMartini() {
-		JMeterProperty property = super.getProperty(PROPERTY_CURRENT_MARTINI);
-		Object o = property.getObjectValue();
-		Martini martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
-		return Optional.ofNullable(martini);
-	}
-
 	private void setCurrent(Martini martini) {
-		JMeterProperty property = new ObjectProperty(PROPERTY_CURRENT_MARTINI, martini);
-		super.setProperty(property);
-		super.setTemporary(property);
+		JMeterContext threadContext = getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		if (null == martini) {
+			variables.remove(PROPERTY_CURRENT_MARTINI);
+		}
+		else {
+			variables.putObject(PROPERTY_CURRENT_MARTINI, martini);
+		}
 	}
 }

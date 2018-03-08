@@ -76,15 +76,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 
 	private void setSpringContext(JMeterContext threadContext) {
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.computeIfAbsent(KEY_SPRING_CONTEXT, s -> {
-			ConfigurableApplicationContext context = getSpringContext().orElse(null);
-			if (null == context) {
-				LOGGER.error("Spring context not set");
-				JMeterUtils.reportErrorToUser("Spring context not set.", "Martini Error");
-			}
-			return context;
-		});
-
+		samplerContext.computeIfAbsent(KEY_SPRING_CONTEXT, s -> getSpringContext().orElse(null));
 	}
 
 	public void process() {
@@ -126,7 +118,8 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
-			JMeterUtils.reportErrorToUser("Unable to create Spring context.", "Martini Error", e);
+			JMeterUtils.reportErrorToUser(
+				"Unable to create Spring context; see logs for details.", "Martini Error", e);
 		}
 	}
 
