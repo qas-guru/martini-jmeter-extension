@@ -77,8 +77,8 @@ public class MartiniController extends GenericController implements LoopIteratio
 
 	protected Iterator<Martini> getNewIterator() {
 		JMeterContext threadContext = super.getThreadContext();
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		Object o = samplerContext.getOrDefault(KEY_SPRING_CONTEXT, null);
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(KEY_SPRING_CONTEXT);
 		if (null == o) {
 			String message = String.format("Spring context not set; %s samplers will not be executed.", getName());
 			throw new MartiniException(message);
@@ -104,11 +104,6 @@ public class MartiniController extends GenericController implements LoopIteratio
 			throw new MartiniException(message);
 		}
 		return martinis.iterator();
-	}
-
-	@Override
-	public void triggerEndOfLoop() {
-		super.triggerEndOfLoop();
 	}
 
 	@SuppressWarnings("unchecked")

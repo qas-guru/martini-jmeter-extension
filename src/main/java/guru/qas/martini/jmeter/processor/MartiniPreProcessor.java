@@ -32,6 +32,7 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,12 +76,27 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	}
 
 	private void setSpringContext(JMeterContext threadContext) {
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.computeIfAbsent(KEY_SPRING_CONTEXT, s -> getSpringContext().orElse(null));
+		JMeterVariables variables = threadContext.getVariables();
+		ConfigurableApplicationContext springContext = getSpringContext().orElse(null);
+		if (null == springContext) {
+			variables.remove(KEY_SPRING_CONTEXT);
+		}
+		else {
+			variables.putObject(KEY_SPRING_CONTEXT, springContext);
+		}
 	}
 
 	public void process() {
 		LOGGER.debug("in process()");
+		JMeterContext threadContext = super.getThreadContext();
+		ConfigurableApplicationContext springContext = getSpringContext().orElse(null);
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		if (null == springContext) {
+			samplerContext.remove(KEY_SPRING_CONTEXT);
+		}
+		else {
+			samplerContext.put(KEY_SPRING_CONTEXT, springContext);
+		}
 	}
 
 	private Optional<ConfigurableApplicationContext> getSpringContext() {
