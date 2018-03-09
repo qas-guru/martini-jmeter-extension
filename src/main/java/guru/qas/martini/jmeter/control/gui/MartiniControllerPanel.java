@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.control.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Font;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -28,6 +27,8 @@ import org.apache.jmeter.control.gui.AbstractControllerGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.testelement.TestElement;
 
+import guru.qas.martini.jmeter.Gui;
+import guru.qas.martini.jmeter.Il8n;
 import guru.qas.martini.jmeter.control.MartiniController;
 
 @SuppressWarnings("WeakerAccess")
@@ -67,10 +68,8 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	private VerticalPanel getSpelPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel spelLabel = new JLabel("SpEL Filter");
-		Font spelLabelFont = spelLabel.getFont();
-		spelLabel.setFont(spelLabelFont.deriveFont((float) spelLabelFont.getSize() + 2));
-		panel.add(spelLabel);
+		JLabel label = Gui.getInstance().getJLabel(getClass(), "spel.filter.label", 2);
+		panel.add(label);
 
 		JScrollPane scrollPane = new JScrollPane(textArea);
 		panel.add(scrollPane);
@@ -80,12 +79,12 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	@Override
 	public String getLabelResource() {
-		return "martini_controller_title";
+		return "gui.title";
 	}
 
 	@Override
 	public String getStaticLabel() {
-		return "Martini Controller";
+		return Il8n.getInstance().getMessage(getClass(), getLabelResource());
 	}
 
 	@Override

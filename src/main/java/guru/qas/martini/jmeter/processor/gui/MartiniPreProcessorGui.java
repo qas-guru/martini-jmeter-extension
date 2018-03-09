@@ -16,8 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor.gui;
 
-import java.awt.Font;
-
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
@@ -27,6 +25,8 @@ import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
+import guru.qas.martini.jmeter.Gui;
+import guru.qas.martini.jmeter.Il8n;
 import guru.qas.martini.jmeter.processor.MartiniPreProcessor;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -51,33 +51,38 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		setBorder(makeBorder());
 		add(makeTitlePanel());
 
+		VerticalPanel springPanel = getSpringPanel();
+		add(springPanel);
+
+		VerticalPanel environmentDisplayPanel = getEnvironmentDisplayPanel();
+		add(environmentDisplayPanel);
+	}
+
+	protected VerticalPanel getSpringPanel() {
 		VerticalPanel springPanel = new VerticalPanel();
-		JLabel springLabel = new JLabel("Spring Configuration Locations");
-		Font springLabelFont = springLabel.getFont();
-		springLabel.setFont(springLabelFont.deriveFont((float) springLabelFont.getSize() + 2));
-		springPanel.add(springLabel);
+		JLabel label = Gui.getInstance().getJLabel(getClass(), "spring.panel.label", 2);
+		springPanel.add(label);
 
 		configLocationsField.setText(DEFAULT);
 		springPanel.add(configLocationsField);
-		add(springPanel);
+		return springPanel;
+	}
 
-		VerticalPanel environmentDisplayPanel = new VerticalPanel();
-		JLabel environmentLabel = new JLabel("System Properties");
-		Font environmentLabelFont = environmentLabel.getFont();
-		environmentLabel.setFont(environmentLabelFont.deriveFont((float) environmentLabelFont.getSize() + 2));
-		environmentDisplayPanel.add(environmentLabel);
-
-		environmentDisplayPanel.add(environmentPanel);
-		add(environmentDisplayPanel);
+	protected VerticalPanel getEnvironmentDisplayPanel() {
+		VerticalPanel panel = new VerticalPanel();
+		JLabel label = Gui.getInstance().getJLabel(getClass(), "spring.environment.label", 2);
+		panel.add(label);
+		panel.add(environmentPanel);
+		return panel;
 	}
 
 	@Override
 	public String getStaticLabel() {
-		return "Martini PreProcessor";
+		return Il8n.getInstance().getMessage(getClass(), getLabelResource());
 	}
 
 	public String getLabelResource() {
-		return "martini_preprocessor_title";
+		return "gui.title";
 	}
 
 	public TestElement createTestElement() {

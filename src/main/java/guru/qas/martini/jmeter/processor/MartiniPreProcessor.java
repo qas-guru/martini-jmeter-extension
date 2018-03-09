@@ -33,7 +33,6 @@ import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -49,6 +48,7 @@ import com.google.common.collect.ImmutableMap;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
@@ -130,12 +130,12 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			eventManager.publishBeforeSuite(this, suiteIdentifier);
 		}
 		catch (MartiniException e) {
-			JMeterUtils.reportErrorToUser(e.getMessage(), "Martini Error", e);
+			LOGGER.error("unable to create Spring context", e);
+			Gui.getInstance().reportError(getClass(), e);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
-			JMeterUtils.reportErrorToUser(
-				"Unable to create Spring context; see logs for details.", "Martini Error", e);
+			Gui.getInstance().reportError(getClass(), "error.creating.spring.context", e);
 		}
 	}
 
@@ -189,7 +189,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			}
 			catch (Exception e) {
 				LOGGER.warn("unable to close Spring context", e);
-				JMeterUtils.reportErrorToUser("Unable to close Spring context.", "Martini Error", e);
+				Gui.getInstance().reportError(getClass(), "error.closing.spring.context", e);
 			}
 		}
 	}

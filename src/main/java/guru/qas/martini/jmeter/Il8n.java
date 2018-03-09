@@ -17,62 +17,68 @@ limitations under the License.
 package guru.qas.martini.jmeter;
 
 import java.util.Locale;
+
 import java.util.ResourceBundle;
-import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nonnull;
-
-import org.apache.jmeter.gui.JMeterGUIComponent;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
-public class Il8n extends CacheLoader<Class, ResourceBundle> {
+public class Il8n {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Il8n.class);
 	protected static final Il8n INSTANCE = new Il8n();
 
 	private final Locale locale;
-	private final LoadingCache<Class, ResourceBundle> cache;
 
 	protected Il8n() {
 		locale = JMeterUtils.getLocale();
-		cache = CacheBuilder.newBuilder()
-			.maximumSize(10)
-			.expireAfterAccess(1, TimeUnit.MINUTES)
-			.build(this);
-	}
-
-	@Override
-	public ResourceBundle load(@Nonnull Class c) {
-		String name = c.getCanonicalName();
-		return ResourceBundle.getBundle(name, locale);
 	}
 
 	public static Il8n getInstance() {
 		return INSTANCE;
 	}
 
-	public String getStaticLabel(JMeterGUIComponent component) {
-		checkNotNull(component, "null JMeterGUIComponent");
-		Class implementation = component.getClass();
-		String key = component.getLabelResource();
+	public String getMessage(Class implementation, String key) {
+		checkNotNull(implementation, "null Class");
+		checkNotNull(key, "null String");
+		ResourceBundle bundle = getResourceBundle(implementation);
+		return null == bundle ? key : getText(key, bundle);
+	}
 
-		String label = key;
+	public String getInterpolatedMessage(Class implementation, String key, Object... arguments) {
+		checkNotNull(implementation, "null Class");
+		checkNotNull(key, "null String");
+		String template = getMessage(implementation, key);
+		return null == template ? key : String.format(template, arguments);
+	}
+
+	private ResourceBundle getResourceBundle(Class implementation) {
+		String name = implementation.getCanonicalName();
+
+		ResourceBundle bundle = null;
 		try {
-			ResourceBundle bundle = cache.get(implementation);
-			label = bundle.getString(key).trim();
+			checkNotNull(name, "Class has no canonical name: %s", implementation);
+			String baseName = String.format("%sIl8n", name);
+			bundle = ResourceBundle.getBundle(baseName, locale); // ResourceBundle performs caching.
 		}
 		catch (Exception e) {
-			LOGGER.warn("unable to retrieve label from ResourceBundle", e);
+			LOGGER.warn("unable to retrieve ResourceBundle for class: {}", implementation, e);
 		}
-		return label;
+		return bundle;
+	}
+
+	protected String getText(String key, ResourceBundle bundle) {
+		String label = null;
+		try {
+			label = bundle.getString(key);
+		}
+		catch (Exception e) {
+			LOGGER.warn("unable to find value by key {} in ResourceBundle {}", key, bundle, e);
+		}
+		return null == label ? key : label;
 	}
 }

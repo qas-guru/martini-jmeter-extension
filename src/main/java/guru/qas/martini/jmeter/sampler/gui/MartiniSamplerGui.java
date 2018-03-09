@@ -40,12 +40,12 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getInstance().getStaticLabel(this);
+		return Il8n.getInstance().getMessage(getClass(), getLabelResource());
 	}
 
 	@Override
 	public String getLabelResource() {
-		return "martini_sampler";
+		return "gui.title";
 	}
 
 	@Override

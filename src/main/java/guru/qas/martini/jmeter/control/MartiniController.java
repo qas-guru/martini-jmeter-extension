@@ -27,7 +27,6 @@ import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -35,6 +34,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
+import guru.qas.martini.jmeter.Gui;
+import guru.qas.martini.jmeter.Il8n;
 
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
@@ -67,11 +68,11 @@ public class MartiniController extends GenericController implements LoopIteratio
 			variables.putObject(PROPERTY_MARTINI_ITERATOR, i);
 		}
 		catch (MartiniException e) {
-			JMeterUtils.reportErrorToUser(e.getMessage(), "Martini Error", e);
+			Gui.getInstance().reportError(getClass(), e);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to retrieve test scenarios", e);
-			JMeterUtils.reportErrorToUser("Unable to retrieve test scenarios.", "Martini Error", e);
+			Gui.getInstance().reportError(getClass(), "error.retrieving.scenarios", e);
 		}
 	}
 
@@ -80,7 +81,8 @@ public class MartiniController extends GenericController implements LoopIteratio
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject(KEY_SPRING_CONTEXT);
 		if (null == o) {
-			String message = String.format("Spring context not set; %s samplers will not be executed.", getName());
+			Il8n il8n = Il8n.getInstance();
+			String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
 			throw new MartiniException(message);
 		}
 		return getNewIterator(ConfigurableApplicationContext.class.cast(o));
@@ -96,11 +98,11 @@ public class MartiniController extends GenericController implements LoopIteratio
 
 	protected Iterator<Martini> getNewIterator(Collection<Martini> martinis) {
 		if (martinis.isEmpty()) {
-			String action = String.format("%s samplers will not be executed", getName());
 			String spelFilter = getSpelFilter();
+			Il8n il8n = Il8n.getInstance();
 			String message = spelFilter.isEmpty() ?
-				String.format("No Martini found; %s.", action) :
-				String.format("No Martini found matching filter %s; %s.", spelFilter, action);
+				il8n.getInterpolatedMessage(getClass(), "warning.no.martinis.found", getName()) :
+				il8n.getInterpolatedMessage(getClass(), "warning.no.martinis.match.filter", spelFilter, getName());
 			throw new MartiniException(message);
 		}
 		return martinis.iterator();
