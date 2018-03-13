@@ -22,6 +22,8 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
+import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -32,12 +34,13 @@ import com.google.common.util.concurrent.Monitor;
 import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
+import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.Il8n;
 
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements TestStateListener {
+public class MartiniController extends GenericController implements TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 2700570246170278883L;
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
@@ -46,8 +49,6 @@ public class MartiniController extends GenericController implements TestStateLis
 	protected transient AtomicReference<Deque<Martini>> ref;
 
 	public MartiniController() {
-//		monitor = new Monitor();
-//		ref = new AtomicReference<>();
 	}
 
 	@Override
@@ -76,53 +77,66 @@ public class MartiniController extends GenericController implements TestStateLis
 	@Override
 	public void testStarted(String host) {
 		testStarted();
-
 	}
 
-	public void initialize() {
+	@Override
+	public void iterationStart(LoopIterationEvent event) {
 		monitor.enter();
 		try {
-			System.out.println("breakpoint");
-//			if (null == martinis) {
-//				JMeterVariables variables = super.getThreadContext().getVariables();
-//				Object o = variables.getObject(KEY_SPRING_CONTEXT);
-//				if (!ApplicationContext.class.isInstance(o)) {
-//					Il8n il8n = Il8n.getInstance();
-//					String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
-//					throw new MartiniException(message);
-//				}
-//
-//				ApplicationContext springContext = ApplicationContext.class.cast(o);
-//				Mixologist mixologist = springContext.getBean(Mixologist.class);
-//				String spelFilter = getSpelFilter();
-//				Collection<Martini> martiniCollection = spelFilter.isEmpty() ?
-//					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
-//				martinis = new ArrayDeque<>(martiniCollection);
-//			}
+			Deque<Martini> martinis = ref.get();
+			if (null == martinis) {
+				JMeterVariables variables = super.getThreadContext().getVariables();
+				Object o = variables.getObject(KEY_SPRING_CONTEXT);
+				if (!ApplicationContext.class.isInstance(o)) {
+					Il8n il8n = Il8n.getInstance();
+					String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
+					MartiniException exception = new MartiniException(message);
+					Gui.getInstance().reportError(getClass(), exception);
+					throw exception;
+				}
+
+				ApplicationContext springContext = ApplicationContext.class.cast(o);
+				Mixologist mixologist = springContext.getBean(Mixologist.class);
+				String spelFilter = getSpelFilter();
+				Collection<Martini> martiniCollection = spelFilter.isEmpty() ?
+					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
+				martinis = new ArrayDeque<>(martiniCollection);
+				ref.compareAndSet(null, martinis);
+			}
 		}
 		finally {
 			monitor.leave();
 		}
 	}
 
-	@Override
-	protected void initializeSubControllers() {
-		super.initializeSubControllers();
-	}
-
-	@Override
-	protected void reInitialize() {
-		super.reInitialize();
-	}
 
 	@Override
 	public Sampler next() {
-		return super.next();
+		Sampler sampler = super.next();
+		if (super.isFirst()) {
+			monitor.enter();
+			try {
+				Deque<Martini> martinis = ref.get();
+				Martini martini = null == martinis || martinis.isEmpty() ? null : martinis.pop();
+				System.out.println("breakpoint"); // TODO: set on sampler
+			}
+			finally {
+				monitor.leave();
+			}
+		}
+		return sampler;
 	}
 
 	@Override
 	public boolean isDone() {
-		return super.isDone();
+		monitor.enter();
+		try {
+			Deque<Martini> martinis = ref.get();
+			return !super.isDone() && null != martinis && martinis.isEmpty(); // todo: edit
+		}
+		finally {
+			monitor.leave();
+		}
 	}
 
 	@Override
