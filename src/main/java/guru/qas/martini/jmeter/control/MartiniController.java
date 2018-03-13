@@ -16,38 +16,47 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.control;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Deque;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
-import org.apache.jmeter.engine.event.LoopIterationEvent;
-import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
-import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.ApplicationContext;
+
+import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.Il8n;
 
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements LoopIterationListener {
+public class MartiniController extends GenericController implements TestStateListener {
 
 	private static final long serialVersionUID = 2700570246170278883L;
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniController.class);
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
-	protected static final String PROPERTY_MARTINI_ITERATOR = "martini.iterator";
-	protected static final String PROPERTY_CURRENT_MARTINI = "martini.current";
+
+	protected transient Monitor monitor;
+	protected transient AtomicReference<Deque<Martini>> ref;
+
+	public MartiniController() {
+//		monitor = new Monitor();
+//		ref = new AtomicReference<>();
+	}
+
+	@Override
+	public Object clone() {
+		MartiniController clone = MartiniController.class.cast(super.clone());
+		clone.monitor = monitor;
+		clone.ref = ref;
+		return clone;
+	}
 
 	public void setSpelFilter(String spelFilter) {
 		String normalized = null == spelFilter ? "" : spelFilter.replaceAll("\\s+", " ").trim();
@@ -58,111 +67,97 @@ public class MartiniController extends GenericController implements LoopIteratio
 		return super.getPropertyAsString(PROPERTY_SPEL_FILTER);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public void iterationStart(LoopIterationEvent event) {
+	public void testStarted() {
+		this.monitor = new Monitor();
+		this.ref = new AtomicReference<>();
+	}
+
+	@Override
+	public void testStarted(String host) {
+		testStarted();
+
+	}
+
+	public void initialize() {
+		monitor.enter();
 		try {
-			Iterator<Martini> i = getNewIterator();
-			JMeterContext threadContext = super.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-			variables.putObject(PROPERTY_MARTINI_ITERATOR, i);
+			System.out.println("breakpoint");
+//			if (null == martinis) {
+//				JMeterVariables variables = super.getThreadContext().getVariables();
+//				Object o = variables.getObject(KEY_SPRING_CONTEXT);
+//				if (!ApplicationContext.class.isInstance(o)) {
+//					Il8n il8n = Il8n.getInstance();
+//					String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
+//					throw new MartiniException(message);
+//				}
+//
+//				ApplicationContext springContext = ApplicationContext.class.cast(o);
+//				Mixologist mixologist = springContext.getBean(Mixologist.class);
+//				String spelFilter = getSpelFilter();
+//				Collection<Martini> martiniCollection = spelFilter.isEmpty() ?
+//					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
+//				martinis = new ArrayDeque<>(martiniCollection);
+//			}
 		}
-		catch (MartiniException e) {
-			Gui.getInstance().reportError(getClass(), e);
-		}
-		catch (Exception e) {
-			LOGGER.error("unable to retrieve test scenarios", e);
-			Gui.getInstance().reportError(getClass(), "error.retrieving.scenarios", e);
+		finally {
+			monitor.leave();
 		}
 	}
 
-	protected Iterator<Martini> getNewIterator() {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(KEY_SPRING_CONTEXT);
-		if (null == o) {
-			Il8n il8n = Il8n.getInstance();
-			String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
-			throw new MartiniException(message);
-		}
-		return getNewIterator(ConfigurableApplicationContext.class.cast(o));
+	@Override
+	protected void initializeSubControllers() {
+		super.initializeSubControllers();
 	}
 
-	protected Iterator<Martini> getNewIterator(ConfigurableApplicationContext context) {
-		Mixologist mixologist = context.getBean(Mixologist.class);
-		String spelFilter = getSpelFilter();
-		Collection<Martini> martinis = spelFilter.isEmpty() ?
-			mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
-		return getNewIterator(martinis);
+	@Override
+	protected void reInitialize() {
+		super.reInitialize();
 	}
 
-	protected Iterator<Martini> getNewIterator(Collection<Martini> martinis) {
-		if (martinis.isEmpty()) {
-			String spelFilter = getSpelFilter();
-			Il8n il8n = Il8n.getInstance();
-			String message = spelFilter.isEmpty() ?
-				il8n.getInterpolatedMessage(getClass(), "warning.no.martinis.found", getName()) :
-				il8n.getInterpolatedMessage(getClass(), "warning.no.martinis.match.filter", spelFilter, getName());
-			throw new MartiniException(message);
-		}
-		return martinis.iterator();
-	}
-
-	@SuppressWarnings("unchecked")
 	@Override
 	public Sampler next() {
-		Sampler sampler = super.next();
-		Martini martini = null == sampler ? getNextMartini() : getCurrentMartini();
-
-		if (null == martini) {
-			sampler = null;
-		}
-		else if (null == sampler) {
-			resetCurrent();
-			recoverRunningVersion();
-			sampler = super.next();
-		}
-
-		if (null != sampler) {
-			JMeterContext threadContext = sampler.getThreadContext();
-			Map<String, Object> samplerContext = threadContext.getSamplerContext();
-			samplerContext.put(PROPERTY_CURRENT_MARTINI, martini);
-		}
-		return sampler;
+		return super.next();
 	}
 
-	private Martini getCurrentMartini() {
-		JMeterContext threadContext = getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(PROPERTY_CURRENT_MARTINI);
-		Martini martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
-		return null == martini ? getNextMartini() : martini;
+	@Override
+	public boolean isDone() {
+		return super.isDone();
 	}
 
-	private Martini getNextMartini() {
-		Iterator<Martini> i = this.getIterator().orElse(null);
-		Martini next = null != i && i.hasNext() ? i.next() : null;
-		this.setCurrent(next);
-		return next;
+	@Override
+	public void triggerEndOfLoop() {
+		super.triggerEndOfLoop();
 	}
 
-	@SuppressWarnings("unchecked")
-	private Optional<Iterator<Martini>> getIterator() {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(PROPERTY_MARTINI_ITERATOR);
-		Iterator<Martini> i = Iterator.class.isInstance(o) ? (Iterator<Martini>) o : null;
-		return Optional.ofNullable(i);
+	@Override
+	public void testEnded() {
+		this.monitor = null;
+		this.ref = null;
 	}
 
-	private void setCurrent(Martini martini) {
-		JMeterContext threadContext = getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		if (null == martini) {
-			variables.remove(PROPERTY_CURRENT_MARTINI);
-		}
-		else {
-			variables.putObject(PROPERTY_CURRENT_MARTINI, martini);
-		}
+	@Override
+	public void testEnded(String host) {
+		testEnded();
 	}
+
+//	@Override
+//	public void iterationStart(LoopIterationEvent event) {
+//
+//		monitor.enter();
+//		try {
+//			initialize();
+//			TestElement source = event.getSource();
+//			JMeterProperty property = source.getProperty(key);
+//			Object o = property.getObjectValue();
+//			if (GenericController.class.isInstance(o)) {
+//				GenericController controller = GenericController.class.cast(o);
+//				controller.setRunningVersion(true);
+//			}
+//			listeners.forEach(l -> l.iterationStart(event));
+//		}
+//		finally {
+//			monitor.leave();
+//		}
+//	}
 }
