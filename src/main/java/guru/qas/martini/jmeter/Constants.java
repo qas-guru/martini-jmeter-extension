@@ -17,5 +17,8 @@ limitations under the License.
 package guru.qas.martini.jmeter;
 
 public interface Constants {
+
 	String KEY_SPRING_CONTEXT = "martini.spring.context";
+	String KEY_CURRENT_MARTINI = "martini.current";
+
 }

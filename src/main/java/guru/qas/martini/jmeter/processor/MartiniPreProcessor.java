@@ -16,7 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +59,6 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
 	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
 	protected static final String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
-	protected static final String CONFIG_LOCATION = "classpath*:/martiniJmeterContext.xml";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniPreProcessor.class);
 
@@ -113,14 +111,7 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		try {
 			PropertySource propertySource = getEnvironmentPropertySource();
 			ConfigurableApplicationContext context = setUpSpring(propertySource);
-
-			SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
-				.setJMeterContext(getThreadContext())
-				.setConfigurableApplicationContext(context)
-				.build();
-
-			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-			beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
+			SuiteIdentifier suiteIdentifier = setUpSuiteIdentifier(context);
 
 			JMeterProperty property = new ObjectProperty(KEY_SPRING_CONTEXT, context);
 			super.setProperty(property);
@@ -137,6 +128,16 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 			LOGGER.error("unable to create Spring context", e);
 			Gui.getInstance().reportError(getClass(), "error.creating.spring.context", e);
 		}
+	}
+
+	protected SuiteIdentifier setUpSuiteIdentifier(ConfigurableApplicationContext context) {
+		SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
+			.setJMeterContext(getThreadContext())
+			.setConfigurableApplicationContext(context)
+			.build();
+		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+		beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
+		return suiteIdentifier;
 	}
 
 	public void testStarted(String host) {
@@ -165,14 +166,9 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	}
 
 	private String[] getRuntimeConfigurationLocations() {
-		LinkedHashSet<String> locations = new LinkedHashSet<>();
-		locations.add(CONFIG_LOCATION);
-
 		String joined = getConfigLocations();
 		List<String> configured = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
-		locations.addAll(configured);
-
-		return locations.toArray(new String[locations.size()]);
+		return configured.toArray(new String[configured.size()]);
 	}
 
 	public void testEnded() {
