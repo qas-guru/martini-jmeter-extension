@@ -19,13 +19,16 @@ package guru.qas.martini.jmeter.control;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ApplicationContext;
 
@@ -46,7 +49,8 @@ public class MartiniController extends GenericController implements TestStateLis
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
 
 	protected transient Monitor monitor;
-	protected transient AtomicReference<Deque<Martini>> ref;
+	protected transient Set<Integer> iterations;
+	protected transient Deque<Martini> martinis;
 
 	public MartiniController() {
 	}
@@ -54,8 +58,9 @@ public class MartiniController extends GenericController implements TestStateLis
 	@Override
 	public Object clone() {
 		MartiniController clone = MartiniController.class.cast(super.clone());
+		clone.iterations = iterations;
 		clone.monitor = monitor;
-		clone.ref = ref;
+		clone.martinis = martinis;
 		return clone;
 	}
 
@@ -70,8 +75,9 @@ public class MartiniController extends GenericController implements TestStateLis
 
 	@Override
 	public void testStarted() {
+		this.iterations = new HashSet<>();
 		this.monitor = new Monitor();
-		this.ref = new AtomicReference<>();
+		this.martinis = new ArrayDeque<>();
 	}
 
 	@Override
@@ -81,10 +87,11 @@ public class MartiniController extends GenericController implements TestStateLis
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
+		int iteration = event.getIteration();
+
 		monitor.enter();
 		try {
-			Deque<Martini> martinis = ref.get();
-			if (null == martinis) {
+			if (iterations.add(iteration)) {
 				JMeterVariables variables = super.getThreadContext().getVariables();
 				Object o = variables.getObject(KEY_SPRING_CONTEXT);
 				if (!ApplicationContext.class.isInstance(o)) {
@@ -100,43 +107,48 @@ public class MartiniController extends GenericController implements TestStateLis
 				String spelFilter = getSpelFilter();
 				Collection<Martini> martiniCollection = spelFilter.isEmpty() ?
 					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
-				martinis = new ArrayDeque<>(martiniCollection);
-				ref.compareAndSet(null, martinis);
+				martinis.addAll(martiniCollection);
 			}
 		}
 		finally {
 			monitor.leave();
 		}
 	}
-
 
 	@Override
 	public Sampler next() {
-		Sampler sampler = super.next();
-		if (super.isFirst()) {
-			monitor.enter();
-			try {
-				Deque<Martini> martinis = ref.get();
-				Martini martini = null == martinis || martinis.isEmpty() ? null : martinis.pop();
-				System.out.println("breakpoint"); // TODO: set on sampler
-			}
-			finally {
-				monitor.leave();
-			}
-		}
-		return sampler;
-	}
-
-	@Override
-	public boolean isDone() {
 		monitor.enter();
+		Sampler next;
+
 		try {
-			Deque<Martini> martinis = ref.get();
-			return !super.isDone() && null != martinis && martinis.isEmpty(); // todo: edit
+			next = super.next();
+			Martini martini = null;
+
+			if (null == next && null != martinis.peek()) {
+				super.reInitialize();
+				next = super.next();
+				martini = null == next ? null : martinis.pop();
+			}
+			else if (null != next) {
+				JMeterContext threadContext = next.getThreadContext();
+				JMeterVariables variables = threadContext.getVariables();
+				Object o = variables.getObject("martini");
+				martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+			}
+
+			next = null == martini ? null : next;
+			if (null != next) {
+				JMeterContext threadContext = next.getThreadContext();
+				JMeterVariables variables = threadContext.getVariables();
+				variables.putObject("martini", martini);
+				Map<String, Object> samplerContext = threadContext.getSamplerContext();
+				samplerContext.put("martini", martini);
+			}
 		}
 		finally {
 			monitor.leave();
 		}
+		return next;
 	}
 
 	@Override
@@ -146,8 +158,9 @@ public class MartiniController extends GenericController implements TestStateLis
 
 	@Override
 	public void testEnded() {
+		this.iterations = null;
 		this.monitor = null;
-		this.ref = null;
+		this.martinis = null;
 	}
 
 	@Override
