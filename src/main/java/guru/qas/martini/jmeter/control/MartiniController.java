@@ -27,6 +27,7 @@ import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
+import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -87,11 +88,14 @@ public class MartiniController extends GenericController implements TestStateLis
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
+		super.reInitialize();
 		int iteration = event.getIteration();
 
 		monitor.enter();
 		try {
 			if (iterations.add(iteration)) {
+				System.out.println(String.format("\nThread %s adding Martinis for loop %s", Thread.currentThread(), iteration));
+
 				JMeterVariables variables = super.getThreadContext().getVariables();
 				Object o = variables.getObject(KEY_SPRING_CONTEXT);
 				if (!ApplicationContext.class.isInstance(o)) {
@@ -109,6 +113,20 @@ public class MartiniController extends GenericController implements TestStateLis
 					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
 				martinis.addAll(martiniCollection);
 			}
+
+			TestElement source = event.getSource();
+			JMeterContext threadContext = source.getThreadContext();
+			JMeterVariables variables = threadContext.getVariables();
+
+			if (martinis.isEmpty()) {
+				variables.remove("martini");
+				super.setDone(true);
+			}
+			else {
+				Martini martini = martinis.pop();
+				variables.putObject("martini", martini);
+			}
+
 		}
 		finally {
 			monitor.leave();
@@ -117,44 +135,70 @@ public class MartiniController extends GenericController implements TestStateLis
 
 	@Override
 	public Sampler next() {
-		monitor.enter();
-		Sampler next;
-
-		try {
-			next = super.next();
-			Martini martini = null;
-
-			if (null == next && null != martinis.peek()) {
-				super.reInitialize();
-				next = super.next();
-				martini = null == next ? null : martinis.pop();
-			}
-			else if (null != next) {
-				JMeterContext threadContext = next.getThreadContext();
-				JMeterVariables variables = threadContext.getVariables();
-				Object o = variables.getObject("martini");
-				martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
-			}
-
-			next = null == martini ? null : next;
-			if (null != next) {
-				JMeterContext threadContext = next.getThreadContext();
-				JMeterVariables variables = threadContext.getVariables();
-				variables.putObject("martini", martini);
+		Sampler next = super.next();
+		if (null != next) {
+			JMeterContext threadContext = next.getThreadContext();
+			JMeterVariables variables = threadContext.getVariables();
+			Object o = variables.getObject("martini");
+			if (Martini.class.isInstance(o)) {
+				Martini martini = Martini.class.cast(o);
 				Map<String, Object> samplerContext = threadContext.getSamplerContext();
 				samplerContext.put("martini", martini);
 			}
-		}
-		finally {
-			monitor.leave();
+			else {
+				next = null;
+				setDone(true);
+			}
 		}
 		return next;
 	}
 
-	@Override
-	public void triggerEndOfLoop() {
-		super.triggerEndOfLoop();
-	}
+	//
+//	@Override
+//	public Sampler next() {
+//		Sampler next;
+//
+//		monitor.enter();
+//		try {
+//			next = super.next(); // TODO: isFirst();
+//			if (null == next && null != martinis.peek()) {
+//				super.reInitialize();
+//				next = super.next();
+//				if (next != null) {
+//					JMeterContext threadContext = next.getThreadContext();
+//					JMeterVariables variables = threadContext.getVariables();
+//					variables.remove("martini");
+//				}
+//			}
+//
+//			Martini martini = null;
+//			if (null != next) {
+//				JMeterContext threadContext = next.getThreadContext();
+//				JMeterVariables variables = threadContext.getVariables();
+//				Object o = variables.getObject("martini");
+//				martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
+//				if (null == martini && null != martinis.peek()) {
+//					martini = martinis.pop();
+//					variables.putObject("martini", martini);
+//				} else if (null == martini && null == martinis.peek()) {
+//					super.setDone(true);
+//				}
+//			}
+//
+//			next = null == martini ? null : next;
+//			System.out.println(String.format("\nThread %s returning Sampler %s", Thread.currentThread(), next));
+//			return next;
+//		}
+//		finally {
+//			monitor.leave();
+//		}
+//	}
+//
+//	@Override
+//	public void triggerEndOfLoop() {
+//		System.out.println("END OF LOOP");
+//		super.triggerEndOfLoop();
+//	}
 
 	@Override
 	public void testEnded() {
@@ -167,24 +211,4 @@ public class MartiniController extends GenericController implements TestStateLis
 	public void testEnded(String host) {
 		testEnded();
 	}
-
-//	@Override
-//	public void iterationStart(LoopIterationEvent event) {
-//
-//		monitor.enter();
-//		try {
-//			initialize();
-//			TestElement source = event.getSource();
-//			JMeterProperty property = source.getProperty(key);
-//			Object o = property.getObjectValue();
-//			if (GenericController.class.isInstance(o)) {
-//				GenericController controller = GenericController.class.cast(o);
-//				controller.setRunningVersion(true);
-//			}
-//			listeners.forEach(l -> l.iterationStart(event));
-//		}
-//		finally {
-//			monitor.leave();
-//		}
-//	}
 }

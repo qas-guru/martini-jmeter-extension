@@ -16,8 +16,19 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.InputStreamBody;
+import org.apache.jmeter.assertions.AssertionResult;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
@@ -27,9 +38,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 
+import com.google.common.base.Throwables;
+
+import gherkin.ast.Step;
 import guru.qas.martini.Martini;
+import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
+import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.harness.MartiniCallable;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -54,17 +70,68 @@ public class MartiniSampler extends AbstractSampler {
 			MartiniCallable callable = new MartiniCallable(suiteIdentifier, martini);
 			beanFactory.autowireBean(callable);
 			MartiniResult martiniResult = callable.call();
-			System.out.println("breakpoint");
+
+			List<StepResult> stepResults = martiniResult.getStepResults();
+			stepResults.forEach(r -> {
+				SampleResult subResult = new SampleResult();
+
+				Step step = r.getStep();
+				String keyword = step.getKeyword();
+				String text = step.getText();
+				String label = String.format("%s %s", keyword, text);
+				subResult.setSampleLabel(label);
+
+				Long startTimestamp = r.getStartTimestamp();
+				Long executionTime = r.getExecutionTime(TimeUnit.MILLISECONDS);
+				if (null != startTimestamp) {
+					subResult.setStampAndTime(startTimestamp, null == executionTime ? 0 : executionTime);
+				}
+
+				Status status = r.getStatus();
+				subResult.setSuccessful(Status.PASSED == status);
+
+				Exception exception = r.getException();
+				if (null != exception) {
+					AssertionResult assertionResult = new AssertionResult("Exception");
+					assertionResult.setError(false);
+					assertionResult.setFailure(true);
+					String stackTrace = Throwables.getStackTraceAsString(exception);
+					assertionResult.setFailureMessage(stackTrace);
+					subResult.addAssertionResult(assertionResult);
+				}
+
+				List<HttpEntity> entities = r.getEmbedded();
+				if (null != entities && !entities.isEmpty()) {
+					MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+					AtomicInteger i = new AtomicInteger(0);
+					entities.forEach(entity -> {
+						String name = String.format("HttpEntity-%s", i.incrementAndGet());
+						Header header = entity.getContentType();
+						String headerValue = header.getValue();
+						try (InputStream in = entity.getContent()) {
+							ContentType contentType = ContentType.parse(headerValue);
+							InputStreamBody contentBody = new InputStreamBody(in, contentType);
+							builder.addPart(name, contentBody);
+						}
+						catch (IOException e1) {
+							LOGGER.warn("unable to attach HttpEntity to SampleResult", e1);
+						}
+					});
+				}
+			});
+
+			Status status = martiniResult.getStatus();
+			result.setSuccessful(Status.PASSED == status);
 		}
 		catch (Exception exception) {
 			System.out.println("oopsy");
+			result.setSuccessful(false);
+		}
+		finally {
+			result.sampleEnd();
+
 		}
 
-		// Execute the martini task
-		// put results in SampleResult
-
-		result.sampleEnd();
-		result.setSuccessful(true);
 		return result;
 	}
 
