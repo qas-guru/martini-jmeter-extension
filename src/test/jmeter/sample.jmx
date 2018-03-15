@@ -11,7 +11,7 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.processor.MartiniPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
+      <guru.qas.martini.jmeter.processor.MartiniPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniPreProcessor" testname="Martini PreProcessor" enabled="false">
         <stringProp name="martini.config.locations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
         <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">

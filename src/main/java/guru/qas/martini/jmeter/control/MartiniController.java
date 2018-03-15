@@ -17,53 +17,27 @@ limitations under the License.
 package guru.qas.martini.jmeter.control;
 
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.LinkedHashSet;
 
-import org.apache.jmeter.control.GenericController;
+import org.apache.jmeter.control.Controller;
+
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
+import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
-import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterVariables;
-import org.springframework.context.ApplicationContext;
-
-import com.google.common.util.concurrent.Monitor;
-
-import guru.qas.martini.Martini;
-import guru.qas.martini.MartiniException;
-import guru.qas.martini.Mixologist;
-import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
-
-import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
+import org.apache.jmeter.threads.TestCompilerHelper;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniController extends GenericController implements TestStateListener, LoopIterationListener {
+public class MartiniController extends AbstractTestElement implements Controller, TestStateListener, TestCompilerHelper, LoopIterationListener {
 
 	private static final long serialVersionUID = 2700570246170278883L;
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
 
-	protected transient Monitor monitor;
-	protected transient Set<Integer> iterations;
-	protected transient Deque<Martini> martinis;
-
-	public MartiniController() {
-	}
-
-	@Override
-	public Object clone() {
-		MartiniController clone = MartiniController.class.cast(super.clone());
-		clone.iterations = iterations;
-		clone.monitor = monitor;
-		clone.martinis = martinis;
-		return clone;
-	}
+	protected transient LinkedHashSet<TestElement> subElements;
+	protected transient Deque<TestElement> elementDeque;
 
 	public void setSpelFilter(String spelFilter) {
 		String normalized = null == spelFilter ? "" : spelFilter.replaceAll("\\s+", " ").trim();
@@ -75,10 +49,25 @@ public class MartiniController extends GenericController implements TestStateLis
 	}
 
 	@Override
+	public Object clone() {
+		MartiniController clone = MartiniController.class.cast(super.clone());
+		System.out.println("CLONE: " + System.identityHashCode(clone));
+		return clone;
+	}
+
+	@Override
+	public void setRunningVersion(boolean runningVersion) {
+		System.out.println("SET RUNNING VERSION: " + runningVersion + " " + System.identityHashCode(this));
+		super.setRunningVersion(runningVersion);
+		if (runningVersion) {
+			subElements = new LinkedHashSet<>();
+			elementDeque = new ArrayDeque<>();
+		}
+	}
+
+	@Override
 	public void testStarted() {
-		this.iterations = new HashSet<>();
-		this.monitor = new Monitor();
-		this.martinis = new ArrayDeque<>();
+		System.out.println("TEST STARTED: " + System.identityHashCode(this));
 	}
 
 	@Override
@@ -87,124 +76,90 @@ public class MartiniController extends GenericController implements TestStateLis
 	}
 
 	@Override
-	public void iterationStart(LoopIterationEvent event) {
-		super.reInitialize();
-		int iteration = event.getIteration();
+	public void addTestElement(TestElement element) {
+		System.out.println("ADD TEST ELEMENT: " + System.identityHashCode(this));
+		System.out.println("IS RUNNING VERSION: " + this.isRunningVersion());
+		addTestElementOnce(element);
+	}
 
-		monitor.enter();
-		try {
-			if (iterations.add(iteration)) {
-				System.out.println(String.format("\nThread %s adding Martinis for loop %s", Thread.currentThread(), iteration));
-
-				JMeterVariables variables = super.getThreadContext().getVariables();
-				Object o = variables.getObject(KEY_SPRING_CONTEXT);
-				if (!ApplicationContext.class.isInstance(o)) {
-					Il8n il8n = Il8n.getInstance();
-					String message = il8n.getInterpolatedMessage(getClass(), "warning.spring.context.not.set", getName());
-					MartiniException exception = new MartiniException(message);
-					Gui.getInstance().reportError(getClass(), exception);
-					throw exception;
-				}
-
-				ApplicationContext springContext = ApplicationContext.class.cast(o);
-				Mixologist mixologist = springContext.getBean(Mixologist.class);
-				String spelFilter = getSpelFilter();
-				Collection<Martini> martiniCollection = spelFilter.isEmpty() ?
-					mixologist.getMartinis() : mixologist.getMartinis(spelFilter);
-				martinis.addAll(martiniCollection);
-			}
-
-			TestElement source = event.getSource();
-			JMeterContext threadContext = source.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-
-			if (martinis.isEmpty()) {
-				variables.remove("martini");
-				super.setDone(true);
-			}
-			else {
-				Martini martini = martinis.pop();
-				variables.putObject("martini", martini);
-			}
-
+	@Override
+	public boolean addTestElementOnce(TestElement element) {
+		System.out.println("ADD TEST ELEMENT ONCE: " + System.identityHashCode(this));
+		boolean evaluation = false;
+		if (this.isRunningVersion() && (Sampler.class.isInstance(element) || Controller.class.isInstance(element))) {
+			evaluation = subElements.add(element);
 		}
-		finally {
-			monitor.leave();
+		return evaluation;
+	}
+
+	@Override
+	public void addIterationListener(LoopIterationListener listener) {
+		System.out.println("ADD ITERATION LISTENER: " + System.identityHashCode(this));
+	}
+
+	@Override
+	public void removeIterationListener(LoopIterationListener iterationListener) {
+		System.out.println("breakpoint");
+	}
+
+	@Override
+	public void initialize() {
+		System.out.println("INITIALIZE: " + System.identityHashCode(this));
+	}
+
+	@Override
+	public void iterationStart(LoopIterationEvent iterEvent) {
+		System.out.println("LOOP ITERATION START: " + System.identityHashCode(this));
+		elementDeque = new ArrayDeque<>(subElements); // TODO: advance que
+	}
+
+	@Override
+	public boolean isDone() {
+		System.out.println("IS DONE: " + System.identityHashCode(this));
+		TestElement current = advanceElementDeque();
+		if (null == current) {
+			triggerEndOfLoop();
 		}
+		return false;
+	}
+
+	protected TestElement advanceElementDeque() {
+		TestElement peek = elementDeque.peek();
+		while (Controller.class.isInstance(peek) && Controller.class.cast(peek).isDone()) {
+			elementDeque.pop();
+			peek = elementDeque.peek();
+		}
+		return peek;
 	}
 
 	@Override
 	public Sampler next() {
-		Sampler next = super.next();
-		if (null != next) {
-			JMeterContext threadContext = next.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-			Object o = variables.getObject("martini");
-			if (Martini.class.isInstance(o)) {
-				Martini martini = Martini.class.cast(o);
-				Map<String, Object> samplerContext = threadContext.getSamplerContext();
-				samplerContext.put("martini", martini);
-			}
-			else {
-				next = null;
-				setDone(true);
-			}
+		System.out.println("NEXT: " + System.identityHashCode(this));
+
+		Sampler sampler = null;
+		TestElement peek = advanceElementDeque();
+		if (Controller.class.isInstance(peek)) {
+			Controller subController = Controller.class.cast(peek);
+			sampler = subController.next();
 		}
-		return next;
+		else if (null != peek) {
+			TestElement pop = elementDeque.pop();
+			sampler = Sampler.class.isInstance(pop) ? Sampler.class.cast(pop) : null;
+		}
+		return sampler;
 	}
 
-	//
-//	@Override
-//	public Sampler next() {
-//		Sampler next;
-//
-//		monitor.enter();
-//		try {
-//			next = super.next(); // TODO: isFirst();
-//			if (null == next && null != martinis.peek()) {
-//				super.reInitialize();
-//				next = super.next();
-//				if (next != null) {
-//					JMeterContext threadContext = next.getThreadContext();
-//					JMeterVariables variables = threadContext.getVariables();
-//					variables.remove("martini");
-//				}
-//			}
-//
-//			Martini martini = null;
-//			if (null != next) {
-//				JMeterContext threadContext = next.getThreadContext();
-//				JMeterVariables variables = threadContext.getVariables();
-//				Object o = variables.getObject("martini");
-//				martini = Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
-//				if (null == martini && null != martinis.peek()) {
-//					martini = martinis.pop();
-//					variables.putObject("martini", martini);
-//				} else if (null == martini && null == martinis.peek()) {
-//					super.setDone(true);
-//				}
-//			}
-//
-//			next = null == martini ? null : next;
-//			System.out.println(String.format("\nThread %s returning Sampler %s", Thread.currentThread(), next));
-//			return next;
-//		}
-//		finally {
-//			monitor.leave();
-//		}
-//	}
-//
-//	@Override
-//	public void triggerEndOfLoop() {
-//		System.out.println("END OF LOOP");
-//		super.triggerEndOfLoop();
-//	}
+	@Override
+	public void triggerEndOfLoop() {
+		System.out.println("TRIGGER END OF LOOP: " + System.identityHashCode(this));
+		elementDeque.clear();
+		elementDeque.addAll(subElements);
+		advanceElementDeque();
+	}
 
 	@Override
 	public void testEnded() {
-		this.iterations = null;
-		this.monitor = null;
-		this.martinis = null;
+		System.out.println("TEST ENDED: " + System.identityHashCode(this));
 	}
 
 	@Override
