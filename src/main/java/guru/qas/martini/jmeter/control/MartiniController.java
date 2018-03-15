@@ -70,6 +70,12 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected volatile transient Map<Integer, ConcurrentLinkedDeque<Martini>> index;
 	protected volatile transient UUID id;
 
+	public MartiniController() {
+		subElements = new LinkedHashSet<>();
+		elementDeque = new ArrayDeque<>();
+		listeners = new LinkedHashSet<>();
+	}
+
 	/**
 	 * Called by JMeter GUI.
 	 *
@@ -126,32 +132,6 @@ public class MartiniController extends AbstractTestElement implements Controller
 		martinisRef = new AtomicReference<>();
 		index = new HashMap<>();
 		id = UUID.randomUUID();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setRunningVersion(boolean runningVersion) {
-		super.setRunningVersion(runningVersion);
-		if (runningVersion) {
-			initializeLocalMembers();
-		}
-		else {
-			destroyLocalMembers();
-		}
-	}
-
-	protected void initializeLocalMembers() {
-		subElements = new LinkedHashSet<>();
-		elementDeque = new ArrayDeque<>();
-		listeners = new LinkedHashSet<>();
-	}
-
-	protected void destroyLocalMembers() {
-		subElements = null;
-		elementDeque = null;
-		listeners = null;
 	}
 
 	/**
@@ -379,8 +359,12 @@ public class MartiniController extends AbstractTestElement implements Controller
 		TestElement source = event.getSource();
 		JMeterContext threadContext = source.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s.deque", id);
+		String key = getMartiniDequeKey();
 		variables.putObject(key, deque);
+	}
+
+	protected String getMartiniDequeKey() {
+		return String.format("martini.%s.deque", id);
 	}
 
 	/**
@@ -409,7 +393,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected Deque<Martini> getMartiniDequeVariable() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s.deque", id);
+		String key = getMartiniDequeKey();
 		Object o = variables.getObject(key);
 
 		Deque<Martini> deque = null;
@@ -425,8 +409,12 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected void setMartiniVariable(Martini martini) {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s", id);
+		String key = getMartiniKey();
 		variables.putObject(key, martini);
+	}
+
+	protected String getMartiniKey() {
+		return String.format("martini.%s", id);
 	}
 
 	/**
@@ -441,6 +429,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 	/**
 	 * Walks through exhausted subelement Controllers.
+	 *
 	 * @return next TestElement that is not a Controller, or is not an exhausted Controller
 	 */
 	protected TestElement advanceElementDeque() {
@@ -479,7 +468,24 @@ public class MartiniController extends AbstractTestElement implements Controller
 			cueNextMartini();
 			sampler = cueNextSampler();
 		}
+		updateSamplerContext(sampler);
 		return sampler;
+	}
+
+	protected void updateSamplerContext(Sampler sampler) {
+		if (null != sampler) {
+			JMeterContext threadContext = sampler.getThreadContext();
+			Martini martini = getMartiniVariable(threadContext);
+			Map<String, Object> samplerContext = threadContext.getSamplerContext();
+			samplerContext.put(Constants.KEY_CURRENT_MARTINI, martini);
+		}
+	}
+
+	protected Martini getMartiniVariable(JMeterContext context) {
+		String key = getMartiniKey();
+		JMeterVariables variables = context.getVariables();
+		Object o = variables.getObject(key);
+		return Martini.class.isInstance(o) ? Martini.class.cast(o) : null;
 	}
 
 	/**
@@ -547,5 +553,17 @@ public class MartiniController extends AbstractTestElement implements Controller
 	@Override
 	public void testEnded(String host) {
 		testEnded();
+	}
+
+	/**
+	 * Sets local members on deserialization.
+	 *
+	 * @return MartiniController with local members populated
+	 */
+	protected Object readResolve() {
+		subElements = new LinkedHashSet<>();
+		elementDeque = new ArrayDeque<>();
+		listeners = new LinkedHashSet<>();
+		return this;
 	}
 }

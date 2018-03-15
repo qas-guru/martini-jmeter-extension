@@ -124,12 +124,12 @@ public class MartiniSampler extends AbstractSampler {
 			result.setSuccessful(Status.PASSED == status);
 		}
 		catch (Exception exception) {
-			System.out.println("oopsy");
+			String stackTrace = Throwables.getStackTraceAsString(exception);
+			result.setResponseMessage(stackTrace);
 			result.setSuccessful(false);
 		}
 		finally {
 			result.sampleEnd();
-
 		}
 
 		return result;
