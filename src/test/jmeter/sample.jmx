@@ -98,7 +98,7 @@
           </JavaSampler>
           <hashTree/>
         </hashTree>
-        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 3" enabled="false">
+        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 3" enabled="true">
           <stringProp name="martini.spel.filter">isCategory(&quot;UsageStatistics&quot;)</stringProp>
         </guru.qas.martini.jmeter.control.MartiniController>
         <hashTree>

@@ -70,15 +70,35 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected volatile transient Map<Integer, ConcurrentLinkedDeque<Martini>> index;
 	protected volatile transient UUID id;
 
+	/**
+	 * Called by JMeter GUI.
+	 *
+	 * @param spelFilter Spring filter used to limit selected Martini Scenarios.
+	 */
 	public void setSpelFilter(String spelFilter) {
 		String normalized = null == spelFilter ? "" : spelFilter.replaceAll("\\s+", " ").trim();
 		super.setProperty(PROPERTY_SPEL_FILTER, normalized);
 	}
 
+	/**
+	 * Called by JMeter GUI.
+	 *
+	 * @return currently configured filter.
+	 */
 	public String getSpelFilter() {
 		return super.getPropertyAsString(PROPERTY_SPEL_FILTER);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Frequently called by JMeter, both during GUI modifications and during test lifecycle.
+	 * <p>
+	 * Note that clone() will be called in creation of Controllers at the beginning of a
+	 * test run and for each subsequent thread.
+	 *
+	 * @return a copy of this Controller with shared members populated
+	 */
 	@Override
 	public Object clone() {
 		MartiniController clone = MartiniController.class.cast(super.clone());
@@ -93,6 +113,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		clone.id = id;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void testStarted() {
 		initializeSharedMembers();
@@ -105,6 +128,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		id = UUID.randomUUID();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void setRunningVersion(boolean runningVersion) {
 		super.setRunningVersion(runningVersion);
@@ -128,16 +154,32 @@ public class MartiniController extends AbstractTestElement implements Controller
 		listeners = null;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void testStarted(String host) {
 		testStarted();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Called by JMeter at beginning of test run to add child test elements.
+	 * Attempting to call this yourself outside the JMeter compile phase will result in exceptions.
+	 *
+	 * @param element to be added to test tree
+	 */
 	@Override
 	public void addTestElement(TestElement element) {
 		addTestElementOnce(element);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Appears to have been added to compensate for poor memory handling.
+	 */
 	@Override
 	public boolean addTestElementOnce(TestElement element) {
 		boolean evaluation = false;
@@ -147,6 +189,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return evaluation;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addIterationListener(LoopIterationListener listener) {
 		if (null != listeners) {
@@ -154,6 +199,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void removeIterationListener(LoopIterationListener listener) {
 		if (null != listeners) {
@@ -161,10 +209,23 @@ public class MartiniController extends AbstractTestElement implements Controller
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * This doesn't appear to be called by the JMeter engine.
+	 */
 	@Override
-	public void initialize() { // Never called.
+	public void initialize() {
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * At this point in the lifecycle, the Martini PreProcessor has loaded Spring
+	 * and set the ApplicationContext as a thread variable.
+	 * </p>
+	 * Note that this method may be called multiple times, once per thread.
+	 */
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
 		int iteration = event.getIteration();
@@ -178,6 +239,12 @@ public class MartiniController extends AbstractTestElement implements Controller
 		cueNextMartini();
 	}
 
+	/**
+	 * Blocking method, allows first thread in to load Martini selection.
+	 * Configuration exceptions will result in an empty collection being loaded to avoid test plan interruption.
+	 * Any other exception will cause the test to halt.
+	 * All exceptions will be reported once.
+	 */
 	protected void initializeMartinis() {
 		Exception exception = null;
 
@@ -189,24 +256,39 @@ public class MartiniController extends AbstractTestElement implements Controller
 				martinisRef.set(martinis);
 			}
 		}
-		catch (Exception e) {
+		catch (MartiniException e) {
 			exception = e;
-			martinisRef.compareAndSet(null, Collections.emptyList());
+		}
+		catch (Exception e) {
+			super.getThreadContext().getEngine().stopTest(true);
+			exception = e;
 		}
 		finally {
+			martinisRef.compareAndSet(null, Collections.emptyList());
 			refLock.unlock();
 		}
 
 		if (MartiniException.class.isInstance(exception)) {
+			LOGGER.warn(exception.getMessage());
 			Gui.getInstance().reportError(getClass(), MartiniException.class.cast(exception));
 		}
 		else if (Exception.class.isInstance(exception)) {
 			String name = getName();
-			MartiniException e = getException("error.retrieving.scenarios", exception, name);
+			MartiniException e = getException(exception, "error.retrieving.scenarios", name);
+			LOGGER.error(e.getMessage(), exception);
 			Gui.getInstance().reportError(getClass(), e);
 		}
 	}
 
+	/**
+	 * Sets Martini scenarios to be executed for the current loop. This is shared by threads in the parent
+	 * ThreadGroup; multiple threads will drain the deque. If one of the threads encounters an exception and
+	 * the ThreadGroup is configured to continue to the next loop, other threads working on the given loop can
+	 * continue draining this loop's que.
+	 *
+	 * @param iteration loop number for this Controller, typically set by ThreadGroup or looping parent Controller
+	 * @return set of Martini scenarios to be executed for the given iteration
+	 */
 	protected ConcurrentLinkedDeque<Martini> getMartiniDeque(int iteration) {
 		ConcurrentLinkedDeque<Martini> deque;
 		Lock indexLock = lock.get(index);
@@ -231,6 +313,14 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return getMartinis(springContext);
 	}
 
+	/**
+	 * Retrieves the Spring ApplicationContext from thread variables. For this to work, a Martini PreProcessor
+	 * should be configured at the TestPlan level.
+	 *
+	 * @param threadContext same whether obtained from an event, sampler or super.getThreadContext()
+	 * @return Spring ApplicationContext
+	 * @throws MartiniException if no such variable has been set, or is set to something other than an ApplicationContext
+	 */
 	protected ApplicationContext getSpringContext(JMeterContext threadContext) throws MartiniException {
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject(Constants.KEY_SPRING_CONTEXT);
@@ -241,15 +331,24 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	protected void throwMartiniException(String key, Object... arguments) {
-		throw getException(key, null, arguments);
+		throw getException(null, key, arguments);
 	}
 
-	protected MartiniException getException(String key, Exception cause, Object... arguments) {
-		Il8n il8n = Il8n.getInstance();
-		String message = il8n.getInterpolatedMessage(getClass(), key, arguments);
+	protected MartiniException getException(Exception cause, String key, Object... arguments) {
+		String message = getMessage(key, arguments);
 		return new MartiniException(message, cause);
 	}
 
+	protected String getMessage(String key, Object... arguments) {
+		Il8n il8n = Il8n.getInstance();
+		return il8n.getInterpolatedMessage(getClass(), key, arguments);
+	}
+
+	/**
+	 * @param springContext a refreshed ApplicationContext
+	 * @return all Martini scenarios, or those matching the filter configured for this Controller
+	 * @throws MartiniException if no scenarios were loaded
+	 */
 	protected Collection<Martini> getMartinis(ApplicationContext springContext) throws MartiniException {
 		Mixologist mixologist = springContext.getBean(Mixologist.class);
 		String filter = getSpelFilter();
@@ -265,6 +364,17 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return collection;
 	}
 
+	/**
+	 * Sets the Martini que as a thread variable.
+	 * <p>
+	 * The queue must be set with a unique ID shared by all clones of this Controller. This ensures that
+	 * threads traversing this Controller's samplers as well as another Martini Controller's samplers will
+	 * be selecting Martinis from the correct basket. If the ID is not unique, the wrong number of
+	 * samplers may be executed.
+	 *
+	 * @param event from which the thread context will be retrieved and on which the variable will be set
+	 * @param deque the set of Martini scenarios to be executed for the given iteration
+	 */
 	protected void setMartiniDequeVariable(LoopIterationEvent event, ConcurrentLinkedDeque<Martini> deque) {
 		TestElement source = event.getSource();
 		JMeterContext threadContext = source.getThreadContext();
@@ -273,6 +383,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		variables.putObject(key, deque);
 	}
 
+	/**
+	 * Loads the next Martini to execute and resets the subelement que.
+	 */
 	protected void cueNextMartini() {
 		Deque<Martini> deque = getMartiniDequeVariable();
 		Martini martini = deque.poll();
@@ -285,6 +398,13 @@ public class MartiniController extends AbstractTestElement implements Controller
 		}
 	}
 
+	/**
+	 * Retrieves the Martini que from thread variables.
+	 * If the que hasn't been set in the variables, will log a warning and continue execution for the
+	 * rest of the Test plan.
+	 *
+	 * @return set of Martini scenarios for the current iteration
+	 */
 	@SuppressWarnings("unchecked")
 	protected Deque<Martini> getMartiniDequeVariable() {
 		JMeterContext threadContext = super.getThreadContext();
@@ -309,6 +429,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 		variables.putObject(key, martini);
 	}
 
+	/**
+	 * Alerts subelements we're about to iterate over them again.
+	 */
 	protected void sendLoopIterationEvent() {
 		if (!listeners.isEmpty()) {
 			LoopIterationEvent event = new LoopIterationEvent(this, ++subElementsLoop);
@@ -316,6 +439,10 @@ public class MartiniController extends AbstractTestElement implements Controller
 		}
 	}
 
+	/**
+	 * Walks through exhausted subelement Controllers.
+	 * @return next TestElement that is not a Controller, or is not an exhausted Controller
+	 */
 	protected TestElement advanceElementDeque() {
 		TestElement peek = elementDeque.peek();
 		while (Controller.class.isInstance(peek) && Controller.class.cast(peek).isDone()) {
@@ -325,11 +452,25 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return peek;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Returning true effectively removes this controller from the parent's test tree.
+	 */
 	@Override
 	public boolean isDone() {
-		return false; // Returning true would remove this controller from the parent's subtree.
+		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Returns a Sampler as long as one's configured as a sub element and the Martini deque hasn't been
+	 * exhausted.
+	 * <p>
+	 * When the subelement deque has been exhausted and a Martini is available, the subelement deque will be
+	 * reinitialized and executed with the martini.
+	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public Sampler next() {
@@ -341,6 +482,13 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return sampler;
 	}
 
+	/**
+	 * Loads the next available Sampler with leniency for non-Controller/non-Sampler elements. Where a
+	 * non-Controller/non-Sampler element is encountered, it will effectively terminate iteration over
+	 * subelements.
+	 *
+	 * @return the next available Sampler
+	 */
 	protected Sampler cueNextSampler() {
 		Sampler sampler = null;
 		TestElement peek = advanceElementDeque();
@@ -360,11 +508,18 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return sampler;
 	}
 
-	@SuppressWarnings("unchecked")
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void triggerEndOfLoop() {
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Releases memory consumed by shared members.
+	 */
 	@Override
 	public void testEnded() {
 		releaseMartinis();
