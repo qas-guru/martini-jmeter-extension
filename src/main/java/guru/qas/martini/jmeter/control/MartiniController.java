@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -67,6 +68,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected volatile transient Striped<Lock> lock;
 	protected volatile transient AtomicReference<Collection<Martini>> martinisRef;
 	protected volatile transient Map<Integer, ConcurrentLinkedDeque<Martini>> index;
+	protected volatile transient UUID id;
 
 	public void setSpelFilter(String spelFilter) {
 		String normalized = null == spelFilter ? "" : spelFilter.replaceAll("\\s+", " ").trim();
@@ -80,32 +82,50 @@ public class MartiniController extends AbstractTestElement implements Controller
 	@Override
 	public Object clone() {
 		MartiniController clone = MartiniController.class.cast(super.clone());
+		setSharedMembers(clone);
+		return clone;
+	}
+
+	protected void setSharedMembers(MartiniController clone) {
 		clone.lock = lock;
 		clone.martinisRef = martinisRef;
 		clone.index = index;
-		return clone;
+		clone.id = id;
 	}
 
 	@Override
 	public void testStarted() {
+		initializeSharedMembers();
+	}
+
+	protected void initializeSharedMembers() {
 		lock = Striped.lock(2);
 		martinisRef = new AtomicReference<>();
 		index = new HashMap<>();
+		id = UUID.randomUUID();
 	}
 
 	@Override
 	public void setRunningVersion(boolean runningVersion) {
 		super.setRunningVersion(runningVersion);
 		if (runningVersion) {
-			subElements = new LinkedHashSet<>();
-			elementDeque = new ArrayDeque<>();
-			listeners = new LinkedHashSet<>();
+			initializeLocalMembers();
 		}
 		else {
-			subElements = null;
-			elementDeque = null;
-			listeners = null;
+			destroyLocalMembers();
 		}
+	}
+
+	protected void initializeLocalMembers() {
+		subElements = new LinkedHashSet<>();
+		elementDeque = new ArrayDeque<>();
+		listeners = new LinkedHashSet<>();
+	}
+
+	protected void destroyLocalMembers() {
+		subElements = null;
+		elementDeque = null;
+		listeners = null;
 	}
 
 	@Override
@@ -142,22 +162,58 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	@Override
-	public void initialize() {
+	public void initialize() { // Never called.
 	}
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
 		int iteration = event.getIteration();
-		ConcurrentLinkedDeque<Martini> deque;
+		if (1 == iteration) {
+			initializeMartinis();
+		}
 
+		ConcurrentLinkedDeque<Martini> deque = getMartiniDeque(iteration);
+		setMartiniDequeVariable(event, deque);
+		subElementsLoop = 0;
+		cueNextMartini();
+	}
+
+	protected void initializeMartinis() {
+		Exception exception = null;
+
+		Lock refLock = lock.get(martinisRef);
+		refLock.lock();
+		try {
+			if (null == martinisRef.get()) {
+				Collection<Martini> martinis = getMartinis();
+				martinisRef.set(martinis);
+			}
+		}
+		catch (Exception e) {
+			exception = e;
+			martinisRef.compareAndSet(null, Collections.emptyList());
+		}
+		finally {
+			refLock.unlock();
+		}
+
+		if (MartiniException.class.isInstance(exception)) {
+			Gui.getInstance().reportError(getClass(), MartiniException.class.cast(exception));
+		}
+		else if (Exception.class.isInstance(exception)) {
+			String name = getName();
+			MartiniException e = getException("error.retrieving.scenarios", exception, name);
+			Gui.getInstance().reportError(getClass(), e);
+		}
+	}
+
+	protected ConcurrentLinkedDeque<Martini> getMartiniDeque(int iteration) {
+		ConcurrentLinkedDeque<Martini> deque;
 		Lock indexLock = lock.get(index);
 		indexLock.lock();
 		try {
 			deque = index.get(iteration);
 			if (null == deque) {
-				if (1 == iteration) {
-					setMartinis();
-				}
 				Collection<Martini> martinis = martinisRef.get();
 				deque = new ConcurrentLinkedDeque<>(martinis);
 				index.put(iteration, deque);
@@ -166,36 +222,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 		finally {
 			indexLock.unlock();
 		}
-
-		TestElement source = event.getSource();
-		JMeterContext threadContext = source.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s.deque", System.identityHashCode(index));
-		variables.putObject(key, deque);
-
-		subElementsLoop = 0;
-		cueNextMartini();
-	}
-
-	protected void setMartinis() {
-		Lock refLock = lock.get(martinisRef);
-		refLock.lock();
-		try {
-			if (null == martinisRef.get()) {
-				Collection martinis = getMartinis();
-				martinisRef.set(null == martinis ? Collections.emptyList() : martinis);
-			}
-		}
-		catch (MartiniException e) {
-			Gui.getInstance().reportError(getClass(), e);
-		}
-		catch (Exception e) {
-			MartiniException exception = getException("error.retrieving.scenarios", e, getName());
-			Gui.getInstance().reportError(getClass(), exception);
-		}
-		finally {
-			refLock.unlock();
-		}
+		return deque;
 	}
 
 	protected Collection<Martini> getMartinis() throws MartiniException {
@@ -229,57 +256,64 @@ public class MartiniController extends AbstractTestElement implements Controller
 		Collection<Martini> collection =
 			filter.isEmpty() ? mixologist.getMartinis() : mixologist.getMartinis(filter);
 
-		if (collection.isEmpty()) {
-			if (filter.isEmpty()) {
-				throwMartiniException("warning.no.martinis.found", getName());
-			}
-			else {
-				throwMartiniException("warning.no.martinis.match.filter", filter, getName());
-			}
+		if (collection.isEmpty() && filter.isEmpty()) {
+			throwMartiniException("warning.no.martinis.found", getName());
+		}
+		else if (collection.isEmpty()) {
+			throwMartiniException("warning.no.martinis.match.filter", filter, getName());
 		}
 		return collection;
 	}
 
-	protected void cueNextMartini() {
-		Deque<Martini> deque = getIterationDeque();
-		Martini martini = deque.poll();
-
-		JMeterContext threadContext = super.getThreadContext();
+	protected void setMartiniDequeVariable(LoopIterationEvent event, ConcurrentLinkedDeque<Martini> deque) {
+		TestElement source = event.getSource();
+		JMeterContext threadContext = source.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s", System.identityHashCode(index));
+		String key = String.format("martini.%s.deque", id);
+		variables.putObject(key, deque);
+	}
 
-		if (null == martini) {
-			variables.remove(key);
-		}
-		else {
-			variables.putObject(key, martini);
+	protected void cueNextMartini() {
+		Deque<Martini> deque = getMartiniDequeVariable();
+		Martini martini = deque.poll();
+		setMartiniVariable(martini);
 
-			if (!listeners.isEmpty()) {
-				LoopIterationEvent event = new LoopIterationEvent(this, ++subElementsLoop);
-				listeners.forEach(l -> l.iterationStart(event));
-			}
-
+		if (null != martini) {
+			sendLoopIterationEvent();
 			elementDeque = new ArrayDeque<>(subElements);
 			advanceElementDeque();
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	protected Deque<Martini> getIterationDeque() {
+	protected Deque<Martini> getMartiniDequeVariable() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		String key = String.format("martini.%s.deque", System.identityHashCode(index));
+		String key = String.format("martini.%s.deque", id);
 		Object o = variables.getObject(key);
 
-		Deque<Martini> deque;
+		Deque<Martini> deque = null;
 		if (Deque.class.isInstance(o)) {
 			deque = (Deque<Martini>) o;
 		}
 		else {
 			LOGGER.warn("variable {} not set", key);
-			deque = new ArrayDeque<>();
 		}
-		return deque;
+		return null == deque ? new ArrayDeque<>() : deque;
+	}
+
+	protected void setMartiniVariable(Martini martini) {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		String key = String.format("martini.%s", id);
+		variables.putObject(key, martini);
+	}
+
+	protected void sendLoopIterationEvent() {
+		if (!listeners.isEmpty()) {
+			LoopIterationEvent event = new LoopIterationEvent(this, ++subElementsLoop);
+			listeners.forEach(l -> l.iterationStart(event));
+		}
 	}
 
 	protected TestElement advanceElementDeque() {
@@ -320,8 +354,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 				sampler = Sampler.class.cast(pop);
 			}
 			else {
-				LOGGER.warn("TestElement is not an instance of Controller or Sampler: {}",
-					null == pop ? null : pop.getClass());
+				LOGGER.warn("TestElement is not an instance of Controller or Sampler: {}", pop);
 			}
 		}
 		return sampler;
@@ -334,11 +367,18 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 	@Override
 	public void testEnded() {
+		releaseMartinis();
+		releaseIndex();
+	}
+
+	protected void releaseMartinis() {
 		Collection<Martini> martinis = null == martinisRef ? null : martinisRef.get();
 		if (null != martinis) {
 			martinis.clear();
 		}
+	}
 
+	protected void releaseIndex() {
 		if (null != index) {
 			index.values().forEach(v -> {
 				if (null != v) {
