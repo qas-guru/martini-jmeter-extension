@@ -20,10 +20,10 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -67,7 +67,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 	protected volatile transient Striped<Lock> lock;
 	protected volatile transient AtomicReference<Collection<Martini>> martinisRef;
-	protected volatile transient Map<Integer, ConcurrentLinkedDeque<Martini>> index;
+	protected volatile transient ConcurrentHashMap<Integer, ConcurrentLinkedDeque<Martini>> index;
 	protected volatile transient UUID id;
 
 	public MartiniController() {
@@ -128,9 +128,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	protected void initializeSharedMembers() {
-		lock = Striped.lock(2);
+		lock = Striped.lock(100);
 		martinisRef = new AtomicReference<>();
-		index = new HashMap<>();
+		index = new ConcurrentHashMap<>();
 		id = UUID.randomUUID();
 	}
 
@@ -271,8 +271,8 @@ public class MartiniController extends AbstractTestElement implements Controller
 	 */
 	protected ConcurrentLinkedDeque<Martini> getMartiniDeque(int iteration) {
 		ConcurrentLinkedDeque<Martini> deque;
-		Lock indexLock = lock.get(index);
-		indexLock.lock();
+		Lock iterationLock = lock.get(iteration);
+		iterationLock.lock();
 		try {
 			deque = index.get(iteration);
 			if (null == deque) {
@@ -282,7 +282,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 			}
 		}
 		finally {
-			indexLock.unlock();
+			iterationLock.unlock();
 		}
 		return deque;
 	}
