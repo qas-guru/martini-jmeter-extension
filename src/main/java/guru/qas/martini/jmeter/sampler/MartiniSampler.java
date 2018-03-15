@@ -44,6 +44,7 @@ import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.jmeter.Constants;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.harness.MartiniCallable;
@@ -66,6 +67,11 @@ public class MartiniSampler extends AbstractSampler {
 			ApplicationContext springContext = getFromSamplerContext(ApplicationContext.class, KEY_SPRING_CONTEXT);
 			AutowireCapableBeanFactory beanFactory = springContext.getAutowireCapableBeanFactory();
 			Martini martini = getFromSamplerContext(Martini.class, KEY_CURRENT_MARTINI);
+
+			String scenarioName = martini.getScenarioName();
+			String sampleLabel = String.format("%s: %s", result.getSampleLabel(), scenarioName);
+			result.setSampleLabel(sampleLabel);
+
 			SuiteIdentifier suiteIdentifier = springContext.getBean(SuiteIdentifier.class);
 			MartiniCallable callable = new MartiniCallable(suiteIdentifier, martini);
 			beanFactory.autowireBean(callable);
@@ -74,6 +80,7 @@ public class MartiniSampler extends AbstractSampler {
 			List<StepResult> stepResults = martiniResult.getStepResults();
 			stepResults.forEach(r -> {
 				SampleResult subResult = new SampleResult();
+				result.addSubResult(subResult);
 
 				Step step = r.getStep();
 				String keyword = step.getKeyword();
@@ -129,7 +136,11 @@ public class MartiniSampler extends AbstractSampler {
 			result.setSuccessful(false);
 		}
 		finally {
-			result.sampleEnd();
+			if (0 == result.getEndTime()) {
+				result.sampleEnd();
+			}
+			Map<String, Object> samplerContext = getSamplerContext();
+			samplerContext.remove(Constants.KEY_CURRENT_MARTINI);
 		}
 
 		return result;
@@ -138,7 +149,8 @@ public class MartiniSampler extends AbstractSampler {
 	private <T> T getFromSamplerContext(Class<T> implementation, String key) {
 		Map<String, Object> samplerContext = getSamplerContext();
 		Object o = samplerContext.get(key);
-		checkState(implementation.isInstance(o), "object of type %s not present in SamplerContext under key %s", implementation, key);
+		checkState(implementation.isInstance(o),
+			"object of type %s not present in SamplerContext under key %s", implementation.getCanonicalName(), key);
 		return implementation.cast(o);
 	}
 
