@@ -240,11 +240,11 @@ public class MartiniController extends AbstractTestElement implements Controller
 		return ApplicationContext.class.cast(o);
 	}
 
-	private void throwMartiniException(String key, Object... arguments) {
+	protected void throwMartiniException(String key, Object... arguments) {
 		throw getException(key, null, arguments);
 	}
 
-	private MartiniException getException(String key, Exception cause, Object... arguments) {
+	protected MartiniException getException(String key, Exception cause, Object... arguments) {
 		Il8n il8n = Il8n.getInstance();
 		String message = il8n.getInterpolatedMessage(getClass(), key, arguments);
 		return new MartiniException(message, cause);
