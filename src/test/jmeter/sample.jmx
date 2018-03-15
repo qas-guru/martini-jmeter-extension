@@ -43,9 +43,9 @@
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">2</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">5</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
@@ -80,6 +80,29 @@
         </guru.qas.martini.jmeter.control.MartiniController>
         <hashTree>
           <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 2" enabled="true">
+            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="SleepTime" elementType="Argument">
+                  <stringProp name="Argument.name">SleepTime</stringProp>
+                  <stringProp name="Argument.value">1000</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="SleepMask" elementType="Argument">
+                  <stringProp name="Argument.name">SleepMask</stringProp>
+                  <stringProp name="Argument.value">0x3FF</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="classname">org.apache.jmeter.protocol.java.test.SleepTest</stringProp>
+          </JavaSampler>
+          <hashTree/>
+        </hashTree>
+        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 3" enabled="false">
+          <stringProp name="martini.spel.filter">isCategory(&quot;UsageStatistics&quot;)</stringProp>
+        </guru.qas.martini.jmeter.control.MartiniController>
+        <hashTree>
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 3" enabled="true">
             <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
               <collectionProp name="Arguments.arguments">
                 <elementProp name="SleepTime" elementType="Argument">

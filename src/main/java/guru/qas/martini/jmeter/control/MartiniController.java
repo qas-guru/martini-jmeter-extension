@@ -170,7 +170,8 @@ public class MartiniController extends AbstractTestElement implements Controller
 		TestElement source = event.getSource();
 		JMeterContext threadContext = source.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		variables.putObject("martini.deque", deque);
+		String key = String.format("martini.%s.deque", System.identityHashCode(index));
+		variables.putObject(key, deque);
 
 		subElementsLoop = 0;
 		cueNextMartini();
@@ -245,11 +246,13 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
+		String key = String.format("martini.%s", System.identityHashCode(index));
+
 		if (null == martini) {
-			variables.remove("martini");
+			variables.remove(key);
 		}
 		else {
-			variables.putObject("martini", martini);
+			variables.putObject(key, martini);
 
 			if (!listeners.isEmpty()) {
 				LoopIterationEvent event = new LoopIterationEvent(this, ++subElementsLoop);
@@ -265,13 +268,15 @@ public class MartiniController extends AbstractTestElement implements Controller
 	protected Deque<Martini> getIterationDeque() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject("martini.deque");
+		String key = String.format("martini.%s.deque", System.identityHashCode(index));
+		Object o = variables.getObject(key);
+
 		Deque<Martini> deque;
 		if (Deque.class.isInstance(o)) {
 			deque = (Deque<Martini>) o;
 		}
 		else {
-			LOGGER.warn("variable 'martini.deque' not set");
+			LOGGER.warn("variable {} not set", key);
 			deque = new ArrayDeque<>();
 		}
 		return deque;
