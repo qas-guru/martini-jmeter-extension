@@ -8,12 +8,12 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
-      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+      <stringProp name="TestPlan.user_define_classpath">/Users/pennycurich/projects/martini-suite/martini-ai-common/target/martini-ai-common-1.0-SNAPSHOT-jmeter-dependencies/selenium-api-3.8.1-.jar</stringProp>
     </TestPlan>
     <hashTree>
       <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="true">
-        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
-        <stringProp name="martini.feature.locations">classpath*:/miscContext.feature</stringProp>
+        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/automation/*Context.xml</stringProp>
+        <stringProp name="martini.feature.locations">classpath*:/automation/features/*.feature</stringProp>
         <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">
             <elementProp name="spring.profiles.active" elementType="Argument">
@@ -26,14 +26,14 @@
               <stringProp name="Argument.value">alpha</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
-            <elementProp name="tripod.super.user.password" elementType="Argument">
-              <stringProp name="Argument.name">tripod.super.user.password</stringProp>
-              <stringProp name="Argument.value">DMPOT</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
             <elementProp name="chromium.env" elementType="Argument">
               <stringProp name="Argument.name">chromium.env</stringProp>
               <stringProp name="Argument.value">pcurich</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="tripod.credentials.key" elementType="Argument">
+              <stringProp name="Argument.name">tripod.credentials.key</stringProp>
+              <stringProp name="Argument.value">/home/dmqa/.credentials.key</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
           </collectionProp>
@@ -44,7 +44,7 @@
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">2</stringProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">2</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
@@ -126,8 +126,6 @@
           </JavaSampler>
           <hashTree/>
         </hashTree>
-        <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Failing Martini Sampler" enabled="true"/>
-        <hashTree/>
       </hashTree>
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>

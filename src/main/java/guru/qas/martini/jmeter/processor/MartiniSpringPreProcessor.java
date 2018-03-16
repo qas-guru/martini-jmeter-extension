@@ -47,7 +47,6 @@ import com.google.common.collect.ImmutableMap;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.gherkin.DefaultGherkinResourceLoader;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.runtime.event.EventManager;
 
@@ -59,7 +58,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	private static final long serialVersionUID = 6143536078921717477L;
 
 	public static final String DEFAULT_RESOURCES_CONTEXT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
-	public static final String DEFAULT_RESOURCES_FEATURES = DefaultGherkinResourceLoader.DEFAULT_PATTERN;
+	public static final String DEFAULT_RESOURCES_FEATURES = "classpath*:**/*.feature";
 
 	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.spring.config.locations";
 	protected static final String PROPERTY_FEATURE_LOCATIONS = "martini.feature.locations";
@@ -160,7 +159,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 		String featureLocations = this.getFeatureLocations().trim();
 		if (!featureLocations.isEmpty()) {
-			builder.put("martini.feature.locations", featureLocations);
+			builder.put("martini.feature.resources", featureLocations);
 		}
 		ImmutableMap<String, Object> source = builder.build();
 
