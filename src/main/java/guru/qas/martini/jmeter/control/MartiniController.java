@@ -67,13 +67,15 @@ import guru.qas.martini.jmeter.Il8n;
  * <ul>
  * <li>If you have more threads assigned than available Martinis, the number of loops will be
  * equivalent to the number of Martinis and some threads will not execute a sampler. Ten threads for
- * four martinis will result in four subelement loops.</li>
- * <li>If you have fewer threads assigned than availabe Martinis, the threads will repeatedly loop
+ * four martinis will result in four subelement loops.
+ * </li>
+ * <li>If you have fewer threads assigned than available Martinis, the threads will repeatedly loop
  * over subelements until the Martinis are drained. Five threads for ten tests will result in two
  * loops by each thread.
+ * </li>
  * <li>If you have five samplers for a single controller, each of the five samplers will be executed
  * with the same Martini.  If you were to set the parent's loop to a value of 3, then a successful
- * test will produce 15 samples.</li>
+ * test will produce 15 samples.
  * </li>
  * <li>If no executable Martinis are found, an error will be reported through the GUI but the remainder
  * of the Test Plan will still execute.</li>
