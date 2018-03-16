@@ -11,8 +11,9 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.processor.MartiniPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniPreProcessor" testname="Martini PreProcessor" enabled="true">
-        <stringProp name="martini.config.locations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
+      <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="true">
+        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/miscContext.xml</stringProp>
+        <stringProp name="martini.feature.locations">classpath*:/miscContext.feature</stringProp>
         <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">
             <elementProp name="spring.profiles.active" elementType="Argument">
@@ -37,13 +38,13 @@
             </elementProp>
           </collectionProp>
         </elementProp>
-      </guru.qas.martini.jmeter.processor.MartiniPreProcessor>
+      </guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">2</stringProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">2</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>

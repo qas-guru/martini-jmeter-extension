@@ -201,7 +201,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * At this point in the lifecycle, the Martini PreProcessor has loaded Spring
+	 * At this point in the lifecycle, the MartiniSpringPreProcessor has loaded Spring
 	 * and set the ApplicationContext as a thread variable.
 	 * </p>
 	 * Note that this method may be called multiple times, once per thread.
@@ -294,7 +294,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	/**
-	 * Retrieves the Spring ApplicationContext from thread variables. For this to work, a Martini PreProcessor
+	 * Retrieves the Spring ApplicationContext from thread variables. For this to work, a MartiniSpringPreProcessor
 	 * should be configured at the TestPlan level.
 	 *
 	 * @param threadContext same whether obtained from an event, sampler or super.getThreadContext()

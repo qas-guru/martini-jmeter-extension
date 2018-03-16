@@ -47,22 +47,28 @@ import com.google.common.collect.ImmutableMap;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.gherkin.DefaultGherkinResourceLoader;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
 @SuppressWarnings("WeakerAccess")
-public final class MartiniPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
+public final class MartiniSpringPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
-	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.config.locations";
+
+	public static final String DEFAULT_RESOURCES_CONTEXT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
+	public static final String DEFAULT_RESOURCES_FEATURES = DefaultGherkinResourceLoader.DEFAULT_PATTERN;
+
+	protected static final String PROPERTY_CONFIG_LOCATIONS = "martini.spring.config.locations";
+	protected static final String PROPERTY_FEATURE_LOCATIONS = "martini.feature.locations";
 	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
 	protected static final String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniPreProcessor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniSpringPreProcessor.class);
 
-	public MartiniPreProcessor() {
+	public MartiniSpringPreProcessor() {
 		super();
 	}
 
@@ -148,8 +154,17 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 	protected PropertySource getEnvironmentPropertySource() {
 		Arguments environmentArguments = getEnvironment();
 		Map<String, String> variables = environmentArguments.getArgumentsAsMap();
-		Map<String, Object> cast = ImmutableMap.<String, Object>builder().putAll(variables).build();
-		return new MapPropertySource(PROPERTY_SYSTEM_PROPERTIES, cast);
+
+		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+		builder.putAll(variables);
+
+		String featureLocations = this.getFeatureLocations().trim();
+		if (!featureLocations.isEmpty()) {
+			builder.put("martini.feature.locations", featureLocations);
+		}
+		ImmutableMap<String, Object> source = builder.build();
+
+		return new MapPropertySource(PROPERTY_SYSTEM_PROPERTIES, source);
 	}
 
 	protected ConfigurableApplicationContext setUpSpring(PropertySource propertySource) {
@@ -195,12 +210,25 @@ public final class MartiniPreProcessor extends AbstractTestElement implements Pr
 		testEnded();
 	}
 
-	public void setConfigLocations(String configLocations) {
-		setProperty(PROPERTY_CONFIG_LOCATIONS, configLocations);
+	public void setConfigLocations(String s) {
+		setStringProperty(s, PROPERTY_CONFIG_LOCATIONS, DEFAULT_RESOURCES_CONTEXT);
 	}
 
 	public String getConfigLocations() {
 		return getPropertyAsString(PROPERTY_CONFIG_LOCATIONS);
+	}
+
+	public void setFeatureLocations(String s) {
+		setStringProperty(s, PROPERTY_FEATURE_LOCATIONS, DEFAULT_RESOURCES_FEATURES);
+	}
+
+	public String getFeatureLocations() {
+		return getPropertyAsString(PROPERTY_FEATURE_LOCATIONS);
+	}
+
+	protected void setStringProperty(String s, String propertyName, String defaultValue) {
+		String trimmed = null == s ? "" : s.trim();
+		setProperty(propertyName, trimmed.isEmpty() ? defaultValue : trimmed);
 	}
 
 	public void setEnvironment(Arguments environment) {

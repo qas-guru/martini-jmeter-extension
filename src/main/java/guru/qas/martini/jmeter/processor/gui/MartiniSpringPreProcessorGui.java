@@ -27,20 +27,22 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.Il8n;
-import guru.qas.martini.jmeter.processor.MartiniPreProcessor;
+import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
+
+import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
-public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
+public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui {
 
 	private static final long serialVersionUID = 4447406345771389792L;
 
-	protected static final String DEFAULT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
-
 	protected final JTextField configLocationsField;
+	protected final JTextField featureLocationsField;
 	protected final EnvironmentPanel environmentPanel;
 
-	public MartiniPreProcessorGui() {
+	public MartiniSpringPreProcessorGui() {
 		configLocationsField = new JTextField(6);
+		featureLocationsField = new JTextField(6);
 		environmentPanel = new EnvironmentPanel(null, true);
 		init();
 	}
@@ -54,18 +56,31 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 		VerticalPanel springPanel = getSpringPanel();
 		add(springPanel);
 
+		VerticalPanel featurePanel = getFeaturePanel();
+		add(featurePanel);
+
 		VerticalPanel environmentDisplayPanel = getEnvironmentDisplayPanel();
 		add(environmentDisplayPanel);
 	}
 
 	protected VerticalPanel getSpringPanel() {
-		VerticalPanel springPanel = new VerticalPanel();
+		VerticalPanel panel = new VerticalPanel();
 		JLabel label = Gui.getInstance().getJLabel(getClass(), "spring.panel.label", 2);
-		springPanel.add(label);
+		panel.add(label);
 
-		configLocationsField.setText(DEFAULT);
-		springPanel.add(configLocationsField);
-		return springPanel;
+		configLocationsField.setText(DEFAULT_RESOURCES_CONTEXT);
+		panel.add(configLocationsField);
+		return panel;
+	}
+
+	protected VerticalPanel getFeaturePanel() {
+		VerticalPanel panel = new VerticalPanel();
+		JLabel label = Gui.getInstance().getJLabel(getClass(), "feature.panel.label", 2);
+		panel.add(label);
+
+		featureLocationsField.setText(DEFAULT_RESOURCES_FEATURES);
+		panel.add(featureLocationsField);
+		return panel;
 	}
 
 	protected VerticalPanel getEnvironmentDisplayPanel() {
@@ -86,16 +101,21 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	public TestElement createTestElement() {
-		MartiniPreProcessor preProcessor = new MartiniPreProcessor();
+		MartiniSpringPreProcessor preProcessor = new MartiniSpringPreProcessor();
 		modifyTestElement(preProcessor);
 		return preProcessor;
 	}
 
 	public void modifyTestElement(TestElement element) {
 		super.configureTestElement(element);
-		String setting = configLocationsField.getText();
-		MartiniPreProcessor preProcessor = MartiniPreProcessor.class.cast(element);
-		preProcessor.setConfigLocations(setting);
+		MartiniSpringPreProcessor preProcessor = MartiniSpringPreProcessor.class.cast(element);
+
+		String configSetting = configLocationsField.getText();
+		preProcessor.setConfigLocations(configSetting);
+
+		String featureSetting = featureLocationsField.getText();
+		preProcessor.setFeatureLocations(featureSetting);
+
 		Arguments arguments = Arguments.class.cast(environmentPanel.createTestElement());
 		preProcessor.setEnvironment(arguments);
 	}
@@ -103,9 +123,14 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
-		MartiniPreProcessor preProcessor = MartiniPreProcessor.class.cast(element);
-		String setting = preProcessor.getConfigLocations();
-		configLocationsField.setText(setting);
+		MartiniSpringPreProcessor preProcessor = MartiniSpringPreProcessor.class.cast(element);
+
+		String configSetting = preProcessor.getConfigLocations();
+		configLocationsField.setText(configSetting);
+
+		String featureSetting = preProcessor.getFeatureLocations();
+		featureLocationsField.setText(featureSetting);
+
 		Arguments arguments = preProcessor.getEnvironment();
 		if (null != arguments) {
 			environmentPanel.configure(arguments);
@@ -115,7 +140,8 @@ public final class MartiniPreProcessorGui extends AbstractPreProcessorGui {
 	@Override
 	public void clearGui() {
 		environmentPanel.clear();
-		configLocationsField.setText(DEFAULT);
+		configLocationsField.setText(DEFAULT_RESOURCES_CONTEXT);
+		featureLocationsField.setText(DEFAULT_RESOURCES_FEATURES);
 		super.clearGui();
 	}
 }
