@@ -52,6 +52,38 @@ import guru.qas.martini.jmeter.Constants;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.Il8n;
 
+/**
+ * A custom JMeter Controller class that loads Martinis from a Spring ApplicationContext and repeatedly all subelements
+ * with a single Martini per thread until its queue is drained.
+ * <p>
+ * The correct operation of this Controller relies on a MartiniSpringPreprocessor being configured at
+ * an ancestor level as it references an ApplicationContext in thread variables.
+ * <p>
+ * Note that this is in effect a looping controller that will remove one element from a queue per parent loop
+ * and execute all descendant Samplers, populating each Sampler's SamplerContext with a Martini under the key
+ * martini.current.
+ * <p>
+ * This may have some confusing effects. For example:
+ * <ul>
+ * <li>If you have more threads assigned than available Martinis, the number of loops will be
+ * equivalent to the number of Martinis and some threads will not execute a sampler. Ten threads for
+ * four martinis will result in four subelement loops.</li>
+ * <li>If you have fewer threads assigned than availabe Martinis, the threads will repeatedly loop
+ * over subelements until the Martinis are drained. Five threads for ten tests will result in two
+ * loops by each thread.
+ * <li>If you have five samplers for a single controller, each of the five samplers will be executed
+ * with the same Martini.  If you were to set the parent's loop to a value of 3, then a successful
+ * test will produce 15 samples.</li>
+ * </li>
+ * <li>If no executable Martinis are found, an error will be reported through the GUI but the remainder
+ * of the Test Plan will still execute.</li>
+ * <li>
+ * Only Controllers and Samplers are accepted as subelements of this Controller. If a subclass of this controller allows
+ * any other type of element into the subtree, it will create a test failure and subsequently re-start the subelement execution
+ * or continue with the next subelement depending on the configuration of the ThreadGroup.
+ * </li>
+ * </ul>
+ */
 @SuppressWarnings("WeakerAccess")
 public class MartiniController extends AbstractTestElement implements Controller, TestStateListener, TestCompilerHelper, LoopIterationListener {
 
