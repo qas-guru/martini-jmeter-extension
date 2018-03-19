@@ -77,6 +77,17 @@
           <hashTree/>
           <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="false"/>
           <hashTree/>
+          <Arguments guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="some.variable" elementType="Argument">
+                <stringProp name="Argument.name">some.variable</stringProp>
+                <stringProp name="Argument.value">meh</stringProp>
+                <stringProp name="Argument.desc">variable.description</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </Arguments>
+          <hashTree/>
           <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Martini Spring Bean PreProcessor" enabled="true">
             <stringProp name="martini.preprocessor.bean.name"></stringProp>
             <stringProp name="martini.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
