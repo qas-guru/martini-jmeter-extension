@@ -83,6 +83,11 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 				throw new RuntimeException(message, e);
 			}
 		}
+		else if (null != bean) {
+			Class<? extends PreProcessor> implementation = bean.getClass();
+			LOGGER.warn("PreProcessor class {} does not implement Cloneable and is not marked NoThreadClone; " +
+				"clone will not receive copy of bean", implementation);
+		}
 		return clone;
 	}
 
@@ -125,8 +130,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		try {
 			ApplicationContext springContext = getSpringContext();
 			Class<? extends PreProcessor> implementation = getImplementation(springContext);
-			PreProcessor preProcessor = getBean(springContext, implementation);
-			cast(preProcessor);
+			bean = getBean(springContext, implementation);
+			cast(bean);
 		}
 		catch (MartiniException e) {
 			Gui.getInstance().reportError(this, e);
@@ -267,7 +272,9 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void process() {
-		bean.process();
+		if (null != bean) {
+			bean.process();
+		}
 	}
 
 	@Override

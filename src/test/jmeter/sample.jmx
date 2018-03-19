@@ -12,7 +12,7 @@
     </TestPlan>
     <hashTree>
       <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="true">
-        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/automation/*Context.xml</stringProp>
+        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/automation/*Context.xml,classpath*:/jmeter/jmeterWorkflowContext.xml</stringProp>
         <stringProp name="martini.feature.locations">classpath*:/automation/features/*.feature</stringProp>
         <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">
@@ -76,6 +76,11 @@
           </JavaSampler>
           <hashTree/>
           <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="false"/>
+          <hashTree/>
+          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Martini Spring Bean PreProcessor" enabled="true">
+            <stringProp name="martini.preprocessor.bean.name"></stringProp>
+            <stringProp name="martini.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
+          </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
           <hashTree/>
         </hashTree>
         <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 2" enabled="false">
