@@ -35,7 +35,6 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	private static final long serialVersionUID = 4447406345771389792L;
 
-	protected static final String INSTRUCTIONS = "blah blah blah";
 	protected static final String DEFAULT_NAME = "aBean";
 	protected static final String DEFAULT_TYPE = "com.mycompany.MyPreProcessorBean";
 
