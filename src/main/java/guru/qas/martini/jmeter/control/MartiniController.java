@@ -284,13 +284,13 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 		if (MartiniException.class.isInstance(exception)) {
 			LOGGER.warn(exception.getMessage());
-			Gui.getInstance().reportError(getClass(), MartiniException.class.cast(exception));
+			Gui.getInstance().reportError(this, MartiniException.class.cast(exception));
 		}
 		else if (Exception.class.isInstance(exception)) {
 			String name = getName();
 			MartiniException e = getException(exception, "error.retrieving.scenarios", name);
 			LOGGER.error(e.getMessage(), exception);
-			Gui.getInstance().reportError(getClass(), e);
+			Gui.getInstance().reportError(this, e);
 		}
 	}
 
@@ -355,7 +355,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 	protected String getMessage(String key, Object... arguments) {
 		Il8n il8n = Il8n.getInstance();
-		return il8n.getInterpolatedMessage(getClass(), key, arguments);
+		return il8n.getMessage(getClass(), key, arguments);
 	}
 
 	/**

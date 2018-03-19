@@ -42,18 +42,18 @@ public class Il8n {
 		return INSTANCE;
 	}
 
-	public String getMessage(Class implementation, String key) {
+	public String getMessage(Class implementation, String key, Object... arguments) {
+		checkNotNull(implementation, "null Class");
+		checkNotNull(key, "null String");
+		String template = getTemplate(implementation, key);
+		return null == template ? key : null == arguments ? template : String.format(template, arguments);
+	}
+
+	protected String getTemplate(Class implementation, String key) {
 		checkNotNull(implementation, "null Class");
 		checkNotNull(key, "null String");
 		ResourceBundle bundle = getResourceBundle(implementation);
 		return null == bundle ? key : getText(key, bundle);
-	}
-
-	public String getInterpolatedMessage(Class implementation, String key, Object... arguments) {
-		checkNotNull(implementation, "null Class");
-		checkNotNull(key, "null String");
-		String template = getMessage(implementation, key);
-		return null == template ? key : String.format(template, arguments);
 	}
 
 	private ResourceBundle getResourceBundle(Class implementation) {

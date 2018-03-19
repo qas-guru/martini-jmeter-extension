@@ -35,6 +35,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -115,23 +116,22 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 		try {
 			PropertySource propertySource = getEnvironmentPropertySource();
-			ConfigurableApplicationContext context = setUpSpring(propertySource);
-			SuiteIdentifier suiteIdentifier = setUpSuiteIdentifier(context);
+			ConfigurableApplicationContext springContext = setUpSpring(propertySource);
+			SuiteIdentifier suiteIdentifier = setUpSuiteIdentifier(springContext);
 
-			JMeterProperty property = new ObjectProperty(KEY_SPRING_CONTEXT, context);
-			super.setProperty(property);
-			super.setTemporary(property);
-
-			EventManager eventManager = context.getBean(EventManager.class);
+			EventManager eventManager = springContext.getBean(EventManager.class);
 			eventManager.publishBeforeSuite(this, suiteIdentifier);
+
+			setSpringProperty(springContext);
+			setSpringVariable(springContext);
 		}
 		catch (MartiniException e) {
 			LOGGER.error("unable to create Spring context", e);
-			Gui.getInstance().reportError(getClass(), e);
+			Gui.getInstance().reportError(this, e);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
-			Gui.getInstance().reportError(getClass(), "error.creating.spring.context", e);
+			Gui.getInstance().reportError(this, "error.creating.spring.context", e);
 		}
 	}
 
@@ -185,6 +185,18 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		return configured.toArray(new String[configured.size()]);
 	}
 
+	protected void setSpringProperty(ApplicationContext context) {
+		JMeterProperty property = new ObjectProperty(KEY_SPRING_CONTEXT, context);
+		super.setProperty(property);
+		super.setTemporary(property);
+	}
+
+	protected void setSpringVariable(ApplicationContext context) {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		variables.putObject(KEY_SPRING_CONTEXT, context);
+	}
+
 	public void testEnded() {
 		LOGGER.debug("in testEnded()");
 
@@ -199,7 +211,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			}
 			catch (Exception e) {
 				LOGGER.warn("unable to close Spring context", e);
-				Gui.getInstance().reportError(getClass(), "error.closing.spring.context", e);
+				Gui.getInstance().reportError(this, "error.closing.spring.context", e);
 			}
 		}
 	}
