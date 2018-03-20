@@ -129,6 +129,9 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		String typeSetting = typeField.getText();
 		preProcessor.setBeanType(typeSetting);
+
+		OnError onError = radiosPanel.getSelected().orElse(null);
+		preProcessor.setOnError(onError);
 	}
 
 	@Override
@@ -141,6 +144,9 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		String typeSetting = preProcessor.getBeanType();
 		typeField.setText(typeSetting);
+
+		OnError onError = preProcessor.getOnError();
+		radiosPanel.setSelected(onError);
 	}
 
 	@Override

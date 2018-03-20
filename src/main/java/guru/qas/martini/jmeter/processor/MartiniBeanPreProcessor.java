@@ -64,18 +64,19 @@ import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
  * <li>{@link org.apache.jmeter.testelement.ThreadListener org.apache.jmeter.testelement.ThreadListener}</li>
  * <li>{@link org.apache.jmeter.engine.event.LoopIterationListener org.apache.jmeter.engine.event.LoopIterationListener}</li>
  * </ul>
- * <strong>Note!</strong> If any exceptions are encountered during your bean's retrieval, cloning or handling of
- * ThreadStateListener events, the test will be terminated.
  */
-// TODO: update Javadoc once more sophisticated
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanPreProcessor extends AbstractTestElement implements PreProcessor, ThreadListener, TestStateListener, TestIterationListener, LoopIterationListener {
+
+	// TODO: the right thing when an error is encountered
 
 	private static final long serialVersionUID = 7661543131018896932L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanPreProcessor.class);
 
-	protected static final String PROPERTY_BEAN_NAME = "martini.preprocessor.bean.name";
-	protected static final String PROPERTY_BEAN_TYPE = "martini.preprocessor.bean.type";
+	protected static final String PROPERTY_BEAN_NAME = "martini.bean.preprocessor.bean.name";
+	protected static final String PROPERTY_BEAN_TYPE = "martini.bean.preprocessor.bean.type";
+	protected static final String PROPERTY_ON_ERROR = "martini.bean.preprocessor.on.error";
+
 	public static final String KEY_THIS = "martini.bean.preprocessor";
 
 	protected volatile transient PreProcessor bean;
@@ -164,6 +165,20 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	public String getBeanType() {
 		return getNormalized(PROPERTY_BEAN_TYPE);
+	}
+
+	public void setOnError(OnError a) {
+		if (null == a) {
+			super.removeProperty(PROPERTY_ON_ERROR);
+		}
+		else {
+			super.setProperty(PROPERTY_ON_ERROR, a.name());
+		}
+	}
+
+	public OnError getOnError() {
+		String name = super.getPropertyAsString(PROPERTY_ON_ERROR, null);
+		return null == name ? OnError.STOP_TEST : OnError.valueOf(name);
 	}
 
 	@Override
