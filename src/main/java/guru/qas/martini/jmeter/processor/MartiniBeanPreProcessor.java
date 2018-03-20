@@ -37,7 +37,7 @@ import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
@@ -108,7 +108,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 				setClonedBean(clone);
 			}
 			else if (null != bean) {
-				String message = Il8n.getMessage(getClass(), "error.bean.implementation", bean.getClass());
+				String message = I18n.getMessage(getClass(), "error.bean.implementation", bean.getClass());
 				throw new MartiniException(message);
 			}
 		}
@@ -116,7 +116,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 			exceptionRef.compareAndSet(null, e);
 		}
 		catch (Exception e) {
-			String message = Il8n.getMessage(getClass(), "error.during.clone", null == bean ? null : bean.getClass());
+			String message = I18n.getMessage(getClass(), "error.during.clone", null == bean ? null : bean.getClass());
 			exceptionRef.compareAndSet(null, e);
 		}
 
@@ -138,7 +138,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		Method method = implementation.getMethod("clone");
 		Object o = method.invoke(bean);
 		if (!PreProcessor.class.isInstance(o)) {
-			String message = Il8n.getMessage(getClass(), "error.clone.not.preprocessor", null == o ? null : o.getClass());
+			String message = I18n.getMessage(getClass(), "error.clone.not.preprocessor", null == o ? null : o.getClass());
 			throw new MartiniException(message);
 		}
 		clone.cast(o);
@@ -186,11 +186,11 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		}
 		catch (MartiniException e) {
 			exceptionRef.compareAndSet(null, e);
-			Gui.getInstance().reportError(this, e);
+			Gui.reportError(this, e);
 		}
 		catch (Exception e) {
 			exceptionRef.compareAndSet(null, e);
-			Gui.getInstance().reportError(this, "error.unexpected.startup", e);
+			Gui.reportError(this, "error.unexpected.startup", e);
 		}
 	}
 
@@ -219,7 +219,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 		Object bean;
 		if (null == name && null == implementation) {
-			String message = Il8n.getMessage(getClass(), "error.gui.provide.bean.information");
+			String message = I18n.getMessage(getClass(), "error.gui.provide.bean.information");
 			throw new MartiniException(message);
 		}
 		else if (null == name) {
@@ -239,7 +239,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	protected void assertPreProcessor(Object bean) {
 		if (!PreProcessor.class.isInstance(bean)) {
 			Class<?> type = bean.getClass();
-			String message = Il8n.getMessage(getClass(), "error.gui.incompatible.bean.type", type);
+			String message = I18n.getMessage(getClass(), "error.gui.incompatible.bean.type", type);
 			throw new MartiniException(message);
 		}
 	}
@@ -263,7 +263,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 			ClassLoader classLoader = springContext.getClassLoader();
 			Class<?> clazz = Class.forName(beanType, true, classLoader);
 			if (!PreProcessor.class.isAssignableFrom(clazz)) {
-				String message = Il8n.getMessage(getClass(), "error.incompatible.class.type", clazz);
+				String message = I18n.getMessage(getClass(), "error.incompatible.class.type", clazz);
 				throw new MartiniException(message);
 			}
 			implementation = (Class<? extends PreProcessor>) clazz;
@@ -343,7 +343,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 				disposable.destroy();
 			}
 			catch (Exception e) {
-				String message = Il8n.getMessage(getClass(), "error.disposing.bean", bean);
+				String message = I18n.getMessage(getClass(), "error.disposing.bean", bean);
 				LOGGER.warn(message, e);
 			}
 		}

@@ -28,7 +28,7 @@ import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.testelement.TestElement;
 
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.control.MartiniController;
 
 @SuppressWarnings("WeakerAccess")
@@ -68,7 +68,7 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	private VerticalPanel getSpelPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getInstance().getJLabel(getClass(), "spel.filter.label", 2);
+		JLabel label = Gui.getJLabel(getClass(), "spel.filter.label", 2);
 		panel.add(label);
 
 		JScrollPane scrollPane = new JScrollPane(textArea);
@@ -84,7 +84,7 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getMessage(getClass(), getLabelResource());
+		return I18n.getMessage(getClass(), getLabelResource());
 	}
 
 	@Override

@@ -129,11 +129,11 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		}
 		catch (MartiniException e) {
 			LOGGER.error("unable to create Spring context", e);
-			Gui.getInstance().reportError(this, e);
+			Gui.reportError(this, e);
 		}
 		catch (Exception e) {
 			LOGGER.error("unable to create Spring context", e);
-			Gui.getInstance().reportError(this, "error.creating.spring.context", e);
+			Gui.reportError(this, "error.creating.spring.context", e);
 		}
 	}
 
@@ -208,7 +208,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			}
 			catch (Exception e) {
 				LOGGER.warn("unable to close Spring context", e);
-				Gui.getInstance().reportError(this, "error.closing.spring.context", e);
+				Gui.reportError(this, "error.closing.spring.context", e);
 			}
 		}
 	}

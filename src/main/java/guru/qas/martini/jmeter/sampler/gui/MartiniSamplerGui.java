@@ -20,7 +20,7 @@ import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -40,7 +40,7 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getMessage(getClass(), getLabelResource());
+		return I18n.getMessage(getClass(), getLabelResource());
 	}
 
 	@Override

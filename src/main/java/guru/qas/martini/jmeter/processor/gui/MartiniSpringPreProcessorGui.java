@@ -26,7 +26,7 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 
 import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.*;
@@ -65,7 +65,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	protected VerticalPanel getSpringPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getInstance().getJLabel(getClass(), "spring.panel.label", 2);
+		JLabel label = Gui.getJLabel(getClass(), "spring.panel.label", 2);
 		panel.add(label);
 
 		configLocationsField.setText(DEFAULT_RESOURCES_CONTEXT);
@@ -75,7 +75,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	protected VerticalPanel getFeaturePanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getInstance().getJLabel(getClass(), "feature.panel.label", 2);
+		JLabel label = Gui.getJLabel(getClass(), "feature.panel.label", 2);
 		panel.add(label);
 
 		featureLocationsField.setText(DEFAULT_RESOURCES_FEATURES);
@@ -85,7 +85,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	protected VerticalPanel getEnvironmentDisplayPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getInstance().getJLabel(getClass(), "spring.environment.label", 2);
+		JLabel label = Gui.getJLabel(getClass(), "spring.environment.label", 2);
 		panel.add(label);
 		panel.add(environmentPanel);
 		return panel;
@@ -93,7 +93,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getMessage(getClass(), getLabelResource());
+		return I18n.getMessage(getClass(), getLabelResource());
 	}
 
 	public String getLabelResource() {

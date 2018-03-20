@@ -16,8 +16,10 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor.gui;
 
+import java.awt.Container;
 import java.awt.Font;
 
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
@@ -27,8 +29,11 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor;
+import guru.qas.martini.jmeter.processor.OnError;
+
+import static guru.qas.martini.jmeter.processor.OnError.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
@@ -40,7 +45,9 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected final JTextField nameField;
 	protected final JTextField typeField;
+	protected RadiosPanel<OnError> radiosPanel;
 
+	@SuppressWarnings("deprecation")
 	public MartiniBeanPreProcessorGui() {
 		nameField = new JTextField(6);
 		typeField = new JTextField(6);
@@ -59,33 +66,48 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected VerticalPanel getBeanPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		panel.setBorder(makeBorder());
+		addBeanIdentifiers(panel);
+		addOnErrorSelection(panel);
+		return panel;
+	}
 
-		JLabel instructions = Gui.getInstance().getJLabel(getClass(), "panel.instructions", 0);
+	protected void addBeanIdentifiers(Container container) {
+		VerticalPanel beanPanel = new VerticalPanel();
+		beanPanel.setBorder(BorderFactory.createEtchedBorder());
+
+		JLabel instructions = Gui.getJLabel(getClass(), "panel.instructions", 0);
 		Font current = instructions.getFont();
 		Font italicized = new Font(current.getName(), Font.ITALIC, current.getSize());
-		panel.add(instructions);
+		beanPanel.add(instructions);
 
-		JLabel nameLabel = Gui.getInstance().getJLabel(getClass(), "preprocessor.bean.name", 1);
-		panel.add(nameLabel);
+		JLabel nameLabel = Gui.getJLabel(getClass(), "preprocessor.bean.name", 1);
+		beanPanel.add(nameLabel);
 
 		nameField.setText(DEFAULT_NAME);
-		panel.add(nameField);
+		beanPanel.add(nameField);
 
-		JLabel typeLabel = Gui.getInstance().getJLabel(getClass(), "preprocessor.bean.type", 1);
-		panel.add(typeLabel);
+		JLabel typeLabel = Gui.getJLabel(getClass(), "preprocessor.bean.type", 1);
+		beanPanel.add(typeLabel);
 
 		typeField.setText(DEFAULT_TYPE);
-		panel.add(typeField);
+		beanPanel.add(typeField);
 
-		// TODO: checkboxes!
+		container.add(beanPanel);
+	}
 
-		return panel;
+	protected void addOnErrorSelection(Container container) {
+		JLabel label = Gui.getJLabel(getClass(), "on.error.description", 1);
+		radiosPanel = new RadiosPanel<>(OnError.class, label);
+		radiosPanel.setBorder(BorderFactory.createEtchedBorder());
+		radiosPanel.addButton(STOP_TEST, STOP_TEST.getLabel(), true);
+		radiosPanel.addButton(STOP_THREAD, STOP_THREAD.getLabel(), false);
+		radiosPanel.addButton(PROCEED, PROCEED.getLabel(), false);
+		container.add(radiosPanel);
 	}
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getMessage(getClass(), getLabelResource());
+		return I18n.getMessage(getClass(), getLabelResource());
 	}
 
 	public String getLabelResource() {
@@ -125,6 +147,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	public void clearGui() {
 		nameField.setText(DEFAULT_NAME);
 		typeField.setText(DEFAULT_TYPE);
+		radiosPanel.setSelected(STOP_TEST);
 		super.clearGui();
 	}
 }

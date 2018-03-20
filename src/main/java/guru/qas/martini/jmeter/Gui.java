@@ -31,47 +31,41 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @SuppressWarnings("WeakerAccess")
 public class Gui {
 
-	protected static final Gui INSTANCE = new Gui();
 	protected static final String KEY_TITLE = "error.dialog.title";
 
 	protected Gui() {
 	}
 
-	public void reportError(TestElement element, MartiniException e) {
+	public static void reportError(TestElement element, MartiniException e) {
 		String description = e.getMessage();
 		showError(element, description, e);
 	}
 
-	protected void showError(TestElement element, String description, Exception e) {
+	protected static void showError(TestElement element, String description, Exception e) {
 		String title = getTitle(element);
 		JMeterUtils.reportErrorToUser(description, title, e);
 	}
 
-	public void reportError(TestElement element, String key, Exception e) {
+	public static void reportError(TestElement element, String key, Exception e) {
 		Class<? extends TestElement> implementation = element.getClass();
-		String description = Il8n.getMessage(implementation, key);
+		String description = I18n.getMessage(implementation, key);
 		showError(element, description, e);
 	}
 
-	private String getTitle(TestElement element) {
+	private static String getTitle(TestElement element) {
 		Class<? extends TestElement> implementation = element.getClass();
-		return Il8n.getMessage(implementation, KEY_TITLE, element.getName());
+		return I18n.getMessage(implementation, KEY_TITLE, element.getName());
 	}
 
-	public JLabel getJLabel(Class<? extends JMeterGUIComponent> implementation, String key, int sizeAdjustment) {
+	public static JLabel getJLabel(Class<? extends JMeterGUIComponent> implementation, String key, int sizeAdjustment) {
 		checkNotNull(implementation, "null Class");
 		checkNotNull(key, "null String");
 
-		String label = Il8n.getMessage(implementation, key);
+		String label = I18n.getMessage(implementation, key);
 		JLabel jLabel = new JLabel(label);
-		Font spelLabelFont = jLabel.getFont();
-		Font font = spelLabelFont.deriveFont((float) spelLabelFont.getSize() + sizeAdjustment);
+		Font sourceFont = jLabel.getFont();
+		Font font = sourceFont.deriveFont((float) sourceFont.getSize() + sizeAdjustment);
 		jLabel.setFont(font);
 		return jLabel;
 	}
-
-	public static Gui getInstance() {
-		return INSTANCE;
-	}
-
 }

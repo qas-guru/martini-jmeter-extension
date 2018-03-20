@@ -50,7 +50,7 @@ import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.jmeter.Constants;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.Il8n;
+import guru.qas.martini.jmeter.I18n;
 
 /**
  * A custom JMeter Controller class that loads Martinis from a Spring ApplicationContext and repeatedly all subelements
@@ -284,13 +284,13 @@ public class MartiniController extends AbstractTestElement implements Controller
 
 		if (MartiniException.class.isInstance(exception)) {
 			LOGGER.warn(exception.getMessage());
-			Gui.getInstance().reportError(this, MartiniException.class.cast(exception));
+			Gui.reportError(this, MartiniException.class.cast(exception));
 		}
 		else if (Exception.class.isInstance(exception)) {
 			String name = getName();
 			MartiniException e = getException(exception, "error.retrieving.scenarios", name);
 			LOGGER.error(e.getMessage(), exception);
-			Gui.getInstance().reportError(this, e);
+			Gui.reportError(this, e);
 		}
 	}
 
@@ -349,7 +349,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	protected MartiniException getException(Exception cause, String key, Object... arguments) {
-		String message = Il8n.getMessage(getClass(), key, arguments);
+		String message = I18n.getMessage(getClass(), key, arguments);
 		return new MartiniException(message, cause);
 	}
 

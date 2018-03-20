@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
-public class Il8n {
+public class I18n {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Il8n.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(I18n.class);
 
-	protected Il8n() {
+	protected I18n() {
 	}
 
 	public static String getMessage(Class implementation, String key, Object... arguments) {
@@ -63,7 +63,7 @@ public class Il8n {
 		ResourceBundle bundle = null;
 		try {
 			checkNotNull(name, "Class has no canonical name: %s", implementation);
-			String baseName = String.format("%sIl8n", name);
+			String baseName = String.format("%sI18n", name);
 			Locale locale = JMeterUtils.getLocale();
 			bundle = ResourceBundle.getBundle(baseName, locale); // ResourceBundle performs caching.
 		}
