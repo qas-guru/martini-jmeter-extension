@@ -111,9 +111,11 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		return Optional.ofNullable(context);
 	}
 
-	public void testStarted() {
-		LOGGER.debug("in testStarted()");
+	public void testStarted(String host) {
+		testStarted();
+	}
 
+	public void testStarted() {
 		try {
 			PropertySource propertySource = getEnvironmentPropertySource();
 			ConfigurableApplicationContext springContext = setUpSpring(propertySource);
@@ -143,11 +145,6 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
 		beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
 		return suiteIdentifier;
-	}
-
-	public void testStarted(String host) {
-		LOGGER.debug("in testStarted({})", host);
-		testStarted();
 	}
 
 	protected PropertySource getEnvironmentPropertySource() {

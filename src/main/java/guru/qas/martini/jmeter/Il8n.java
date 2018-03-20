@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter;
 
 import java.util.Locale;
-
 import java.util.ResourceBundle;
 
 import org.apache.jmeter.util.JMeterUtils;
@@ -30,39 +29,42 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class Il8n {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Il8n.class);
-	protected static final Il8n INSTANCE = new Il8n();
-
-	private final Locale locale;
 
 	protected Il8n() {
-		locale = JMeterUtils.getLocale();
 	}
 
-	public static Il8n getInstance() {
-		return INSTANCE;
-	}
-
-	public String getMessage(Class implementation, String key, Object... arguments) {
+	public static String getMessage(Class implementation, String key, Object... arguments) {
 		checkNotNull(implementation, "null Class");
 		checkNotNull(key, "null String");
-		String template = getTemplate(implementation, key);
-		return null == template ? key : null == arguments ? template : String.format(template, arguments);
+
+		String message = key;
+		try {
+			String template = getTemplate(implementation, key);
+			if (null != template) {
+				message = null == arguments ? template : String.format(template, arguments);
+			}
+		}
+		catch (Exception e) {
+			LOGGER.warn("unable to interpolate message for implementation {}, key {}", implementation, key);
+		}
+		return message;
 	}
 
-	protected String getTemplate(Class implementation, String key) {
+	protected static String getTemplate(Class implementation, String key) {
 		checkNotNull(implementation, "null Class");
 		checkNotNull(key, "null String");
 		ResourceBundle bundle = getResourceBundle(implementation);
 		return null == bundle ? key : getText(key, bundle);
 	}
 
-	private ResourceBundle getResourceBundle(Class implementation) {
+	private static ResourceBundle getResourceBundle(Class implementation) {
 		String name = implementation.getCanonicalName();
 
 		ResourceBundle bundle = null;
 		try {
 			checkNotNull(name, "Class has no canonical name: %s", implementation);
 			String baseName = String.format("%sIl8n", name);
+			Locale locale = JMeterUtils.getLocale();
 			bundle = ResourceBundle.getBundle(baseName, locale); // ResourceBundle performs caching.
 		}
 		catch (Exception e) {
@@ -71,7 +73,7 @@ public class Il8n {
 		return bundle;
 	}
 
-	protected String getText(String key, ResourceBundle bundle) {
+	protected static String getText(String key, ResourceBundle bundle) {
 		String label = null;
 		try {
 			label = bundle.getString(key);

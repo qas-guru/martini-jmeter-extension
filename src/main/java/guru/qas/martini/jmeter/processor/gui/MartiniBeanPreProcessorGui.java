@@ -59,6 +59,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected VerticalPanel getBeanPanel() {
 		VerticalPanel panel = new VerticalPanel();
+		panel.setBorder(makeBorder());
 
 		JLabel instructions = Gui.getInstance().getJLabel(getClass(), "panel.instructions", 0);
 		Font current = instructions.getFont();
@@ -76,12 +77,15 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		typeField.setText(DEFAULT_TYPE);
 		panel.add(typeField);
+
+		// TODO: checkboxes!
+
 		return panel;
 	}
 
 	@Override
 	public String getStaticLabel() {
-		return Il8n.getInstance().getMessage(getClass(), getLabelResource());
+		return Il8n.getMessage(getClass(), getLabelResource());
 	}
 
 	public String getLabelResource() {

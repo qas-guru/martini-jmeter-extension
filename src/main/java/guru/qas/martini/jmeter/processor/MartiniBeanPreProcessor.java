@@ -17,12 +17,14 @@ limitations under the License.
 package guru.qas.martini.jmeter.processor;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.engine.util.NoThreadClone;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testelement.AbstractTestElement;
+import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.ThreadListener;
@@ -30,6 +32,7 @@ import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.MartiniException;
@@ -39,6 +42,32 @@ import guru.qas.martini.jmeter.Il8n;
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 
+/**
+ * Delegates PreProcessor calls to a user-defined bean obtained from Martini's Spring context.
+ * Also forwards ThreadListener, TestStateListener, TestIterationListener and LoopIterationListener
+ * events to delegate.
+ * <p>
+ * To hook your Spring bean into the JMeter lifecycle using this class, at a minimum have your bean
+ * implement org.apache.jmeter.processor.PreProcessor and either:
+ * <ul>
+ * <li>{@link java.lang.Cloneable java.lang.Cloneable}</li>
+ * <li>{@link org.apache.jmeter.engine.util.NoThreadClone org.apache.jmeter.engine.util.NoThreadClone}</li>
+ * </ul>
+ * Your bean's process() method will be called before the start of each sample. If you've implemented Cloneable,
+ * a clone of your bean will be made for each executing thread. If you've implemented NoThreadClone, all threads
+ * will call a single instance of your bean.
+ * <p>
+ * You may also implement:
+ * <ul>
+ * <li>{@link org.apache.jmeter.testelement.TestStateListener org.apache.jmeter.testelement.TestStateListener}</li>
+ * <li>{@link org.apache.jmeter.testelement.TestIterationListener org.apache.jmeter.testelement.TestIterationListener}</li>
+ * <li>{@link org.apache.jmeter.testelement.ThreadListener org.apache.jmeter.testelement.ThreadListener}</li>
+ * <li>{@link org.apache.jmeter.engine.event.LoopIterationListener org.apache.jmeter.engine.event.LoopIterationListener}</li>
+ * </ul>
+ * <strong>Note!</strong> If any exceptions are encountered during your bean's retrieval, cloning or handling of
+ * ThreadStateListener events, the test will be terminated.
+ */
+// TODO: update Javadoc once more sophisticated
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanPreProcessor extends AbstractTestElement implements PreProcessor, ThreadListener, TestStateListener, TestIterationListener, LoopIterationListener {
 
@@ -47,6 +76,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected static final String PROPERTY_BEAN_NAME = "martini.preprocessor.bean.name";
 	protected static final String PROPERTY_BEAN_TYPE = "martini.preprocessor.bean.type";
+	public static final String KEY_THIS = "martini.bean.preprocessor";
 
 	protected volatile transient PreProcessor bean;
 	protected volatile transient NoThreadClone asNoThreadClone;
@@ -54,45 +84,64 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	protected volatile transient TestIterationListener asTestIterationListener;
 	protected volatile transient TestStateListener asTestStateListener;
 	protected volatile transient ThreadListener asThreadListener;
+	protected volatile transient AtomicReference<Exception> exceptionRef;
 
 	public MartiniBeanPreProcessor() {
 		super();
+		exceptionRef = new AtomicReference<>();
+	}
+
+	protected Object readResolve() {
+		this.exceptionRef = new AtomicReference<>();
+		return this;
 	}
 
 	@Override
 	public Object clone() {
 		MartiniBeanPreProcessor clone = MartiniBeanPreProcessor.class.cast(super.clone());
-		if (null != asNoThreadClone) {
-			clone.bean = bean;
-			clone.asNoThreadClone = asNoThreadClone;
-			clone.asLoopIterationListener = asLoopIterationListener;
-			clone.asTestIterationListener = asTestIterationListener;
-			clone.asTestStateListener = asTestStateListener;
-			clone.asThreadListener = asThreadListener;
-		}
-		else if (Cloneable.class.isInstance(bean)) {
-			try {
-				Class<? extends PreProcessor> implementation = bean.getClass();
-				Method method = implementation.getMethod("clone");
-				Object beanClone = method.invoke(bean);
-				checkState(PreProcessor.class.isInstance(beanClone), "cloned bean not of type PreProcessor");
-				clone.cast(beanClone);
+		clone.exceptionRef = exceptionRef;
+		try {
+			if (null != asNoThreadClone) {
+				setMembers(clone);
 			}
-			catch (Exception e) {
-				String message = Il8n.getInstance().getMessage(getClass(), "error.clone.preprocessor");
-				throw new RuntimeException(message, e);
+			else if (Cloneable.class.isInstance(bean)) {
+				setClonedBean(clone);
+			}
+			else if (null != bean) {
+				String message = Il8n.getMessage(getClass(), "error.bean.implementation", bean.getClass());
+				throw new MartiniException(message);
 			}
 		}
-		else if (null != bean) {
-			Class<? extends PreProcessor> implementation = bean.getClass();
-			LOGGER.warn("PreProcessor class {} does not implement Cloneable and is not marked NoThreadClone; " +
-				"clone will not receive copy of bean", implementation);
+		catch (MartiniException e) {
+			exceptionRef.compareAndSet(null, e);
 		}
+		catch (Exception e) {
+			String message = Il8n.getMessage(getClass(), "error.during.clone", null == bean ? null : bean.getClass());
+			exceptionRef.compareAndSet(null, e);
+		}
+
 		return clone;
 	}
 
-	protected <T> T cast(Object o, Class<T> implementation) {
-		return implementation.isInstance(o) ? implementation.cast(o) : null;
+	protected void setMembers(MartiniBeanPreProcessor clone) {
+		clone.bean = bean;
+		clone.asNoThreadClone = asNoThreadClone;
+		clone.asLoopIterationListener = asLoopIterationListener;
+		clone.asTestIterationListener = asTestIterationListener;
+		clone.asTestStateListener = asTestStateListener;
+		clone.asThreadListener = asThreadListener;
+		clone.exceptionRef = exceptionRef;
+	}
+
+	protected void setClonedBean(MartiniBeanPreProcessor clone) throws Exception {
+		Class<? extends PreProcessor> implementation = bean.getClass();
+		Method method = implementation.getMethod("clone");
+		Object o = method.invoke(bean);
+		if (!PreProcessor.class.isInstance(o)) {
+			String message = Il8n.getMessage(getClass(), "error.clone.not.preprocessor", null == o ? null : o.getClass());
+			throw new MartiniException(message);
+		}
+		clone.cast(o);
 	}
 
 	public void setBeanName(String s) {
@@ -119,33 +168,41 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void testStarted() {
-		initializeDelegate();
-
-		if (null != asTestStateListener) {
-			asTestStateListener.testStarted();
-		}
+		testStarted(null);
 	}
 
-	protected void initializeDelegate() {
+	@Override
+	public void testStarted(String host) {
 		try {
-			ApplicationContext springContext = getSpringContext();
-			Class<? extends PreProcessor> implementation = getImplementation(springContext);
-			bean = getBean(springContext, implementation);
-			cast(bean);
+			initializeDelegate();
+			if (null != asTestStateListener) {
+				if (null == host) {
+					asTestStateListener.testStarted();
+				}
+				else {
+					asTestStateListener.testStarted(host);
+				}
+			}
 		}
 		catch (MartiniException e) {
+			exceptionRef.compareAndSet(null, e);
 			Gui.getInstance().reportError(this, e);
 		}
 		catch (Exception e) {
-			Il8n il8n = Il8n.getInstance();
-			String logMessage = il8n.getMessage(getClass(), "error.log.preprocessor.test.started");
-			LOGGER.warn(logMessage, e);
-
-			Gui.getInstance().reportError(this, "error.gui.preprocessor.test.started", e);
+			exceptionRef.compareAndSet(null, e);
+			Gui.getInstance().reportError(this, "error.unexpected.startup", e);
 		}
 	}
 
+	protected void initializeDelegate() throws Exception {
+		ApplicationContext springContext = getSpringContext();
+		Class<? extends PreProcessor> implementation = getImplementation(springContext);
+		bean = getBean(springContext, implementation);
+		cast(bean);
+	}
+
 	protected void cast(Object o) {
+		bean = cast(o, PreProcessor.class);
 		asNoThreadClone = cast(o, NoThreadClone.class);
 		asLoopIterationListener = cast(o, LoopIterationListener.class);
 		asTestIterationListener = cast(o, TestIterationListener.class);
@@ -153,99 +210,77 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		asThreadListener = cast(o, ThreadListener.class);
 	}
 
-	protected PreProcessor getBean(
-		ApplicationContext springContext,
-		Class<? extends PreProcessor> implementation
-	) throws MartiniException {
-		try {
-			String name = getBeanName();
+	protected <T> T cast(Object o, Class<T> implementation) {
+		return implementation.isInstance(o) ? implementation.cast(o) : null;
+	}
 
-			Object bean;
-			if (null == name && null == implementation) {
-				String message = Il8n.getInstance().getMessage(getClass(), "error.gui.provide.bean.information");
-				throw new MartiniException(message);
-			}
-			else if (null == name) {
-				bean = springContext.getBean(implementation);
-			}
-			else if (null == implementation) {
-				bean = springContext.getBean(name);
-			}
-			else {
-				bean = springContext.getBean(name, implementation);
-			}
+	protected PreProcessor getBean(ApplicationContext springContext, Class<? extends PreProcessor> implementation) {
+		String name = getBeanName();
 
-			if (!PreProcessor.class.isInstance(bean)) {
-				Class<?> type = bean.getClass();
-				String message = Il8n.getInstance().getMessage(getClass(), "error.gui.incompatible.bean.type", type);
-				throw new MartiniException(message);
-			}
-			return PreProcessor.class.cast(bean);
+		Object bean;
+		if (null == name && null == implementation) {
+			String message = Il8n.getMessage(getClass(), "error.gui.provide.bean.information");
+			throw new MartiniException(message);
 		}
-		catch (MartiniException e) {
-			LOGGER.warn(e.getMessage());
-			throw e;
+		else if (null == name) {
+			bean = springContext.getBean(implementation);
 		}
-		catch (Exception e) {
-			Il8n il8n = Il8n.getInstance();
-			String logMessage = il8n.getMessage(getClass(), "error.log.preprocessor.retrieval");
-			LOGGER.warn(logMessage, e);
+		else if (null == implementation) {
+			bean = springContext.getBean(name);
+		}
+		else {
+			bean = springContext.getBean(name, implementation);
+		}
 
-			String guiMessage = il8n.getMessage(getClass(), "error.gui.preprocessor.retrieval");
-			throw new MartiniException(guiMessage, e);
+		assertPreProcessor(bean);
+		return PreProcessor.class.cast(bean);
+	}
+
+	protected void assertPreProcessor(Object bean) {
+		if (!PreProcessor.class.isInstance(bean)) {
+			Class<?> type = bean.getClass();
+			String message = Il8n.getMessage(getClass(), "error.gui.incompatible.bean.type", type);
+			throw new MartiniException(message);
 		}
 	}
 
-	protected ApplicationContext getSpringContext() throws MartiniException {
-		try {
-			JMeterContext threadContext = super.getThreadContext();
-			JMeterVariables variables = threadContext.getVariables();
-			Object o = variables.getObject(KEY_SPRING_CONTEXT);
-			checkState(ApplicationContext.class.isInstance(o), "variable %s value %s not an instance of ApplicationContext", KEY_SPRING_CONTEXT, null == o ? null : o.getClass());
-			return ApplicationContext.class.cast(o);
-		}
-		catch (Exception e) {
-			Il8n il8n = Il8n.getInstance();
-			String logMessage = il8n.getMessage(getClass(), "error.log.retrieving.spring.context", KEY_SPRING_CONTEXT);
-			LOGGER.warn(logMessage, e);
-
-			String guiMessage = il8n.getMessage(getClass(), "error.gui.retreiving.spring.context");
-			throw new MartiniException(guiMessage, e);
-		}
+	protected ApplicationContext getSpringContext() {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(KEY_SPRING_CONTEXT);
+		checkState(ApplicationContext.class.isInstance(o), "variable %s value %s not an instance of ApplicationContext", KEY_SPRING_CONTEXT, null == o ? null : o.getClass());
+		return ApplicationContext.class.cast(o);
 	}
 
 	@SuppressWarnings("unchecked")
-	protected Class<? extends PreProcessor> getImplementation(ApplicationContext springContext) throws MartiniException {
+	protected Class<? extends PreProcessor> getImplementation(ApplicationContext springContext) throws Exception {
 		Class<? extends PreProcessor> implementation = null;
-		try {
-			String beanName = getBeanName();
-			String beanType = getBeanType();
 
-			if (null != beanType) {
-				ClassLoader classLoader = springContext.getClassLoader();
-				Class<?> clazz = Class.forName(beanType, true, classLoader);
-				checkState(PreProcessor.class.isAssignableFrom(clazz),
-					"class %s is not an instance of %s", clazz, PreProcessor.class);
-				implementation = (Class<? extends PreProcessor>) clazz;
+		String beanName = getBeanName();
+		String beanType = getBeanType();
+
+		if (null != beanType) {
+			ClassLoader classLoader = springContext.getClassLoader();
+			Class<?> clazz = Class.forName(beanType, true, classLoader);
+			if (!PreProcessor.class.isAssignableFrom(clazz)) {
+				String message = Il8n.getMessage(getClass(), "error.incompatible.class.type", clazz);
+				throw new MartiniException(message);
 			}
-		}
-		catch (Exception e) {
-			Il8n il8n = Il8n.getInstance();
-			String logMessage = il8n.getMessage(getClass(), "error.log.retrieving.bean.implementation", getBeanType());
-			LOGGER.warn(logMessage, e);
-
-			String guiMessage = il8n.getMessage(getClass(), "error.gui.retrieving.bean.implementation");
-			throw new MartiniException(guiMessage, e);
+			implementation = (Class<? extends PreProcessor>) clazz;
 		}
 		return implementation;
 	}
 
 	@Override
-	public void testStarted(String host) {
-		initializeDelegate();
-
-		if (null != asTestStateListener) {
-			asTestStateListener.testStarted(host);
+	public void testIterationStart(LoopIterationEvent event) {
+		if (null != exceptionRef.get()) {
+			TestElement source = event.getSource();
+			JMeterContext threadContext = source.getThreadContext();
+			threadContext.getEngine().stopTest(true);
+			threadContext.getThread().stop();
+		}
+		else if (null != asTestIterationListener) {
+			asTestIterationListener.testIterationStart(event);
 		}
 	}
 
@@ -253,13 +288,6 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	public void threadStarted() {
 		if (null != asThreadListener) {
 			asThreadListener.threadStarted();
-		}
-	}
-
-	@Override
-	public void testIterationStart(LoopIterationEvent event) {
-		if (null != asTestIterationListener) {
-			asTestIterationListener.testIterationStart(event);
 		}
 	}
 
@@ -286,13 +314,38 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void testEnded() {
+		testEnded(null);
+	}
+
+	@Override
+	public void testEnded(String host) {
+		exceptionRef.set(null);
 		try {
 			if (null != asTestStateListener) {
-				asTestStateListener.testEnded();
+				if (null == host) {
+					asTestStateListener.testEnded();
+				}
+				else {
+					asTestStateListener.testEnded(host);
+				}
 			}
 		}
 		finally {
+			disposeDelegate();
 			destroyDelegate();
+		}
+	}
+
+	protected void disposeDelegate() {
+		if (DisposableBean.class.isInstance(bean)) {
+			DisposableBean disposable = DisposableBean.class.cast(bean);
+			try {
+				disposable.destroy();
+			}
+			catch (Exception e) {
+				String message = Il8n.getMessage(getClass(), "error.disposing.bean", bean);
+				LOGGER.warn(message, e);
+			}
 		}
 	}
 
@@ -302,17 +355,5 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		asTestIterationListener = null;
 		asTestStateListener = null;
 		asThreadListener = null;
-	}
-
-	@Override
-	public void testEnded(String host) {
-		try {
-			if (null != asTestStateListener) {
-				asTestStateListener.testEnded(host);
-			}
-		}
-		finally {
-			destroyDelegate();
-		}
 	}
 }

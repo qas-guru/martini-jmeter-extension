@@ -349,13 +349,8 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	protected MartiniException getException(Exception cause, String key, Object... arguments) {
-		String message = getMessage(key, arguments);
+		String message = Il8n.getMessage(getClass(), key, arguments);
 		return new MartiniException(message, cause);
-	}
-
-	protected String getMessage(String key, Object... arguments) {
-		Il8n il8n = Il8n.getInstance();
-		return il8n.getMessage(getClass(), key, arguments);
 	}
 
 	/**

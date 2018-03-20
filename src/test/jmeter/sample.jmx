@@ -8,7 +8,7 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
-      <stringProp name="TestPlan.user_define_classpath">/Users/pennycurich/projects/martini-suite/martini-ai-common/target/martini-ai-common-1.0-SNAPSHOT-jmeter-dependencies/selenium-api-3.8.1-.jar</stringProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
       <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="true">
@@ -23,7 +23,7 @@
             </elementProp>
             <elementProp name="tripod.env" elementType="Argument">
               <stringProp name="Argument.name">tripod.env</stringProp>
-              <stringProp name="Argument.value">alpha</stringProp>
+              <stringProp name="Argument.value">delta</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="chromium.env" elementType="Argument">
@@ -88,7 +88,7 @@
             </collectionProp>
           </Arguments>
           <hashTree/>
-          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Martini Spring Bean PreProcessor" enabled="true">
+          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Meh" enabled="true">
             <stringProp name="martini.preprocessor.bean.name"></stringProp>
             <stringProp name="martini.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
           </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>

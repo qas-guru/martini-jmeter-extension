@@ -34,10 +34,7 @@ public class Gui {
 	protected static final Gui INSTANCE = new Gui();
 	protected static final String KEY_TITLE = "error.dialog.title";
 
-	private final Il8n il8n;
-
 	protected Gui() {
-		this.il8n = Il8n.getInstance();
 	}
 
 	public void reportError(TestElement element, MartiniException e) {
@@ -47,27 +44,25 @@ public class Gui {
 
 	protected void showError(TestElement element, String description, Exception e) {
 		String title = getTitle(element);
-		String elementName = element.getName();
-		String message = String.format("%s\n%s", elementName, description);
-		JMeterUtils.reportErrorToUser(message, title, e);
+		JMeterUtils.reportErrorToUser(description, title, e);
 	}
 
 	public void reportError(TestElement element, String key, Exception e) {
 		Class<? extends TestElement> implementation = element.getClass();
-		String description = il8n.getMessage(implementation, key);
+		String description = Il8n.getMessage(implementation, key);
 		showError(element, description, e);
 	}
 
 	private String getTitle(TestElement element) {
 		Class<? extends TestElement> implementation = element.getClass();
-		return il8n.getMessage(implementation, KEY_TITLE);
+		return Il8n.getMessage(implementation, KEY_TITLE, element.getName());
 	}
 
 	public JLabel getJLabel(Class<? extends JMeterGUIComponent> implementation, String key, int sizeAdjustment) {
 		checkNotNull(implementation, "null Class");
 		checkNotNull(key, "null String");
 
-		String label = il8n.getMessage(implementation, key);
+		String label = Il8n.getMessage(implementation, key);
 		JLabel jLabel = new JLabel(label);
 		Font spelLabelFont = jLabel.getFont();
 		Font font = spelLabelFont.deriveFont((float) spelLabelFont.getSize() + sizeAdjustment);
