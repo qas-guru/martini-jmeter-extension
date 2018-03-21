@@ -19,6 +19,7 @@ package guru.qas.martini.jmeter.processor;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.jmeter.engine.StandardJMeterEngine;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.engine.util.NoThreadClone;
@@ -377,29 +378,21 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	protected void haltTest(JMeterContext threadContext) {
-		reportHalt("halting test on Exception");
-		threadContext.getEngine().stopTest(true);
-		threadContext.getThread().stop();
+		reportHalt("error.halting.test");
+		StandardJMeterEngine engine = threadContext.getEngine();
+		engine.stopTest(true);
 	}
 
-	protected void reportHalt(String message) {
+	protected void reportHalt(String key, Object... args) {
 		Exception exception = exceptionRef.get();
+		String message = messageSource.getMessage(key, args, JMeterUtils.getLocale());
 		LOGGER.error(message, exception);
-		if (MartiniException.class.isInstance(exception)) {
-			Gui.reportError(this, MartiniException.class.cast(exception));
-		}
-		else {
-			MartiniException martiniException = getExceptionBuilder()
-				.setCause(exception)
-				.setKey("error.unexpected.exception")
-				.build();
-			Gui.reportError(this, martiniException);
-		}
+		Gui.reportError(this, message, exception);
 	}
 
 	protected void haltThread(JMeterContext threadContext) {
-		reportHalt("halting thread on Exception");
 		JMeterThread thread = threadContext.getThread();
+		reportHalt("error.halting.thread", thread.getThreadName());
 		thread.stop();
 	}
 
@@ -419,13 +412,16 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void process() {
+		JMeterContext threadContext = super.getThreadContext();
+		Sampler sampler = threadContext.getCurrentSampler();
 		if (isInHaltingCondition()) {
-			JMeterContext threadContext = super.getThreadContext();
-			Sampler sampler = threadContext.getCurrentSampler();
 			halt(sampler);
 		}
 		else if (null != bean) {
 			execute(() -> bean.process());
+			if (isInHaltingCondition()) {
+				halt(sampler);
+			}
 		}
 	}
 

@@ -42,10 +42,10 @@ public class Gui {
 
 	public static void reportError(TestElement element, Exception e) {
 		String description = e.getMessage();
-		showError(element, description, e);
+		reportError(element, description, e);
 	}
 
-	protected static void showError(TestElement element, String description, Exception e) {
+	public static void reportError(TestElement element, String description, Exception e) {
 		String title = getErrorDialogTitle(element);
 		JMeterUtils.reportErrorToUser(description, title, e);
 	}
