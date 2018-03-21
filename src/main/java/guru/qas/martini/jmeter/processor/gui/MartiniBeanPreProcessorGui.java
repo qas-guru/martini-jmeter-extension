@@ -43,14 +43,13 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	protected static final String DEFAULT_NAME = "mySetupBean";
 	protected static final String DEFAULT_TYPE = "com.mycompany.MyPreProcessorBean";
 
-	protected final MessageSource messageSource;
 	protected final JTextField nameField;
 	protected final JTextField typeField;
 	protected RadiosPanel<OnError> radiosPanel;
 
 	@SuppressWarnings("deprecation")
 	public MartiniBeanPreProcessorGui() {
-		messageSource = MessageSources.getMessageSource(getClass());
+		super();
 		nameField = new JTextField(6);
 		typeField = new JTextField(6);
 		init();
@@ -77,6 +76,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		VerticalPanel beanPanel = new VerticalPanel();
 		beanPanel.setBorder(BorderFactory.createEtchedBorder());
 
+		MessageSource messageSource = getMessageSource();
 		String text = messageSource.getMessage("panel.instructions", null, JMeterUtils.getLocale());
 		JLabel instructions = Gui.getJLabel(text, 0);
 		Font current = instructions.getFont();
@@ -100,7 +100,12 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		container.add(beanPanel);
 	}
 
+	protected MessageSource getMessageSource() {
+		return MessageSources.getMessageSource(getClass());
+	}
+
 	protected void addOnErrorSelection(Container container) {
+		MessageSource messageSource = getMessageSource();
 		String text = messageSource.getMessage("on.error.description", null, JMeterUtils.getLocale());
 		JLabel label = Gui.getJLabel(text, 1);
 		radiosPanel = new RadiosPanel<>(OnError.class, label);
@@ -113,6 +118,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	@Override
 	public String getStaticLabel() {
+		MessageSource messageSource = getMessageSource();
 		String key = getLabelResource();
 		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
 	}

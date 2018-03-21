@@ -36,7 +36,6 @@ import guru.qas.martini.jmeter.control.MartiniController;
 @SuppressWarnings("WeakerAccess")
 public class MartiniControllerPanel extends AbstractControllerGui {
 
-	private final MessageSource messageSource;
 	private final boolean standalone;
 	private final JTextArea textArea;
 
@@ -45,7 +44,7 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 	}
 
 	public MartiniControllerPanel(boolean standalone) {
-		messageSource = MessageSources.getMessageSource(getClass());
+		super();
 		this.standalone = standalone;
 		this.textArea = new JTextArea(5, 20);
 		init();
@@ -70,8 +69,9 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 		}
 	}
 
-	private VerticalPanel getSpelPanel() {
+	protected VerticalPanel getSpelPanel() {
 		VerticalPanel panel = new VerticalPanel();
+		MessageSource messageSource = getMessageSource();
 		String text = messageSource.getMessage("spel.filter.label", null, JMeterUtils.getLocale());
 		JLabel label = Gui.getJLabel(text, 2);
 		panel.add(label);
@@ -82,6 +82,10 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 		return panel;
 	}
 
+	protected MessageSource getMessageSource() {
+		return MessageSources.getMessageSource(getClass());
+	}
+
 	@Override
 	public String getLabelResource() {
 		return "gui.title";
@@ -90,6 +94,7 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 	@Override
 	public String getStaticLabel() {
 		String key = getLabelResource();
+		MessageSource messageSource = getMessageSource();
 		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
 	}
 

@@ -40,13 +40,11 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 	protected static final String KEY_FEATURE_LABEL = "feature.panel.label";
 	protected static final String KEY_ENVIRONMENT_LABEL = "spring.environment.label";
 
-	protected final MessageSource messageSource;
 	protected final JTextField configLocationsField;
 	protected final JTextField featureLocationsField;
 	protected final EnvironmentPanel environmentPanel;
 
 	public MartiniSpringPreProcessorGui() {
-		messageSource = MessageSources.getMessageSource(getClass());
 		configLocationsField = new JTextField(6);
 		featureLocationsField = new JTextField(6);
 		environmentPanel = new EnvironmentPanel(null, true);
@@ -78,10 +76,15 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	private VerticalPanel getVerticalPanel(String key) {
 		VerticalPanel panel = new VerticalPanel();
+		MessageSource messageSource = getMessageSource();
 		String text = messageSource.getMessage(key, null, key, JMeterUtils.getLocale());
 		JLabel label = Gui.getJLabel(text, 2);
 		panel.add(label);
 		return panel;
+	}
+
+	protected MessageSource getMessageSource() {
+		return MessageSources.getMessageSource(getClass());
 	}
 
 	protected VerticalPanel getFeaturePanel() {
@@ -99,6 +102,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	@Override
 	public String getStaticLabel() {
+		MessageSource messageSource = getMessageSource();
 		String key = getLabelResource();
 		return messageSource.getMessage(key, null, key, JMeterUtils.getLocale());
 	}

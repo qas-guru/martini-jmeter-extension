@@ -42,7 +42,7 @@ import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class RadiosPanel<E extends Enum> extends VerticalPanel implements JLabeledField, ActionListener {
 
 	private static final long serialVersionUID = 5598924127436725853L;

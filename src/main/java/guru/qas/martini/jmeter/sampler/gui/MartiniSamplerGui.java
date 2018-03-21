@@ -28,10 +28,8 @@ import guru.qas.martini.jmeter.sampler.MartiniSampler;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniSamplerGui extends AbstractSamplerGui {
 
-	private final MessageSource messageSource;
-
 	public MartiniSamplerGui() {
-		messageSource = MessageSources.getMessageSource(getClass());
+		super();
 		init();
 	}
 
@@ -43,8 +41,13 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public String getStaticLabel() {
+		MessageSource messageSource = getMessageSource();
 		String key = getLabelResource();
 		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
+	}
+
+	protected MessageSource getMessageSource() {
+		return MessageSources.getMessageSource(getClass());
 	}
 
 	@Override

@@ -89,7 +89,6 @@
           </Arguments>
           <hashTree/>
           <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Meh" enabled="true">
-            <stringProp name="martini.bean.preprocessor.bean.name"></stringProp>
             <stringProp name="martini.bean.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
             <stringProp name="martini.bean.preprocessor.on.error">STOP_THREAD</stringProp>
           </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
