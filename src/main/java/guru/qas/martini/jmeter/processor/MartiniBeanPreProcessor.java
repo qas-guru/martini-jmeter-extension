@@ -127,7 +127,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	public String getBeanName() {
-		return getPropertyAsString(PROPERTY_BEAN_NAME);
+		String property = getPropertyAsString(PROPERTY_BEAN_NAME);
+		return getNormalized(property);
 	}
 
 	public void setBeanType(String s) {
@@ -156,6 +157,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 				setMembers(clone);
 			}
 			else if (Cloneable.class.isInstance(bean)) {
+				clone.init();
 				clone.exceptionRef.set(exceptionRef.get());
 				setClonedBean(clone);
 			}
@@ -177,6 +179,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected void setMembers(MartiniBeanPreProcessor clone) {
 		clone.bean = bean;
+		clone.messageSource = messageSource;
 		clone.asNoThreadClone = asNoThreadClone;
 		clone.asLoopIterationListener = asLoopIterationListener;
 		clone.asTestIterationListener = asTestIterationListener;

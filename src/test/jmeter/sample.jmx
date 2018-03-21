@@ -57,6 +57,11 @@
           <stringProp name="martini.spel.filter">isCategory(&quot;UsageStatistics&quot;)</stringProp>
         </guru.qas.martini.jmeter.control.MartiniController>
         <hashTree>
+          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Meh" enabled="true">
+            <stringProp name="martini.bean.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
+            <stringProp name="martini.bean.preprocessor.on.error">STOP_THREAD</stringProp>
+          </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
+          <hashTree/>
           <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 1a" enabled="true">
             <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
               <collectionProp name="Arguments.arguments">
@@ -87,11 +92,6 @@
               </elementProp>
             </collectionProp>
           </Arguments>
-          <hashTree/>
-          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Meh" enabled="true">
-            <stringProp name="martini.bean.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
-            <stringProp name="martini.bean.preprocessor.on.error">STOP_THREAD</stringProp>
-          </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
           <hashTree/>
         </hashTree>
         <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 2" enabled="false">
