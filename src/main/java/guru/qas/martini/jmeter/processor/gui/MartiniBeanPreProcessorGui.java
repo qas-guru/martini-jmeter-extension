@@ -26,10 +26,12 @@ import javax.swing.JTextField;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.layout.VerticalLayout;
+import org.springframework.context.MessageSource;
 
+import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor;
 import guru.qas.martini.jmeter.processor.OnError;
 
@@ -38,17 +40,17 @@ import static guru.qas.martini.jmeter.processor.OnError.*;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
-	private static final long serialVersionUID = 4447406345771389792L;
-
 	protected static final String DEFAULT_NAME = "mySetupBean";
 	protected static final String DEFAULT_TYPE = "com.mycompany.MyPreProcessorBean";
 
+	protected final MessageSource messageSource;
 	protected final JTextField nameField;
 	protected final JTextField typeField;
 	protected RadiosPanel<OnError> radiosPanel;
 
 	@SuppressWarnings("deprecation")
 	public MartiniBeanPreProcessorGui() {
+		messageSource = MessageSources.getMessageSource(getClass());
 		nameField = new JTextField(6);
 		typeField = new JTextField(6);
 		init();
@@ -75,18 +77,21 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		VerticalPanel beanPanel = new VerticalPanel();
 		beanPanel.setBorder(BorderFactory.createEtchedBorder());
 
-		JLabel instructions = Gui.getJLabel(getClass(), "panel.instructions", 0);
+		String text = messageSource.getMessage("panel.instructions", null, JMeterUtils.getLocale());
+		JLabel instructions = Gui.getJLabel(text, 0);
 		Font current = instructions.getFont();
 		Font italicized = new Font(current.getName(), Font.ITALIC, current.getSize());
 		beanPanel.add(instructions);
 
-		JLabel nameLabel = Gui.getJLabel(getClass(), "preprocessor.bean.name", 1);
+		text = messageSource.getMessage("preprocessor.bean.name", null, JMeterUtils.getLocale());
+		JLabel nameLabel = Gui.getJLabel(text, 1);
 		beanPanel.add(nameLabel);
 
 		nameField.setText(DEFAULT_NAME);
 		beanPanel.add(nameField);
 
-		JLabel typeLabel = Gui.getJLabel(getClass(), "preprocessor.bean.type", 1);
+		text = messageSource.getMessage("preprocessor.bean.type", null, JMeterUtils.getLocale());
+		JLabel typeLabel = Gui.getJLabel(text, 1);
 		beanPanel.add(typeLabel);
 
 		typeField.setText(DEFAULT_TYPE);
@@ -96,7 +101,8 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	protected void addOnErrorSelection(Container container) {
-		JLabel label = Gui.getJLabel(getClass(), "on.error.description", 1);
+		String text = messageSource.getMessage("on.error.description", null, JMeterUtils.getLocale());
+		JLabel label = Gui.getJLabel(text, 1);
 		radiosPanel = new RadiosPanel<>(OnError.class, label);
 		radiosPanel.setBorder(BorderFactory.createEtchedBorder());
 		radiosPanel.addButton(STOP_TEST, STOP_TEST.getLabel(), true);
@@ -107,7 +113,8 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	@Override
 	public String getStaticLabel() {
-		return I18n.getMessage(getClass(), getLabelResource());
+		String key = getLabelResource();
+		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
 	}
 
 	public String getLabelResource() {

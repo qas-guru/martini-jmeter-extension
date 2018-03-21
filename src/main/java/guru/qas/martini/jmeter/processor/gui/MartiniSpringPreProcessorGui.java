@@ -23,10 +23,12 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.layout.VerticalLayout;
+import org.springframework.context.MessageSource;
 
+import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 
 import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.*;
@@ -34,13 +36,17 @@ import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.*;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui {
 
-	private static final long serialVersionUID = 4447406345771389792L;
+	protected static final String KEY_SPRING_LABEL = "spring.panel.label";
+	protected static final String KEY_FEATURE_LABEL = "feature.panel.label";
+	protected static final String KEY_ENVIRONMENT_LABEL = "spring.environment.label";
 
+	protected final MessageSource messageSource;
 	protected final JTextField configLocationsField;
 	protected final JTextField featureLocationsField;
 	protected final EnvironmentPanel environmentPanel;
 
 	public MartiniSpringPreProcessorGui() {
+		messageSource = MessageSources.getMessageSource(getClass());
 		configLocationsField = new JTextField(6);
 		featureLocationsField = new JTextField(6);
 		environmentPanel = new EnvironmentPanel(null, true);
@@ -64,36 +70,37 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 	}
 
 	protected VerticalPanel getSpringPanel() {
-		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getJLabel(getClass(), "spring.panel.label", 2);
-		panel.add(label);
-
+		VerticalPanel panel = getVerticalPanel(KEY_SPRING_LABEL);
 		configLocationsField.setText(DEFAULT_RESOURCES_CONTEXT);
 		panel.add(configLocationsField);
 		return panel;
 	}
 
-	protected VerticalPanel getFeaturePanel() {
+	private VerticalPanel getVerticalPanel(String key) {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getJLabel(getClass(), "feature.panel.label", 2);
+		String text = messageSource.getMessage(key, null, key, JMeterUtils.getLocale());
+		JLabel label = Gui.getJLabel(text, 2);
 		panel.add(label);
+		return panel;
+	}
 
+	protected VerticalPanel getFeaturePanel() {
+		VerticalPanel panel = getVerticalPanel(KEY_FEATURE_LABEL);
 		featureLocationsField.setText(DEFAULT_RESOURCES_FEATURES);
 		panel.add(featureLocationsField);
 		return panel;
 	}
 
 	protected VerticalPanel getEnvironmentDisplayPanel() {
-		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getJLabel(getClass(), "spring.environment.label", 2);
-		panel.add(label);
+		VerticalPanel panel = getVerticalPanel(KEY_ENVIRONMENT_LABEL);
 		panel.add(environmentPanel);
 		return panel;
 	}
 
 	@Override
 	public String getStaticLabel() {
-		return I18n.getMessage(getClass(), getLabelResource());
+		String key = getLabelResource();
+		return messageSource.getMessage(key, null, key, JMeterUtils.getLocale());
 	}
 
 	public String getLabelResource() {

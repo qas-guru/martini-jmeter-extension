@@ -18,17 +18,20 @@ package guru.qas.martini.jmeter.sampler.gui;
 
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.layout.VerticalLayout;
+import org.springframework.context.MessageSource;
 
-import guru.qas.martini.jmeter.I18n;
+import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniSamplerGui extends AbstractSamplerGui {
 
-	private static final long serialVersionUID = -1472260817829729851L;
+	private final MessageSource messageSource;
 
 	public MartiniSamplerGui() {
+		messageSource = MessageSources.getMessageSource(getClass());
 		init();
 	}
 
@@ -40,7 +43,8 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public String getStaticLabel() {
-		return I18n.getMessage(getClass(), getLabelResource());
+		String key = getLabelResource();
+		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
 	}
 
 	@Override

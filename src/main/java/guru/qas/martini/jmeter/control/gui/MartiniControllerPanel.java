@@ -26,14 +26,17 @@ import javax.swing.JTextArea;
 import org.apache.jmeter.control.gui.AbstractControllerGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.util.JMeterUtils;
+import org.springframework.context.MessageSource;
 
+import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.I18n;
 import guru.qas.martini.jmeter.control.MartiniController;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniControllerPanel extends AbstractControllerGui {
 
+	private final MessageSource messageSource;
 	private final boolean standalone;
 	private final JTextArea textArea;
 
@@ -42,6 +45,7 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 	}
 
 	public MartiniControllerPanel(boolean standalone) {
+		messageSource = MessageSources.getMessageSource(getClass());
 		this.standalone = standalone;
 		this.textArea = new JTextArea(5, 20);
 		init();
@@ -68,7 +72,8 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	private VerticalPanel getSpelPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		JLabel label = Gui.getJLabel(getClass(), "spel.filter.label", 2);
+		String text = messageSource.getMessage("spel.filter.label", null, JMeterUtils.getLocale());
+		JLabel label = Gui.getJLabel(text, 2);
 		panel.add(label);
 
 		JScrollPane scrollPane = new JScrollPane(textArea);
@@ -84,7 +89,8 @@ public class MartiniControllerPanel extends AbstractControllerGui {
 
 	@Override
 	public String getStaticLabel() {
-		return I18n.getMessage(getClass(), getLabelResource());
+		String key = getLabelResource();
+		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
 	}
 
 	@Override

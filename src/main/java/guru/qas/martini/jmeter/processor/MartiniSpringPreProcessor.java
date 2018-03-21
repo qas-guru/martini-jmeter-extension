@@ -32,11 +32,13 @@ import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
+import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.MessageSource;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
@@ -48,6 +50,7 @@ import com.google.common.collect.ImmutableMap;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.runtime.event.EventManager;
 
@@ -68,8 +71,20 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniSpringPreProcessor.class);
 
+	protected transient MessageSource messageSource;
+
 	public MartiniSpringPreProcessor() {
 		super();
+		init();
+	}
+
+	protected void init() {
+		messageSource = MessageSources.getMessageSource(getClass());
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
 	}
 
 	@Override
@@ -128,12 +143,18 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			setSpringVariable(springContext);
 		}
 		catch (MartiniException e) {
-			LOGGER.error("unable to create Spring context", e);
+			LOGGER.error(e.getMessage(), e);
 			Gui.reportError(this, e);
 		}
 		catch (Exception e) {
-			LOGGER.error("unable to create Spring context", e);
-			Gui.reportError(this, "error.creating.spring.context", e);
+			MartiniException martiniException = new MartiniException.Builder()
+				.setLocale(JMeterUtils.getLocale())
+				.setMessageSource(messageSource)
+				.setKey("error.creating.spring.context")
+				.setCause(e)
+				.build();
+			LOGGER.error(martiniException.getMessage(), e);
+			Gui.reportError(this, martiniException);
 		}
 	}
 
@@ -207,8 +228,14 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 				context.close();
 			}
 			catch (Exception e) {
-				LOGGER.warn("unable to close Spring context", e);
-				Gui.reportError(this, "error.closing.spring.context", e);
+				MartiniException martiniException = new MartiniException.Builder()
+					.setCause(e)
+					.setLocale(JMeterUtils.getLocale())
+					.setMessageSource(messageSource)
+					.setKey("error.closing.spring.context")
+					.build();
+				LOGGER.warn(martiniException.getMessage(), e);
+				Gui.reportError(this, martiniException);
 			}
 		}
 	}

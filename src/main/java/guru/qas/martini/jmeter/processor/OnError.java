@@ -16,18 +16,24 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor;
 
-import guru.qas.martini.jmeter.I18n;
+import java.util.ResourceBundle;
+
+import org.apache.jmeter.util.JMeterUtils;
+
+import static java.util.ResourceBundle.getBundle;
 
 public enum OnError {
 	STOP_TEST("on.error.stop.test"), STOP_THREAD("on.error.stop.thread"), PROCEED("on.error.proceed");
 
+	private final ResourceBundle messageBundle;
 	private final String key;
 
 	OnError(String key) {
+		messageBundle = getBundle(getClass().getName(), JMeterUtils.getLocale(), getClass().getClassLoader());
 		this.key = key;
 	}
 
 	public String getLabel() {
-		return I18n.getMessage(getClass(), key);
+		return messageBundle.getString(key);
 	}
 }

@@ -18,51 +18,45 @@ package guru.qas.martini.jmeter;
 
 import java.awt.Font;
 
+import javax.annotation.Nonnull;
 import javax.swing.JLabel;
 
-import org.apache.jmeter.gui.JMeterGUIComponent;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.util.JMeterUtils;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
-import guru.qas.martini.MartiniException;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.jmeter.util.JMeterUtils.getLocale;
 
 @SuppressWarnings("WeakerAccess")
 public class Gui {
 
-	protected static final String KEY_TITLE = "error.dialog.title";
+	protected static final Gui INSTANCE = new Gui();
+	protected static final String KEY_DIALOG_TITLE = "error.dialog.title";
+	protected final ResourceBundleMessageSource messageBundle;
 
 	protected Gui() {
+		messageBundle = new ResourceBundleMessageSource();
+		messageBundle.setBasename(getClass().getName());
+		messageBundle.setBundleClassLoader(getClass().getClassLoader());
 	}
 
-	public static void reportError(TestElement element, MartiniException e) {
+	public static void reportError(TestElement element, Exception e) {
 		String description = e.getMessage();
 		showError(element, description, e);
 	}
 
 	protected static void showError(TestElement element, String description, Exception e) {
-		String title = getTitle(element);
+		String title = getErrorDialogTitle(element);
 		JMeterUtils.reportErrorToUser(description, title, e);
 	}
 
-	public static void reportError(TestElement element, String key, Exception e) {
-		Class<? extends TestElement> implementation = element.getClass();
-		String description = I18n.getMessage(implementation, key);
-		showError(element, description, e);
+	protected static String getErrorDialogTitle(TestElement element) {
+		String name = element.getName();
+		return INSTANCE.messageBundle.getMessage(KEY_DIALOG_TITLE, new Object[]{name}, KEY_DIALOG_TITLE, getLocale());
 	}
 
-	private static String getTitle(TestElement element) {
-		Class<? extends TestElement> implementation = element.getClass();
-		return I18n.getMessage(implementation, KEY_TITLE, element.getName());
-	}
-
-	public static JLabel getJLabel(Class<? extends JMeterGUIComponent> implementation, String key, int sizeAdjustment) {
-		checkNotNull(implementation, "null Class");
-		checkNotNull(key, "null String");
-
-		String label = I18n.getMessage(implementation, key);
-		JLabel jLabel = new JLabel(label);
+	public static JLabel getJLabel(@Nonnull String text, int sizeAdjustment) {
+		JLabel jLabel = new JLabel(text);
 		Font sourceFont = jLabel.getFont();
 		Font font = sourceFont.deriveFont((float) sourceFont.getSize() + sizeAdjustment);
 		jLabel.setFont(font);
