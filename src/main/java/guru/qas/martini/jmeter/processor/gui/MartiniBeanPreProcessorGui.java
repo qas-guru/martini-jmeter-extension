@@ -111,6 +111,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		radiosPanel = new RadiosPanel<>(OnError.class, label);
 		radiosPanel.setBorder(BorderFactory.createEtchedBorder());
 		radiosPanel.addButton(STOP_TEST, STOP_TEST.getLabel(), true);
+		radiosPanel.addButton(STOP_THREAD_GROUP, STOP_THREAD_GROUP.getLabel(), false);
 		radiosPanel.addButton(STOP_THREAD, STOP_THREAD.getLabel(), false);
 		radiosPanel.addButton(PROCEED, PROCEED.getLabel(), false);
 		container.add(radiosPanel);

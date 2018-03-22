@@ -30,6 +30,7 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.ThreadListener;
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -363,10 +364,14 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected void halt(TestElement source) {
 		JMeterContext threadContext = source.getThreadContext();
+
 		OnError instruction = getOnError();
 		switch (instruction) {
 			case STOP_TEST:
 				haltTest(threadContext);
+				break;
+			case STOP_THREAD_GROUP:
+				haltThreadGroup(threadContext);
 				break;
 			case STOP_THREAD:
 				haltThread(threadContext);
@@ -378,7 +383,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	protected void haltTest(JMeterContext threadContext) {
-		reportHalt("error.halting.test");
+		reportHalt("halting.test.on.error");
 		StandardJMeterEngine engine = threadContext.getEngine();
 		engine.stopTest(true);
 	}
@@ -390,9 +395,15 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		Gui.reportError(this, message, exception);
 	}
 
+	protected void haltThreadGroup(JMeterContext threadContext) {
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		reportHalt("halting.thread.group.on.error", threadGroup.getName());
+		threadGroup.stop();
+	}
+
 	protected void haltThread(JMeterContext threadContext) {
 		JMeterThread thread = threadContext.getThread();
-		reportHalt("error.halting.thread", thread.getThreadName());
+		reportHalt("halting.thread.on.error", thread.getThreadName());
 		thread.stop();
 	}
 

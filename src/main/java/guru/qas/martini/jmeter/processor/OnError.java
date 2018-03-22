@@ -23,7 +23,10 @@ import org.apache.jmeter.util.JMeterUtils;
 import static java.util.ResourceBundle.getBundle;
 
 public enum OnError {
-	STOP_TEST("on.error.stop.test"), STOP_THREAD("on.error.stop.thread"), PROCEED("on.error.proceed");
+	STOP_TEST("on.error.stop.test"),
+	STOP_THREAD_GROUP("on.error.stop.thread.group"),
+	STOP_THREAD("on.error.stop.thread"),
+	PROCEED("on.error.proceed");
 
 	private final ResourceBundle messageBundle;
 	private final String key;
