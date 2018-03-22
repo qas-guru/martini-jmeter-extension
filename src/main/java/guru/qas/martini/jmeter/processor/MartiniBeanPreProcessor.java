@@ -251,7 +251,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 			bean = getBean(springContext, name, implementation);
 			cast(bean);
 		});
-		return isInHaltingCondition();
+		return !isInHaltingCondition();
 	}
 
 	protected ApplicationContext getSpringContext() {

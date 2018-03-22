@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -13,6 +14,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Modified version of JMeter's org.apache.jmeter.config.gui.ArgumentsPanel.
  *
  */
 
@@ -771,7 +774,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 		}
 		p.add(makeMainPanel(), BorderLayout.CENTER);
 		// Force a minimum table height of 70 pixels
-		p.add(Box.createVerticalStrut(70), BorderLayout.WEST);
+		p.add(Box.createVerticalStrut(150), BorderLayout.WEST);
 		if (!disableButtons) {
 			p.add(makeButtonPanel(), BorderLayout.SOUTH);
 		}
