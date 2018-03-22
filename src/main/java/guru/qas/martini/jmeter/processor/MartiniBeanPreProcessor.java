@@ -17,6 +17,7 @@ limitations under the License.
 package guru.qas.martini.jmeter.processor;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.engine.StandardJMeterEngine;
@@ -340,11 +341,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void testIterationStart(LoopIterationEvent event) {
-		if (isInHaltingCondition()) {
-			TestElement source = event.getSource();
-			halt(source);
-		}
-		else if (null != asTestIterationListener) {
+		if (null != asTestIterationListener) {
 			execute(() -> asTestIterationListener.testIterationStart(event));
 		}
 	}
@@ -383,9 +380,9 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	protected void haltTest(JMeterContext threadContext) {
-		reportHalt("halting.test.on.error");
 		StandardJMeterEngine engine = threadContext.getEngine();
 		engine.stopTest(true);
+		reportHalt("halting.test.on.error");
 	}
 
 	protected void reportHalt(String key, Object... args) {
@@ -397,14 +394,14 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected void haltThreadGroup(JMeterContext threadContext) {
 		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
-		reportHalt("halting.thread.group.on.error", threadGroup.getName());
 		threadGroup.stop();
+		reportHalt("halting.thread.group.on.error", threadGroup.getName());
 	}
 
 	protected void haltThread(JMeterContext threadContext) {
 		JMeterThread thread = threadContext.getThread();
-		reportHalt("halting.thread.on.error", thread.getThreadName());
 		thread.stop();
+		reportHalt("halting.thread.on.error", thread.getThreadName());
 	}
 
 	@Override
@@ -429,7 +426,12 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 			halt(sampler);
 		}
 		else if (null != bean) {
-			execute(() -> bean.process());
+			execute(() -> {
+				Map<String, Object> samplerContext = threadContext.getSamplerContext();
+				samplerContext.put(KEY_THIS, this);
+				bean.process();
+			});
+
 			if (isInHaltingCondition()) {
 				halt(sampler);
 			}
