@@ -11,9 +11,38 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="true">
+      <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Martini Spring PreProcessor" enabled="false">
         <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/automation/*Context.xml,classpath*:/jmeter/jmeterWorkflowContext.xml</stringProp>
         <stringProp name="martini.feature.locations">classpath*:/automation/features/*.feature</stringProp>
+        <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="spring.profiles.active" elementType="Argument">
+              <stringProp name="Argument.name">spring.profiles.active</stringProp>
+              <stringProp name="Argument.value">provisional,chromium</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="tripod.env" elementType="Argument">
+              <stringProp name="Argument.name">tripod.env</stringProp>
+              <stringProp name="Argument.value">delta</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="chromium.env" elementType="Argument">
+              <stringProp name="Argument.name">chromium.env</stringProp>
+              <stringProp name="Argument.value">pcurich</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="tripod.credentials.key" elementType="Argument">
+              <stringProp name="Argument.name">tripod.credentials.key</stringProp>
+              <stringProp name="Argument.value">/home/dmqa/.credentials.key</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </elementProp>
+      </guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniSpringPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor" testname="Featureless Martini Spring PreProcessor" enabled="true">
+        <stringProp name="martini.spring.config.locations">classpath*:/commonContext.xml,classpath*:/automation/*Context.xml,classpath*:/jmeter/jmeterWorkflowContext.xml</stringProp>
+        <stringProp name="martini.feature.locations">classpath*:/bogus/*.feature</stringProp>
         <elementProp name="martini.system.properties" elementType="Arguments" guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">
             <elementProp name="spring.profiles.active" elementType="Argument">
@@ -53,16 +82,11 @@
         <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 1" enabled="true">
+        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller" enabled="false">
           <stringProp name="martini.spel.filter">isCategory(&quot;UsageStatistics&quot;)</stringProp>
         </guru.qas.martini.jmeter.control.MartiniController>
         <hashTree>
-          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Meh" enabled="true">
-            <stringProp name="martini.bean.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
-            <stringProp name="martini.bean.preprocessor.on.error">STOP_THREAD</stringProp>
-          </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
-          <hashTree/>
-          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 1a" enabled="true">
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Sleep" enabled="true">
             <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
               <collectionProp name="Arguments.arguments">
                 <elementProp name="SleepTime" elementType="Argument">
@@ -82,48 +106,26 @@
           <hashTree/>
           <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="false"/>
           <hashTree/>
-          <Arguments guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        </hashTree>
+        <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Workflow Load Controller" enabled="true"/>
+        <hashTree>
+          <Arguments guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="12 Threads Settings" enabled="true">
             <collectionProp name="Arguments.arguments">
-              <elementProp name="some.variable" elementType="Argument">
-                <stringProp name="Argument.name">some.variable</stringProp>
-                <stringProp name="Argument.value">meh</stringProp>
-                <stringProp name="Argument.desc">variable.description</stringProp>
+              <elementProp name="yaml.resource.location" elementType="Argument">
+                <stringProp name="Argument.name">yaml.resource.location</stringProp>
+                <stringProp name="Argument.value">classpath*:/workflow/yaml/12Threads</stringProp>
+                <stringProp name="Argument.desc">directory containing YAML files</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
           </Arguments>
           <hashTree/>
-        </hashTree>
-        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 2" enabled="false">
-          <stringProp name="martini.spel.filter">isCategory(&quot;Miscellaneous&quot;)</stringProp>
-        </guru.qas.martini.jmeter.control.MartiniController>
-        <hashTree>
-          <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="true"/>
+          <guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor guiclass="guru.qas.martini.jmeter.processor.gui.MartiniBeanPreProcessorGui" testclass="guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor" testname="Schedule PreProcessor" enabled="true">
+            <stringProp name="martini.bean.preprocessor.bean.type">com.digitalmeasures.qa.automation.jmeter.workflow.spring.WorkflowPreProcessor</stringProp>
+            <stringProp name="martini.bean.preprocessor.on.error">STOP_TEST</stringProp>
+          </guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor>
           <hashTree/>
-          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 4" enabled="true">
-            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
-              <collectionProp name="Arguments.arguments">
-                <elementProp name="SleepTime" elementType="Argument">
-                  <stringProp name="Argument.name">SleepTime</stringProp>
-                  <stringProp name="Argument.value">1000</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="SleepMask" elementType="Argument">
-                  <stringProp name="Argument.name">SleepMask</stringProp>
-                  <stringProp name="Argument.value">0x3FF</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-              </collectionProp>
-            </elementProp>
-            <stringProp name="classname">org.apache.jmeter.protocol.java.test.SleepTest</stringProp>
-          </JavaSampler>
-          <hashTree/>
-        </hashTree>
-        <guru.qas.martini.jmeter.control.MartiniController guiclass="guru.qas.martini.jmeter.control.gui.MartiniControllerPanel" testclass="guru.qas.martini.jmeter.control.MartiniController" testname="Martini Controller 3" enabled="false">
-          <stringProp name="martini.spel.filter">isCategory(&quot;UsageStatistics&quot;)</stringProp>
-        </guru.qas.martini.jmeter.control.MartiniController>
-        <hashTree>
-          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request 3" enabled="true">
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Sleep" enabled="true">
             <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
               <collectionProp name="Arguments.arguments">
                 <elementProp name="SleepTime" elementType="Argument">
