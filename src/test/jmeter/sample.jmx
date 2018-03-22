@@ -65,11 +65,16 @@
               <stringProp name="Argument.value">/home/dmqa/.credentials.key</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
+            <elementProp name="workflow.purge.before.suite" elementType="Argument">
+              <stringProp name="Argument.name">workflow.purge.before.suite</stringProp>
+              <stringProp name="Argument.value">false</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
           </collectionProp>
         </elementProp>
       </guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Martini Thread Group" enabled="false">
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
@@ -107,14 +112,28 @@
           <guru.qas.martini.jmeter.sampler.MartiniSampler guiclass="guru.qas.martini.jmeter.sampler.gui.MartiniSamplerGui" testclass="guru.qas.martini.jmeter.sampler.MartiniSampler" testname="Martini Sampler" enabled="false"/>
           <hashTree/>
         </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="JMeter Thread Group" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
         <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Workflow Load Controller" enabled="true"/>
         <hashTree>
           <Arguments guiclass="guru.qas.martini.jmeter.processor.gui.EnvironmentPanel" testclass="Arguments" testname="12 Threads Settings" enabled="true">
             <collectionProp name="Arguments.arguments">
               <elementProp name="yaml.resource.location" elementType="Argument">
                 <stringProp name="Argument.name">yaml.resource.location</stringProp>
-                <stringProp name="Argument.value">classpath*:/workflow/yaml/12Threads</stringProp>
-                <stringProp name="Argument.desc">directory containing YAML files</stringProp>
+                <stringProp name="Argument.value">classpath*:/workflow/yaml/12Threads/</stringProp>
+                <stringProp name="Argument.desc">trailing slash is important</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
