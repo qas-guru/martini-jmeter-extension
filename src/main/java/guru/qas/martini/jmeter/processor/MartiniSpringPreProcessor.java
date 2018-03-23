@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.engine.StandardJMeterEngine;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.processor.PreProcessor;
@@ -143,10 +144,12 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			setSpringVariable(springContext);
 		}
 		catch (MartiniException e) {
+			StandardJMeterEngine.stopEngineNow();
 			LOGGER.error(e.getMessage(), e);
 			Gui.reportError(this, e);
 		}
 		catch (Exception e) {
+			StandardJMeterEngine.stopEngineNow();
 			MartiniException martiniException = new MartiniException.Builder()
 				.setLocale(JMeterUtils.getLocale())
 				.setMessageSource(messageSource)

@@ -23,6 +23,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
@@ -46,12 +47,14 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	protected final JTextField nameField;
 	protected final JTextField typeField;
 	protected RadiosPanel<OnError> radiosPanel;
+	protected final ArgumentPanel argumentPanel;
 
 	@SuppressWarnings("deprecation")
 	public MartiniBeanPreProcessorGui() {
 		super();
 		nameField = new JTextField(6);
 		typeField = new JTextField(6);
+		argumentPanel = new ArgumentPanel(null, true);
 		init();
 	}
 
@@ -63,6 +66,9 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		VerticalPanel beanPanel = getBeanPanel();
 		add(beanPanel);
+
+		VerticalPanel argumentDisplayPanel = getArgumentDisplayPanel();
+		add(argumentDisplayPanel);
 	}
 
 	protected VerticalPanel getBeanPanel() {
@@ -98,6 +104,16 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		beanPanel.add(typeField);
 
 		container.add(beanPanel);
+	}
+
+	protected VerticalPanel getArgumentDisplayPanel() {
+		VerticalPanel panel = new VerticalPanel();
+		MessageSource messageSource = getMessageSource();
+		String text = messageSource.getMessage("panel.arguments", null, "panel.arguments", JMeterUtils.getLocale());
+		JLabel label = Gui.getJLabel(text, 2);
+		panel.add(label);
+		panel.add(argumentPanel);
+		return panel;
 	}
 
 	protected MessageSource getMessageSource() {
@@ -146,6 +162,9 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		OnError onError = radiosPanel.getSelected().orElse(null);
 		preProcessor.setOnError(onError);
+
+		Arguments arguments = Arguments.class.cast(argumentPanel.createTestElement());
+		preProcessor.setArguments(arguments);
 	}
 
 	@Override
@@ -161,6 +180,11 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 		OnError onError = preProcessor.getOnError();
 		radiosPanel.setSelected(onError);
+
+		Arguments arguments = preProcessor.getArguments();
+		if (null != arguments) {
+			argumentPanel.configure(arguments);
+		}
 	}
 
 	@Override
@@ -168,6 +192,7 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		nameField.setText(DEFAULT_NAME);
 		typeField.setText(DEFAULT_TYPE);
 		radiosPanel.setSelected(STOP_TEST);
+		argumentPanel.clear();
 		super.clearGui();
 	}
 }

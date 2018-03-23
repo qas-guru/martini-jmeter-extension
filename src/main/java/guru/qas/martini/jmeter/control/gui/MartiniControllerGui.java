@@ -33,17 +33,17 @@ import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.control.MartiniController;
 
-@SuppressWarnings("WeakerAccess")
-public class MartiniControllerPanel extends AbstractControllerGui {
+@SuppressWarnings({"WeakerAccess", "unused"})
+public class MartiniControllerGui extends AbstractControllerGui {
 
 	private final boolean standalone;
 	private final JTextArea textArea;
 
-	public MartiniControllerPanel() {
+	public MartiniControllerGui() {
 		this(true);
 	}
 
-	public MartiniControllerPanel(boolean standalone) {
+	public MartiniControllerGui(boolean standalone) {
 		super();
 		this.standalone = standalone;
 		this.textArea = new JTextArea(5, 20);

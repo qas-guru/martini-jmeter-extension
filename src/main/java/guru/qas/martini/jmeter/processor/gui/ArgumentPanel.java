@@ -62,7 +62,7 @@ import org.apache.jorphan.reflect.Functor;
  * arguments (or parameters) are usually used to provide configuration values
  * for some other component.
  */
-public class EnvironmentPanel extends AbstractConfigGui implements ActionListener {
+public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 
 	private static final long serialVersionUID = 240L;
 
@@ -173,11 +173,11 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 
 	public static final String COLUMN_RESOURCE_NAMES_2 = "description"; // $NON-NLS-1$
 
-	public EnvironmentPanel() {
+	public ArgumentPanel() {
 		this(null, null, true, true);
 	}
 
-	public EnvironmentPanel(String label, boolean enableUpDown) {
+	public ArgumentPanel(String label, boolean enableUpDown) {
 		this(label, null, enableUpDown, false);
 	}
 
@@ -187,7 +187,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 	 * @param label text for label
 	 * @param bkg   background colour
 	 */
-	public EnvironmentPanel(String label, Color bkg) {
+	public ArgumentPanel(String label, Color bkg) {
 		this(label, bkg, true, false);
 	}
 
@@ -199,7 +199,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 	 * @param enableUpDown Add up/down buttons
 	 * @param standalone   is standalone
 	 */
-	public EnvironmentPanel(String label, Color bkg, boolean enableUpDown, boolean standalone) {
+	public ArgumentPanel(String label, Color bkg, boolean enableUpDown, boolean standalone) {
 		this(label, bkg, enableUpDown, standalone, null, false);
 	}
 
@@ -212,7 +212,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 	 * @param standalone   is standalone
 	 * @param model        the table model to use
 	 */
-	public EnvironmentPanel(String label, Color bkg, boolean enableUpDown, boolean standalone, ObjectTableModel model) {
+	public ArgumentPanel(String label, Color bkg, boolean enableUpDown, boolean standalone, ObjectTableModel model) {
 		this(label, bkg, enableUpDown, standalone, model, false);
 	}
 
@@ -226,7 +226,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 	 * @param model          the table model to use
 	 * @param disableButtons Remove all buttons
 	 */
-	public EnvironmentPanel(
+	public ArgumentPanel(
 		String label,
 		Color bkg,
 		boolean enableUpDown,
@@ -669,7 +669,7 @@ public class EnvironmentPanel extends AbstractConfigGui implements ActionListene
 	}
 
 	public static boolean testFunctors() {
-		EnvironmentPanel instance = new EnvironmentPanel();
+		ArgumentPanel instance = new ArgumentPanel();
 		instance.initializeTableModel();
 		return instance.tableModel.checkFunctors(null, instance.getClass());
 	}

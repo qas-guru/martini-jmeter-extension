@@ -42,12 +42,12 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	protected final JTextField configLocationsField;
 	protected final JTextField featureLocationsField;
-	protected final EnvironmentPanel environmentPanel;
+	protected final ArgumentPanel environmentPanel;
 
 	public MartiniSpringPreProcessorGui() {
 		configLocationsField = new JTextField(6);
 		featureLocationsField = new JTextField(6);
-		environmentPanel = new EnvironmentPanel(null, true);
+		environmentPanel = new ArgumentPanel(null, true);
 		init();
 	}
 

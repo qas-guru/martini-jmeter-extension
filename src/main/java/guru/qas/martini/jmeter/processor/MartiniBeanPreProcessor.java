@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.engine.StandardJMeterEngine;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
@@ -31,6 +32,8 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.ThreadListener;
+import org.apache.jmeter.testelement.property.JMeterProperty;
+import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
@@ -80,11 +83,13 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected static final String PROPERTY_BEAN_NAME = "martini.bean.preprocessor.bean.name";
 	protected static final String PROPERTY_BEAN_TYPE = "martini.bean.preprocessor.bean.type";
+	protected static final String PROPERTY_ARGUMENTS = "martini.bean.preprocessor.arguments";
 	protected static final String PROPERTY_ON_ERROR = "martini.bean.preprocessor.on.error";
 
 	public static final String KEY_THIS = "martini.bean.preprocessor";
 
-	protected volatile transient AtomicReference<Exception> exceptionRef;
+	protected volatile transient AtomicReference<Exception> setupExceptionRef;
+	protected volatile transient AtomicReference<Exception> processExceptionRef;
 	protected transient MessageSource messageSource;
 
 	protected volatile transient PreProcessor bean;
@@ -101,7 +106,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	protected void init() {
 		messageSource = MessageSources.getMessageSource(getClass());
-		exceptionRef = new AtomicReference<>();
+		setupExceptionRef = new AtomicReference<>();
+		processExceptionRef = new AtomicReference<>();
 	}
 
 	protected Object readResolve() {
@@ -151,18 +157,32 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		return null == name ? STOP_TEST : OnError.valueOf(name);
 	}
 
+	public Arguments getArguments() {
+		JMeterProperty property = super.getProperty(PROPERTY_ARGUMENTS);
+		Object o = property.getObjectValue();
+		return Arguments.class.isInstance(o) ? Arguments.class.cast(o) : new Arguments();
+	}
+
+	public void setArguments(Arguments arguments) {
+		ObjectProperty property = new ObjectProperty(PROPERTY_ARGUMENTS, arguments);
+		super.setProperty(property);
+	}
+
 	@Override
 	public Object clone() {
 		MartiniBeanPreProcessor clone = MartiniBeanPreProcessor.class.cast(super.clone());
-		execute(() -> {
+		clone.init();
+		clone.setupExceptionRef = setupExceptionRef;
+		clone.messageSource = messageSource;
+		executeSetup(() -> {
 			if (null != asNoThreadClone) {
-				clone.exceptionRef = exceptionRef;
-				setMembers(clone);
+				clone.processExceptionRef = processExceptionRef;
+				clone.cast(bean);
 			}
 			else if (Cloneable.class.isInstance(bean)) {
-				clone.init();
-				clone.exceptionRef.set(exceptionRef.get());
-				setClonedBean(clone);
+				Object o = cloneDelegate();
+				assertCloneIsPreProcessor(o);
+				clone.cast(o);
 			}
 			else if (null != bean) {
 				throw getExceptionBuilder()
@@ -178,25 +198,6 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		return new MartiniException.Builder()
 			.setLocale(JMeterUtils.getLocale())
 			.setMessageSource(messageSource);
-	}
-
-	protected void setMembers(MartiniBeanPreProcessor clone) {
-		clone.bean = bean;
-		clone.messageSource = messageSource;
-		clone.asNoThreadClone = asNoThreadClone;
-		clone.asLoopIterationListener = asLoopIterationListener;
-		clone.asTestIterationListener = asTestIterationListener;
-		clone.asTestStateListener = asTestStateListener;
-		clone.asThreadListener = asThreadListener;
-		clone.exceptionRef = exceptionRef;
-	}
-
-	protected void setClonedBean(MartiniBeanPreProcessor clone) {
-		execute(() -> {
-			Object o = cloneDelegate();
-			assertCloneIsPreProcessor(o);
-			clone.cast(o);
-		});
 	}
 
 	protected Object cloneDelegate() {
@@ -230,8 +231,11 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void testStarted(String host) {
-		if (!isInHaltingCondition() && initializeDelegate() && null != asTestStateListener) {
-			execute(() -> {
+		setupExceptionRef = new AtomicReference<>();
+		processExceptionRef = new AtomicReference<>();
+
+		if (initializeDelegate() && null != asTestStateListener) {
+			executeSetup(() -> {
 				if (null == host) {
 					asTestStateListener.testStarted();
 				}
@@ -243,7 +247,11 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	protected boolean initializeDelegate() {
-		execute(() -> {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		variables.putObject(KEY_THIS, this);
+
+		executeSetup(() -> {
 			String name = getBeanName();
 			String type = getBeanType();
 			ApplicationContext springContext = getSpringContext();
@@ -342,11 +350,19 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	@Override
 	public void testIterationStart(LoopIterationEvent event) {
 		if (null != asTestIterationListener) {
-			execute(() -> asTestIterationListener.testIterationStart(event));
+			executeSetup(() -> asTestIterationListener.testIterationStart(event));
 		}
 	}
 
-	protected void execute(Runnable r) {
+	protected void executeSetup(Runnable r) {
+		execute(r, setupExceptionRef);
+	}
+
+	protected void executeProcess(Runnable r) {
+		execute(r, processExceptionRef);
+	}
+
+	protected void execute(Runnable r, AtomicReference<Exception> exceptionRef) {
 		try {
 			r.run();
 		}
@@ -355,8 +371,19 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		}
 	}
 
+	protected void executeSilently(Runnable r) {
+		try {
+			r.run();
+		}
+		catch (Exception e) {
+			LOGGER.error("encountered unexpected Exception", e);
+		}
+	}
+
 	protected boolean isInHaltingCondition() {
-		return null != exceptionRef.get() && !PROCEED.equals(getOnError());
+		boolean exceptionEncountered = null != setupExceptionRef.get() || null != processExceptionRef.get();
+		OnError instructions = getOnError();
+		return exceptionEncountered && !PROCEED.equals(instructions);
 	}
 
 	protected void halt(TestElement source) {
@@ -386,7 +413,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	}
 
 	protected void reportHalt(String key, Object... args) {
-		Exception exception = exceptionRef.get();
+		Exception exception = setupExceptionRef.get();
+		exception = null == exception ? processExceptionRef.get() : exception;
 		String message = messageSource.getMessage(key, args, JMeterUtils.getLocale());
 		LOGGER.error(message, exception);
 		Gui.reportError(this, message, exception);
@@ -407,14 +435,14 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	@Override
 	public void threadStarted() {
 		if (!isInHaltingCondition() && null != asThreadListener) {
-			execute(() -> asThreadListener.threadStarted());
+			executeSetup(() -> asThreadListener.threadStarted());
 		}
 	}
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
 		if (null != asLoopIterationListener) {
-			execute(() -> asLoopIterationListener.iterationStart(event));
+			executeSetup(() -> asLoopIterationListener.iterationStart(event));
 		}
 	}
 
@@ -426,7 +454,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 			halt(sampler);
 		}
 		else if (null != bean) {
-			execute(() -> {
+			executeProcess(() -> {
 				Map<String, Object> samplerContext = threadContext.getSamplerContext();
 				samplerContext.put(KEY_THIS, this);
 				bean.process();
@@ -441,7 +469,7 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 	@Override
 	public void threadFinished() {
 		if (!isInHaltingCondition() && null != asThreadListener) {
-			execute(() -> asThreadListener.threadFinished());
+			executeSilently(() -> asThreadListener.threadFinished());
 		}
 	}
 
@@ -452,8 +480,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 
 	@Override
 	public void testEnded(String host) {
-		if (!isInHaltingCondition() && null != asTestStateListener) {
-			execute(() -> {
+		if (null != asTestStateListener) {
+			executeSilently(() -> {
 				if (null == host) {
 					asTestStateListener.testEnded();
 				}
@@ -464,7 +492,8 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		}
 
 		disposeDelegate();
-		exceptionRef.set(null);
+		setupExceptionRef = null;
+		processExceptionRef = null;
 		bean = null;
 		asLoopIterationListener = null;
 		asTestIterationListener = null;
