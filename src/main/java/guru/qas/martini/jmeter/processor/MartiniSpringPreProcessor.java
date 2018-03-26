@@ -32,6 +32,7 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
@@ -55,12 +56,11 @@ import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.runtime.event.EventManager;
 
-import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
-
 @SuppressWarnings("WeakerAccess")
 public final class MartiniSpringPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
+	protected static final String KEY_SPRING_CONTEXT = "martini.spring.context";
 
 	public static final String DEFAULT_RESOURCES_CONTEXT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
 	public static final String DEFAULT_RESOURCES_FEATURES = "classpath*:**/*.feature";
@@ -97,7 +97,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 	private void setSpringContext(JMeterContext threadContext) {
 		JMeterVariables variables = threadContext.getVariables();
-		ConfigurableApplicationContext springContext = getSpringContext().orElse(null);
+		ConfigurableApplicationContext springContext = getSpringContextProperty().orElse(null);
 		if (null == springContext) {
 			variables.remove(KEY_SPRING_CONTEXT);
 		}
@@ -109,7 +109,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	public void process() {
 		LOGGER.debug("in process()");
 		JMeterContext threadContext = super.getThreadContext();
-		ConfigurableApplicationContext springContext = getSpringContext().orElse(null);
+		ConfigurableApplicationContext springContext = getSpringContextProperty().orElse(null);
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
 		if (null == springContext) {
 			samplerContext.remove(KEY_SPRING_CONTEXT);
@@ -119,7 +119,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		}
 	}
 
-	private Optional<ConfigurableApplicationContext> getSpringContext() {
+	private Optional<ConfigurableApplicationContext> getSpringContextProperty() {
 		JMeterProperty property = this.getProperty(KEY_SPRING_CONTEXT);
 		Object o = property.getObjectValue();
 		ConfigurableApplicationContext context = ConfigurableApplicationContext.class.isInstance(o) ?
@@ -221,7 +221,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	public void testEnded() {
 		LOGGER.debug("in testEnded()");
 
-		ConfigurableApplicationContext context = getSpringContext().orElse(null);
+		ConfigurableApplicationContext context = getSpringContextProperty().orElse(null);
 		this.removeProperty(KEY_SPRING_CONTEXT);
 		if (null != context) {
 			try {
@@ -285,5 +285,17 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			}
 		}
 		return arguments;
+	}
+
+	public static Optional<ApplicationContext> getSpringContext() {
+		JMeterContext context = JMeterContextService.getContext();
+		JMeterVariables variables = null == context ? null : context.getVariables();
+		Object o = null == variables ? null : variables.getObject(KEY_SPRING_CONTEXT);
+		ApplicationContext springContext = ApplicationContext.class.isInstance(o) ? ApplicationContext.class.cast(o) : null;
+		return Optional.ofNullable(springContext);
+	}
+
+	public static String getSpringContextKey() {
+		return KEY_SPRING_CONTEXT;
 	}
 }

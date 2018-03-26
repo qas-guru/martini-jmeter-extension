@@ -51,10 +51,8 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.i18n.MessageSources;
-import guru.qas.martini.jmeter.Constants;
 import guru.qas.martini.jmeter.Gui;
-
-import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
+import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 
 /**
  * A custom JMeter Controller class that loads Martinis from a Spring ApplicationContext and repeatedly all subelements
@@ -96,6 +94,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 	private static final long serialVersionUID = 2700570246170278883L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniController.class);
 
+	protected static String KEY_CURRENT_MARTINI = "martini.current";
 	protected static final String PROPERTY_SPEL_FILTER = "martini.spel.filter";
 
 	protected transient MessageSource messageSource;
@@ -345,29 +344,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 	}
 
 	protected Collection<Martini> getMartinis() throws MartiniException {
-		JMeterContext threadContext = super.getThreadContext();
-		ApplicationContext springContext = getSpringContext(threadContext);
+		ApplicationContext springContext = MartiniSpringPreProcessor.getSpringContext()
+			.orElseThrow(NullPointerException::new);
 		return getMartinis(springContext);
-	}
-
-	/**
-	 * Retrieves the Spring ApplicationContext from thread variables. For this to work, a MartiniSpringPreProcessor
-	 * should be configured at the TestPlan level.
-	 *
-	 * @param threadContext same whether obtained from an event, sampler or super.getThreadContext()
-	 * @return Spring ApplicationContext
-	 * @throws MartiniException if no such variable has been set, or is set to something other than an ApplicationContext
-	 */
-	protected ApplicationContext getSpringContext(JMeterContext threadContext) throws MartiniException {
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(KEY_SPRING_CONTEXT);
-		if (!ApplicationContext.class.isInstance(o)) {
-			throw getExceptionBuilder()
-				.setKey("error.spring.context.not.set")
-				.setArguments(KEY_SPRING_CONTEXT)
-				.build();
-		}
-		return ApplicationContext.class.cast(o);
 	}
 
 	/**
@@ -528,7 +507,7 @@ public class MartiniController extends AbstractTestElement implements Controller
 			JMeterContext threadContext = sampler.getThreadContext();
 			Martini martini = getMartiniVariable(threadContext);
 			Map<String, Object> samplerContext = threadContext.getSamplerContext();
-			samplerContext.put(Constants.KEY_CURRENT_MARTINI, martini);
+			samplerContext.put(KEY_CURRENT_MARTINI, martini);
 		}
 	}
 
@@ -604,5 +583,9 @@ public class MartiniController extends AbstractTestElement implements Controller
 	@Override
 	public void testEnded(String host) {
 		testEnded();
+	}
+
+	public static String getKey() {
+		return KEY_CURRENT_MARTINI;
 	}
 }

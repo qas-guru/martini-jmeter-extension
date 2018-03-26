@@ -40,6 +40,11 @@ public class Gui {
 		messageBundle.setBundleClassLoader(getClass().getClassLoader());
 	}
 
+	public static void reportError(TestElement element, String description) {
+		String title = getErrorDialogTitle(element);
+		JMeterUtils.reportErrorToUser(description, title);
+	}
+
 	public static void reportError(TestElement element, Exception e) {
 		String description = e.getMessage();
 		reportError(element, description, e);

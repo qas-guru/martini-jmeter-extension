@@ -45,13 +45,13 @@ import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.jmeter.Constants;
+import guru.qas.martini.jmeter.control.MartiniController;
+import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.harness.MartiniCallable;
 
 import static com.google.common.base.Preconditions.checkState;
-import static guru.qas.martini.jmeter.Constants.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniSampler extends AbstractSampler {
@@ -65,7 +65,7 @@ public class MartiniSampler extends AbstractSampler {
 		result.sampleStart();
 
 		try {
-			Martini martini = getFromSamplerContext(Martini.class, KEY_CURRENT_MARTINI);
+			Martini martini = getFromSamplerContext(Martini.class, MartiniController.getKey());
 			setSampleLabel(result, martini);
 
 			MartiniCallable callable = getCallable(martini);
@@ -83,7 +83,7 @@ public class MartiniSampler extends AbstractSampler {
 		finally {
 			setSampleEnd(result);
 			Map<String, Object> samplerContext = getSamplerContext();
-			samplerContext.remove(Constants.KEY_CURRENT_MARTINI);
+			samplerContext.remove(MartiniController.getKey());
 		}
 		return result;
 	}
@@ -94,10 +94,6 @@ public class MartiniSampler extends AbstractSampler {
 		String name = getName();
 		result.setSampleLabel(name);
 		return result;
-	}
-
-	protected ApplicationContext getSpringContext() {
-		return getFromSamplerContext(ApplicationContext.class, KEY_SPRING_CONTEXT);
 	}
 
 	protected void setSampleLabel(SampleResult result, Martini martini) {
@@ -122,6 +118,10 @@ public class MartiniSampler extends AbstractSampler {
 	protected SuiteIdentifier getSuiteIdentifier() {
 		ApplicationContext springContext = getSpringContext();
 		return springContext.getBean(SuiteIdentifier.class);
+	}
+
+	protected ApplicationContext getSpringContext() {
+		return MartiniSpringPreProcessor.getSpringContext().orElseThrow(NullPointerException::new);
 	}
 
 	protected void populate(SampleResult result, StepResult r) {

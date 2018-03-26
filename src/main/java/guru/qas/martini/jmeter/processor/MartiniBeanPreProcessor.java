@@ -42,14 +42,13 @@ import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
+import guru.qas.martini.jmeter.SpringBeanUtil;
 
-import static guru.qas.martini.jmeter.Constants.KEY_SPRING_CONTEXT;
 import static guru.qas.martini.jmeter.processor.OnError.*;
 
 /**
@@ -254,84 +253,10 @@ public class MartiniBeanPreProcessor extends AbstractTestElement implements PreP
 		executeSetup(() -> {
 			String name = getBeanName();
 			String type = getBeanType();
-			ApplicationContext springContext = getSpringContext();
-			Class<? extends PreProcessor> implementation =
-				null == type ? null : getImplementation(springContext.getClassLoader());
-			bean = getBean(springContext, name, implementation);
+			bean = SpringBeanUtil.getBean(name, type, PreProcessor.class);
 			cast(bean);
 		});
 		return !isInHaltingCondition();
-	}
-
-	protected ApplicationContext getSpringContext() {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(KEY_SPRING_CONTEXT);
-		if (!ApplicationContext.class.isInstance(o)) {
-			throw getExceptionBuilder()
-				.setKey("error.spring.context.variable")
-				.setArguments(KEY_SPRING_CONTEXT, null == o ? null : o.getClass())
-				.build();
-		}
-		return ApplicationContext.class.cast(o);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected Class<? extends PreProcessor> getImplementation(ClassLoader loader) {
-		String type = getBeanType();
-		Class<?> clazz;
-		try {
-			clazz = Class.forName(type, true, loader);
-		}
-		catch (Exception e) {
-			throw getExceptionBuilder()
-				.setCause(e)
-				.setKey("error.loading.bean.class")
-				.setArguments(type)
-				.build();
-		}
-
-		assertPreProcessor(clazz);
-		return (Class<? extends PreProcessor>) clazz;
-	}
-
-	protected void assertPreProcessor(Class c) {
-		if (!PreProcessor.class.isAssignableFrom(c)) {
-			throw getExceptionBuilder()
-				.setKey("error.incompatible.class.type")
-				.setArguments(c)
-				.build();
-		}
-	}
-
-	protected PreProcessor getBean(ApplicationContext context, String name, Class<? extends PreProcessor> type) {
-		Object bean;
-		if (null == name && null == type) {
-			throw getExceptionBuilder()
-				.setKey("error.gui.provide.bean.information")
-				.build();
-		}
-		else if (null == name) {
-			bean = context.getBean(type);
-		}
-		else if (null == type) {
-			bean = context.getBean(name);
-		}
-		else {
-			bean = context.getBean(name, type);
-		}
-
-		assertBeanIsPreProcessor(bean);
-		return PreProcessor.class.cast(bean);
-	}
-
-	protected void assertBeanIsPreProcessor(Object bean) {
-		if (!PreProcessor.class.isInstance(bean)) {
-			throw getExceptionBuilder()
-				.setKey("error.gui.incompatible.bean.type")
-				.setArguments(bean.getClass())
-				.build();
-		}
 	}
 
 	protected void cast(Object o) {
