@@ -32,7 +32,7 @@ public class MartiniBeanController extends AbstractMartiniController {
 	protected static final String PROPERTY_BEAN_NAME = "martini.bean.controller.bean.name";
 	protected static final String PROPERTY_BEAN_TYPE = "martini.bean.controller.bean.type";
 	protected static final String PROPERTY_ARGUMENTS = "martini.bean.controller.arguments";
-	protected static final String PROPERTY_THIS = "martini.bean.controller";
+	public static final String PROPERTY_THIS = "martini.bean.controller";
 
 	public MartiniBeanController() {
 		super();

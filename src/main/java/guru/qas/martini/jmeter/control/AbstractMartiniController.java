@@ -17,8 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.control;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.jmeter.control.Controller;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
@@ -37,8 +35,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
-	protected transient List<LoopIterationListener> listeners;
-
 	protected transient Controller delegate;
 	protected transient TestStateListener asTestStateListener;
 	protected transient LoopIterationListener asLoopIterationListener;
@@ -46,30 +42,16 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	public AbstractMartiniController() {
 		super();
-		init();
-	}
-
-	protected Object readResolve() {
-		init();
-		return this;
-	}
-
-	protected void init() {
-		listeners = new ArrayList<>();
 	}
 
 	@Override
 	public Object clone() {
-		Object clone;
+		AbstractMartiniController clone = AbstractMartiniController.class.cast(super.clone());
 		if (NoThreadClone.class.isInstance(delegate)) {
-			clone = this;
+			clone.cast(delegate);
 		}
 		else if (Cloneable.class.isInstance(delegate)) {
-			clone = super.clone();
-			AbstractMartiniController.class.cast(clone).cast(delegate.clone());
-		}
-		else {
-			clone = super.clone();
+			clone.cast(delegate.clone());
 		}
 		return clone;
 	}
@@ -82,11 +64,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	}
 
 	@Override
-	public void addIterationListener(LoopIterationListener listener) {
-		listeners.add(listener);
-	}
-
-	@Override
 	public void testStarted() {
 		initializeDelegate();
 		if (null != asTestStateListener) {
@@ -95,11 +72,17 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	}
 
 	protected void initializeDelegate() {
-		delegate = checkNotNull(createDelegate());
-		listeners.forEach(l -> delegate.addIterationListener(l));
+		cast(checkNotNull(createDelegate()));
 	}
 
 	protected abstract Controller createDelegate();
+
+	@Override
+	public void addIterationListener(LoopIterationListener listener) {
+		if (null != delegate) {
+			delegate.addIterationListener(listener);
+		}
+	}
 
 	@Override
 	public void addTestElement(TestElement element) {
@@ -162,9 +145,8 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void removeIterationListener(LoopIterationListener listener) {
-		listeners.remove(listener);
 		if (null != delegate) {
-			delegate.addIterationListener(listener);
+			delegate.removeIterationListener(listener);
 		}
 	}
 
@@ -193,7 +175,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	}
 
 	protected void releaseMembers() {
-		listeners.clear();
 		delegate = null;
 		asTestStateListener = null;
 		asLoopIterationListener = null;
