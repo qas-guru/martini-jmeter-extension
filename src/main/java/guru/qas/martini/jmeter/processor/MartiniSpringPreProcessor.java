@@ -107,7 +107,6 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	}
 
 	public void process() {
-		LOGGER.debug("in process()");
 		JMeterContext threadContext = super.getThreadContext();
 		ConfigurableApplicationContext springContext = getSpringContextProperty().orElse(null);
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
@@ -219,8 +218,6 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	}
 
 	public void testEnded() {
-		LOGGER.debug("in testEnded()");
-
 		ConfigurableApplicationContext context = getSpringContextProperty().orElse(null);
 		this.removeProperty(KEY_SPRING_CONTEXT);
 		if (null != context) {
@@ -244,7 +241,6 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	}
 
 	public void testEnded(String host) {
-		LOGGER.debug("in testEnded({})", host);
 		testEnded();
 	}
 
