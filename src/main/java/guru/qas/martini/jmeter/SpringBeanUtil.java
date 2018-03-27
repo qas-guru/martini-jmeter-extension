@@ -29,23 +29,31 @@ public class SpringBeanUtil {
 	public static <T> T getBean(String name, String type, @Nonnull Class<T> expectedType) {
 		checkNotNull(expectedType, "null Class");
 
+		String normalizedName = getNormalized(name);
+		String normalizedType = getNormalized(type);
+
 		ApplicationContext context = getSpringContext().orElseThrow(NullPointerException::new);
-		Class<? extends T> implementation = null == type ? null : getImplementation(context, type);
+		Class<? extends T> implementation = null == normalizedType ? null : getImplementation(context, normalizedType);
 
 		Object bean;
-		if (null == name && null == implementation) {
+		if (null == normalizedName && null == implementation) {
 			throw new RuntimeException("at least one of bean name or bean type must be specified");
 		}
-		else if (null == name) {
+		else if (null == normalizedName) {
 			bean = context.getBean(implementation);
 		}
 		else if (null == implementation) {
-			bean = context.getBean(name);
+			bean = context.getBean(normalizedName);
 		}
 		else {
-			bean = context.getBean(name, implementation);
+			bean = context.getBean(normalizedName, implementation);
 		}
 		return expectedType.cast(bean);
+	}
+
+	private static String getNormalized(String text) {
+		String trimmed = null == text ? "" : text.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	protected static Class getImplementation(ApplicationContext springContext, String type) {

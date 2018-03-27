@@ -28,6 +28,7 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
+import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 

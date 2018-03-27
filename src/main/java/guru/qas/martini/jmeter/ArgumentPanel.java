@@ -19,7 +19,7 @@
  *
  */
 
-package guru.qas.martini.jmeter.processor.gui;
+package guru.qas.martini.jmeter;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

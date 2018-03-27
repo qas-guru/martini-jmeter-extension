@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.processor.gui;
+package guru.qas.martini.jmeter.control.gui;
 
 import java.awt.Container;
 import java.awt.Font;
@@ -24,39 +24,36 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.control.gui.AbstractControllerGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
-import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.layout.VerticalLayout;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
-import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.Gui;
-import guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor;
-import guru.qas.martini.jmeter.processor.OnError;
-
-import static guru.qas.martini.jmeter.processor.OnError.*;
+import guru.qas.martini.jmeter.ArgumentPanel;
+import guru.qas.martini.jmeter.control.MartiniBeanController;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
-public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
-
-	protected static final String DEFAULT_NAME = "mySetupBean";
-	protected static final String DEFAULT_TYPE = "com.mycompany.MyPreProcessorBean";
+public final class MartiniBeanControllerGui extends AbstractControllerGui {
 
 	protected final JTextField nameField;
 	protected final JTextField typeField;
-	protected RadiosPanel<OnError> radiosPanel;
 	protected final ArgumentPanel argumentPanel;
 
 	@SuppressWarnings("deprecation")
-	public MartiniBeanPreProcessorGui() {
+	public MartiniBeanControllerGui() {
 		super();
 		nameField = new JTextField(6);
 		typeField = new JTextField(6);
 		argumentPanel = new ArgumentPanel(null, true);
 		init();
+	}
+
+	protected MessageSource getMessageSource() {
+		return MessageSources.getMessageSource(getClass());
 	}
 
 	protected void init() {
@@ -75,7 +72,6 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	protected VerticalPanel getBeanPanel() {
 		VerticalPanel panel = new VerticalPanel();
 		addBeanIdentifiers(panel);
-		addOnErrorSelection(panel);
 		return panel;
 	}
 
@@ -94,51 +90,44 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		JLabel nameLabel = Gui.getJLabel(text, 1);
 		beanPanel.add(nameLabel);
 
-		nameField.setText(DEFAULT_NAME);
+		nameField.setText(getDefaultBeanName());
 		beanPanel.add(nameField);
 
 		text = messageSource.getMessage("preprocessor.bean.type", null, JMeterUtils.getLocale());
 		JLabel typeLabel = Gui.getJLabel(text, 1);
 		beanPanel.add(typeLabel);
 
-		typeField.setText(DEFAULT_TYPE);
+		typeField.setText(getDefaultBeanType());
 		beanPanel.add(typeField);
 
 		container.add(beanPanel);
 	}
 
+	protected String getDefaultBeanName() {
+		MessageSource messageSource = getMessageSource();
+		return messageSource.getMessage(
+			"martini.bean.controller.default.name", null, "myControllerBean", JMeterUtils.getLocale());
+	}
+
+	protected String getDefaultBeanType() {
+		MessageSource messageSource = getMessageSource();
+		return messageSource.getMessage(
+			"martini.bean.controller.default.type", null, "com.mine.MyControllerBean", JMeterUtils.getLocale());
+	}
+
 	protected VerticalPanel getArgumentDisplayPanel() {
 		VerticalPanel panel = new VerticalPanel();
-		MessageSource messageSource = getMessageSource();
-		String text = messageSource.getMessage("panel.arguments", null, "panel.arguments", JMeterUtils.getLocale());
+		String text = getMessageSource().getMessage("panel.arguments", null, "panel.arguments", JMeterUtils.getLocale());
 		JLabel label = Gui.getJLabel(text, 2);
 		panel.add(label);
 		panel.add(argumentPanel);
 		return panel;
 	}
 
-	protected MessageSource getMessageSource() {
-		return MessageSources.getMessageSource(getClass());
-	}
-
-	protected void addOnErrorSelection(Container container) {
-		MessageSource messageSource = getMessageSource();
-		String text = messageSource.getMessage("on.error.description", null, JMeterUtils.getLocale());
-		JLabel label = Gui.getJLabel(text, 1);
-		radiosPanel = new RadiosPanel<>(OnError.class, label);
-		radiosPanel.setBorder(BorderFactory.createEtchedBorder());
-		radiosPanel.addButton(STOP_TEST, STOP_TEST.getLabel(), true);
-		radiosPanel.addButton(STOP_THREAD_GROUP, STOP_THREAD_GROUP.getLabel(), false);
-		radiosPanel.addButton(STOP_THREAD, STOP_THREAD.getLabel(), false);
-		radiosPanel.addButton(PROCEED, PROCEED.getLabel(), false);
-		container.add(radiosPanel);
-	}
-
 	@Override
 	public String getStaticLabel() {
-		MessageSource messageSource = getMessageSource();
 		String key = getLabelResource();
-		return messageSource.getMessage(key, null, JMeterUtils.getLocale());
+		return getMessageSource().getMessage(key, null, "Martini Bean Controller", JMeterUtils.getLocale());
 	}
 
 	public String getLabelResource() {
@@ -146,43 +135,37 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 	}
 
 	public TestElement createTestElement() {
-		MartiniBeanPreProcessor preProcessor = new MartiniBeanPreProcessor();
-		modifyTestElement(preProcessor);
-		return preProcessor;
+		MartiniBeanController controller = new MartiniBeanController();
+		modifyTestElement(controller);
+		return controller;
 	}
 
 	public void modifyTestElement(TestElement element) {
 		super.configureTestElement(element);
-		MartiniBeanPreProcessor preProcessor = MartiniBeanPreProcessor.class.cast(element);
+		MartiniBeanController controller = MartiniBeanController.class.cast(element);
 
 		String nameSetting = nameField.getText();
-		preProcessor.setBeanName(nameSetting);
+		controller.setBeanName(nameSetting);
 
 		String typeSetting = typeField.getText();
-		preProcessor.setBeanType(typeSetting);
-
-		OnError onError = radiosPanel.getSelected().orElse(null);
-		preProcessor.setOnError(onError);
+		controller.setBeanType(typeSetting);
 
 		Arguments arguments = Arguments.class.cast(argumentPanel.createTestElement());
-		preProcessor.setArguments(arguments);
+		controller.setArguments(arguments);
 	}
 
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
-		MartiniBeanPreProcessor preProcessor = MartiniBeanPreProcessor.class.cast(element);
+		MartiniBeanController controller = MartiniBeanController.class.cast(element);
 
-		String nameSetting = preProcessor.getBeanName();
+		String nameSetting = controller.getBeanName();
 		nameField.setText(nameSetting);
 
-		String typeSetting = preProcessor.getBeanType();
+		String typeSetting = controller.getBeanType();
 		typeField.setText(typeSetting);
 
-		OnError onError = preProcessor.getOnError();
-		radiosPanel.setSelected(onError);
-
-		Arguments arguments = preProcessor.getArguments();
+		Arguments arguments = controller.getArguments();
 		if (null != arguments) {
 			argumentPanel.configure(arguments);
 		}
@@ -190,9 +173,8 @@ public final class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
 	@Override
 	public void clearGui() {
-		nameField.setText(DEFAULT_NAME);
-		typeField.setText(DEFAULT_TYPE);
-		radiosPanel.setSelected(STOP_TEST);
+		nameField.setText(getDefaultBeanName());
+		typeField.setText(getDefaultBeanType());
 		argumentPanel.clear();
 		super.clearGui();
 	}
