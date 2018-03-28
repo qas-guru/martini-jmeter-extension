@@ -22,6 +22,8 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 
+import guru.qas.martini.jmeter.DefaultParameterized;
+import guru.qas.martini.jmeter.Parameterized;
 import guru.qas.martini.jmeter.SpringBeanUtil;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -32,7 +34,6 @@ public class MartiniBeanController extends AbstractMartiniController {
 	protected static final String PROPERTY_BEAN_NAME = "martini.bean.controller.bean.name";
 	protected static final String PROPERTY_BEAN_TYPE = "martini.bean.controller.bean.type";
 	protected static final String PROPERTY_ARGUMENTS = "martini.bean.controller.arguments";
-	public static final String PROPERTY_THIS = "martini.bean.controller";
 
 	public MartiniBeanController() {
 		super();
@@ -67,17 +68,11 @@ public class MartiniBeanController extends AbstractMartiniController {
 
 	protected void initializeDelegate() {
 		super.initializeDelegate();
-		ObjectProperty property = new ObjectProperty(PROPERTY_THIS, this);
+		Arguments parameters = getArguments();
+		DefaultParameterized parameterized = new DefaultParameterized(this, null == parameters ? new Arguments() : parameters);
+		ObjectProperty property = new ObjectProperty(Parameterized.class.getName(), parameterized);
 		delegate.setProperty(property);
 		delegate.setTemporary(property);
-		initializeProperties();
-	}
-
-	protected void initializeProperties() {
-		Arguments arguments = getArguments();
-		if (null != arguments) {
-			arguments.getArguments().forEach(a -> delegate.setProperty(a));
-		}
 	}
 
 	@Override
