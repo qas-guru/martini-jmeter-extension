@@ -39,7 +39,7 @@ public class LockingIterator<T> extends ForwardingIterator<T> implements Lock {
 	}
 
 	@Override
-	protected Iterator delegate() {
+	protected Iterator<T> delegate() {
 		return iterator;
 	}
 
@@ -68,6 +68,7 @@ public class LockingIterator<T> extends ForwardingIterator<T> implements Lock {
 		lock.unlock();
 	}
 
+	@Nonnull
 	@Override
 	public Condition newCondition() {
 		return lock.newCondition();
