@@ -19,7 +19,6 @@ package guru.qas.martini.jmeter.sampler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +31,6 @@ import org.apache.jmeter.assertions.AssertionResult;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.threads.JMeterContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -45,35 +43,33 @@ import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.jmeter.control.MartiniController;
+import guru.qas.martini.jmeter.JMeterContextUtil;
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.harness.MartiniCallable;
 
-import static com.google.common.base.Preconditions.checkState;
-
 @SuppressWarnings("WeakerAccess")
 public class MartiniSampler extends AbstractSampler {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniSampler.class);
+	protected final Logger logger;
+
+	public MartiniSampler() {
+		super();
+		logger = LoggerFactory.getLogger(getClass());
+	}
 
 	@Override
 	public SampleResult sample(Entry e) {
 
 		SampleResult result = initializeSampleResult();
-		result.sampleStart();
-
 		try {
-			Martini martini = getFromSamplerContext(Martini.class, MartiniController.getKey());
+			Martini martini = getMartini();
 			setSampleLabel(result, martini);
 
 			MartiniCallable callable = getCallable(martini);
 			MartiniResult martiniResult = callable.call();
-
-			List<StepResult> stepResults = martiniResult.getStepResults();
-			stepResults.forEach(r -> populate(result, r));
-			setStatus(result, martiniResult);
+			update(result, martiniResult);
 		}
 		catch (Exception exception) {
 			String stackTrace = Throwables.getStackTraceAsString(exception);
@@ -81,9 +77,7 @@ public class MartiniSampler extends AbstractSampler {
 			result.setSuccessful(false);
 		}
 		finally {
-			setSampleEnd(result);
-			Map<String, Object> samplerContext = getSamplerContext();
-			samplerContext.remove(MartiniController.getKey());
+			JMeterContextUtil.removeSamplerData(Martini.class);
 		}
 		return result;
 	}
@@ -102,6 +96,11 @@ public class MartiniSampler extends AbstractSampler {
 		result.setSampleLabel(sampleLabel);
 	}
 
+	protected Martini getMartini() {
+		return JMeterContextUtil.getSamplerData(Martini.class)
+			.orElseThrow(() -> new IllegalStateException("Martini not found in Sampler context"));
+	}
+
 	protected MartiniCallable getCallable(Martini martini) {
 		SuiteIdentifier suiteIdentifier = getSuiteIdentifier();
 		MartiniCallable callable = new MartiniCallable(suiteIdentifier, martini);
@@ -111,17 +110,23 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected AutowireCapableBeanFactory getBeanFactory() {
-		ApplicationContext springContext = getSpringContext();
+		ApplicationContext springContext = MartiniSpringPreProcessor.getApplicationContext();
 		return springContext.getAutowireCapableBeanFactory();
 	}
 
 	protected SuiteIdentifier getSuiteIdentifier() {
-		ApplicationContext springContext = getSpringContext();
+		ApplicationContext springContext = MartiniSpringPreProcessor.getApplicationContext();
 		return springContext.getBean(SuiteIdentifier.class);
 	}
 
-	protected ApplicationContext getSpringContext() {
-		return MartiniSpringPreProcessor.getSpringContext().orElseThrow(NullPointerException::new);
+	protected void update(SampleResult sampleResult, MartiniResult martiniResult) {
+		Long timestamp = martiniResult.getEndTimestamp();
+		Long elapsed = martiniResult.getExecutionTimeMs();
+		sampleResult.setStampAndTime(null == timestamp ? System.currentTimeMillis() : timestamp, elapsed);
+		List<StepResult> stepResults = martiniResult.getStepResults();
+		stepResults.forEach(r -> populate(sampleResult, r));
+		Status status = martiniResult.getStatus();
+		sampleResult.setSuccessful(Status.PASSED == status);
 	}
 
 	protected void populate(SampleResult result, StepResult r) {
@@ -152,11 +157,6 @@ public class MartiniSampler extends AbstractSampler {
 
 	protected void setStatus(SampleResult result, StepResult r) {
 		Status status = r.getStatus();
-		result.setSuccessful(Status.PASSED == status);
-	}
-
-	protected void setStatus(SampleResult result, MartiniResult martiniResult) {
-		Status status = martiniResult.getStatus();
 		result.setSuccessful(Status.PASSED == status);
 	}
 
@@ -193,7 +193,7 @@ public class MartiniSampler extends AbstractSampler {
 			builder.addPart(name, contentBody);
 		}
 		catch (IOException e1) {
-			LOGGER.warn("unable to attach HttpEntity to SampleResult", e1);
+			logger.warn("unable to attach HttpEntity to SampleResult", e1);
 		}
 	}
 
@@ -203,26 +203,7 @@ public class MartiniSampler extends AbstractSampler {
 			result.setResponseData(bytes);
 		}
 		catch (IOException e) {
-			LOGGER.warn("unable to attach HttpEntity to SampleResult", e);
+			logger.warn("unable to attach HttpEntity to SampleResult", e);
 		}
-	}
-
-	protected void setSampleEnd(SampleResult result) {
-		if (0 == result.getEndTime()) {
-			result.sampleEnd();
-		}
-	}
-
-	protected <T> T getFromSamplerContext(Class<T> implementation, String key) {
-		Map<String, Object> samplerContext = getSamplerContext();
-		Object o = samplerContext.get(key);
-		checkState(implementation.isInstance(o),
-			"object of type %s not present in SamplerContext under key %s", implementation.getCanonicalName(), key);
-		return implementation.cast(o);
-	}
-
-	protected Map<String, Object> getSamplerContext() {
-		JMeterContext threadContext = super.getThreadContext();
-		return threadContext.getSamplerContext();
 	}
 }

@@ -18,7 +18,6 @@ package guru.qas.martini.jmeter.processor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.engine.StandardJMeterEngine;
@@ -29,11 +28,7 @@ import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
-import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterContextService;
-import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +49,15 @@ import guru.qas.martini.MartiniException;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
+import guru.qas.martini.jmeter.JMeterContextUtil;
 import guru.qas.martini.runtime.event.EventManager;
+
+import static guru.qas.martini.jmeter.JMeterContextUtil.*;
 
 @SuppressWarnings("WeakerAccess")
 public final class MartiniSpringPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;
-	protected static final String KEY_SPRING_CONTEXT = "martini.spring.context";
 
 	public static final String DEFAULT_RESOURCES_CONTEXT = "classpath*:**/contextOne.xml,classpath*:**/contextTwo.xml";
 	public static final String DEFAULT_RESOURCES_FEATURES = "classpath*:**/*.feature";
@@ -70,9 +67,8 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	protected static final String PROPERTY_SYSTEM_PROPERTIES = "martini.system.properties";
 	protected static final String BEAN_SUITE_IDENTIFIER = "suiteIdentifier";
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniSpringPreProcessor.class);
-
 	protected transient MessageSource messageSource;
+	protected transient Logger logger;
 
 	public MartiniSpringPreProcessor() {
 		super();
@@ -81,49 +77,12 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 	protected void init() {
 		messageSource = MessageSources.getMessageSource(getClass());
+		logger = LoggerFactory.getLogger(getClass());
 	}
 
 	protected Object readResolve() {
 		init();
 		return this;
-	}
-
-	@Override
-	public void iterationStart(LoopIterationEvent event) {
-		TestElement source = event.getSource();
-		JMeterContext threadContext = source.getThreadContext();
-		setSpringContext(threadContext);
-	}
-
-	private void setSpringContext(JMeterContext threadContext) {
-		JMeterVariables variables = threadContext.getVariables();
-		ConfigurableApplicationContext springContext = getSpringContextProperty().orElse(null);
-		if (null == springContext) {
-			variables.remove(KEY_SPRING_CONTEXT);
-		}
-		else {
-			variables.putObject(KEY_SPRING_CONTEXT, springContext);
-		}
-	}
-
-	public void process() {
-		JMeterContext threadContext = super.getThreadContext();
-		ConfigurableApplicationContext springContext = getSpringContextProperty().orElse(null);
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		if (null == springContext) {
-			samplerContext.remove(KEY_SPRING_CONTEXT);
-		}
-		else {
-			samplerContext.put(KEY_SPRING_CONTEXT, springContext);
-		}
-	}
-
-	private Optional<ConfigurableApplicationContext> getSpringContextProperty() {
-		JMeterProperty property = this.getProperty(KEY_SPRING_CONTEXT);
-		Object o = property.getObjectValue();
-		ConfigurableApplicationContext context = ConfigurableApplicationContext.class.isInstance(o) ?
-			ConfigurableApplicationContext.class.cast(o) : null;
-		return Optional.ofNullable(context);
 	}
 
 	public void testStarted(String host) {
@@ -139,12 +98,12 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			EventManager eventManager = springContext.getBean(EventManager.class);
 			eventManager.publishBeforeSuite(this, suiteIdentifier);
 
-			setSpringProperty(springContext);
-			setSpringVariable(springContext);
+			setTemporaryProperty(this, springContext, ConfigurableApplicationContext.class);
+			setVariable(springContext, ApplicationContext.class);
 		}
 		catch (MartiniException e) {
 			StandardJMeterEngine.stopEngineNow();
-			LOGGER.error(e.getMessage(), e);
+			logger.error(e.getMessage(), e);
 			Gui.reportError(this, e);
 		}
 		catch (Exception e) {
@@ -155,19 +114,9 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 				.setKey("error.creating.spring.context")
 				.setCause(e)
 				.build();
-			LOGGER.error(martiniException.getMessage(), e);
+			logger.error(martiniException.getMessage(), e);
 			Gui.reportError(this, martiniException);
 		}
-	}
-
-	protected SuiteIdentifier setUpSuiteIdentifier(ConfigurableApplicationContext context) {
-		SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
-			.setJMeterContext(getThreadContext())
-			.setConfigurableApplicationContext(context)
-			.build();
-		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-		beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
-		return suiteIdentifier;
 	}
 
 	protected PropertySource getEnvironmentPropertySource() {
@@ -182,8 +131,55 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 			builder.put("martini.feature.resources", featureLocations);
 		}
 		ImmutableMap<String, Object> source = builder.build();
-
 		return new MapPropertySource(PROPERTY_SYSTEM_PROPERTIES, source);
+	}
+
+	public Arguments getEnvironment() {
+		JMeterProperty property = getProperty(PROPERTY_SYSTEM_PROPERTIES);
+		Arguments arguments = null;
+		if (TestElementProperty.class.isInstance(property)) {
+			TestElementProperty testElementProperty = TestElementProperty.class.cast(property);
+			TestElement element = testElementProperty.getElement();
+			if (Arguments.class.isInstance(element)) {
+				arguments = Arguments.class.cast(element);
+			}
+		}
+		return arguments;
+	}
+
+	@Override
+	public void iterationStart(LoopIterationEvent event) {
+		ApplicationContext springContext = getSpringContextProperty();
+		if (null == springContext) {
+			JMeterContextUtil.removeVariable(ApplicationContext.class);
+		}
+		else {
+			setVariable(springContext, ApplicationContext.class);
+		}
+	}
+
+	public void process() {
+		ConfigurableApplicationContext springContext = getSpringContextProperty();
+		if (null == springContext) {
+			JMeterContextUtil.removeSamplerData(ApplicationContext.class);
+		}
+		else {
+			JMeterContextUtil.setSamplerData(springContext, ApplicationContext.class);
+		}
+	}
+
+	private ConfigurableApplicationContext getSpringContextProperty() {
+		return JMeterContextUtil.getProperty(this, ConfigurableApplicationContext.class).orElse(null);
+	}
+
+	protected SuiteIdentifier setUpSuiteIdentifier(ConfigurableApplicationContext context) {
+		SuiteIdentifier suiteIdentifier = JMeterSuiteIdentifier.builder()
+			.setJMeterContext(getThreadContext())
+			.setConfigurableApplicationContext(context)
+			.build();
+		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+		beanFactory.registerSingleton(BEAN_SUITE_IDENTIFIER, suiteIdentifier);
+		return suiteIdentifier;
 	}
 
 	protected ConfigurableApplicationContext setUpSpring(PropertySource propertySource) {
@@ -205,21 +201,9 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		return configured.toArray(new String[configured.size()]);
 	}
 
-	protected void setSpringProperty(ApplicationContext context) {
-		JMeterProperty property = new ObjectProperty(KEY_SPRING_CONTEXT, context);
-		super.setProperty(property);
-		super.setTemporary(property);
-	}
-
-	protected void setSpringVariable(ApplicationContext context) {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		variables.putObject(KEY_SPRING_CONTEXT, context);
-	}
-
 	public void testEnded() {
-		ConfigurableApplicationContext context = getSpringContextProperty().orElse(null);
-		this.removeProperty(KEY_SPRING_CONTEXT);
+		ConfigurableApplicationContext context = getSpringContextProperty();
+		JMeterContextUtil.removeProperty(this, ConfigurableApplicationContext.class);
 		if (null != context) {
 			try {
 				EventManager eventManager = context.getBean(EventManager.class);
@@ -234,7 +218,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 					.setMessageSource(messageSource)
 					.setKey("error.closing.spring.context")
 					.build();
-				LOGGER.warn(martiniException.getMessage(), e);
+				logger.warn(martiniException.getMessage(), e);
 				Gui.reportError(this, martiniException);
 			}
 		}
@@ -270,28 +254,12 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 		setProperty(property);
 	}
 
-	public Arguments getEnvironment() {
-		JMeterProperty property = getProperty(PROPERTY_SYSTEM_PROPERTIES);
-		Arguments arguments = null;
-		if (TestElementProperty.class.isInstance(property)) {
-			TestElementProperty testElementProperty = TestElementProperty.class.cast(property);
-			TestElement element = testElementProperty.getElement();
-			if (Arguments.class.isInstance(element)) {
-				arguments = Arguments.class.cast(element);
-			}
-		}
-		return arguments;
-	}
-
-	public static Optional<ApplicationContext> getSpringContext() {
-		JMeterContext context = JMeterContextService.getContext();
-		JMeterVariables variables = null == context ? null : context.getVariables();
-		Object o = null == variables ? null : variables.getObject(KEY_SPRING_CONTEXT);
-		ApplicationContext springContext = ApplicationContext.class.isInstance(o) ? ApplicationContext.class.cast(o) : null;
-		return Optional.ofNullable(springContext);
-	}
-
-	public static String getSpringContextKey() {
-		return KEY_SPRING_CONTEXT;
+	public static ApplicationContext getApplicationContext() {
+		return JMeterContextUtil.getVariable(ApplicationContext.class).orElseThrow(() ->
+			new MartiniException.Builder()
+				.setLocale(JMeterUtils.getLocale())
+				.setMessageSource(MessageSources.getMessageSource(MartiniSpringPreProcessor.class))
+				.setKey("spring.not.loaded")
+				.build());
 	}
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
-import java.util.Map;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
@@ -26,13 +25,11 @@ import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.util.JMeterUtils;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.SpringBeanUtil;
-import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniSamplerClient implements Serializable, Interruptible, JavaSamplerClient {
@@ -59,8 +56,8 @@ public class MartiniSamplerClient implements Serializable, Interruptible, JavaSa
 	protected void init() {
 		messageSource = MessageSources.getMessageSource(getClass());
 		arguments = new Arguments();
-		arguments.addArgument(PARAMETER_BEAN_NAME, "mySamplerBean");
-		arguments.addArgument(PARAMETER_BEAN_TYPE, "com.mycompany.MySamplerClientBean");
+		arguments.addArgument(PARAMETER_BEAN_NAME, "mySamplerClientBean");
+		arguments.addArgument(PARAMETER_BEAN_TYPE, "com.mine.MySamplerClientBean");
 	}
 
 	@Override
@@ -91,12 +88,6 @@ public class MartiniSamplerClient implements Serializable, Interruptible, JavaSa
 		String parameter = context.getParameter(key);
 		String trimmed = null == parameter ? "" : parameter.trim();
 		return trimmed.isEmpty() ? null : trimmed;
-	}
-
-	protected static ApplicationContext getSpringContext(JavaSamplerContext context) {
-		Map<String, Object> samplerContext = context.getJMeterContext().getSamplerContext();
-		Object o = samplerContext.get(MartiniSpringPreProcessor.getSpringContextKey());
-		return ApplicationContext.class.cast(o);
 	}
 
 	@Override

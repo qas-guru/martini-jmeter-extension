@@ -20,8 +20,9 @@ import javax.annotation.Nonnull;
 
 import org.springframework.context.ApplicationContext;
 
+import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
+
 import static com.google.common.base.Preconditions.checkNotNull;
-import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.getSpringContext;
 
 @SuppressWarnings("WeakerAccess")
 public class SpringBeanUtil {
@@ -32,7 +33,7 @@ public class SpringBeanUtil {
 		String normalizedName = getNormalized(name);
 		String normalizedType = getNormalized(type);
 
-		ApplicationContext context = getSpringContext().orElseThrow(NullPointerException::new);
+		ApplicationContext context = MartiniSpringPreProcessor.getApplicationContext();
 		Class<? extends T> implementation = null == normalizedType ? null : getImplementation(context, normalizedType);
 
 		Object bean;
@@ -51,7 +52,7 @@ public class SpringBeanUtil {
 		return expectedType.cast(bean);
 	}
 
-	private static String getNormalized(String text) {
+	protected static String getNormalized(String text) {
 		String trimmed = null == text ? "" : text.trim();
 		return trimmed.isEmpty() ? null : trimmed;
 	}
