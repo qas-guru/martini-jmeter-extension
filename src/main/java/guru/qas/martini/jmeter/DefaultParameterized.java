@@ -17,11 +17,12 @@ limitations under the License.
 package guru.qas.martini.jmeter;
 
 import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.testelement.TestElement;
-
-import com.google.common.collect.ImmutableMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,39 +48,49 @@ public class DefaultParameterized implements Parameterized {
 	}
 
 	@Override
-	public String getParameter(String name) {
+	public Optional<String> getParameter(@Nonnull String name) {
 		checkNotNull(name, "null String");
-		Map<String, String> map = null == arguments ? ImmutableMap.of() : arguments.getArgumentsAsMap();
-		return map.get(name);
+		Map<String, String> map = null == arguments ? null : arguments.getArgumentsAsMap();
+		String parameter = null == map ? null : map.get(name);
+		return Optional.ofNullable(parameter);
 	}
 
 	@Override
-	public String getNormalizedParameter(String name) {
+	public Optional<Boolean> getBooleanParameter(@Nonnull String name) {
 		checkNotNull(name, "null String");
-		String parameter = getParameter(name);
-		String trimmed = null == parameter ? "" : parameter.trim();
-		return trimmed.isEmpty() ? null : trimmed;
+		String parameter = getNormalized(name);
+		Boolean parsed = null == parameter ? null : Boolean.parseBoolean(parameter);
+		return Optional.ofNullable(parsed);
+	}
+
+	protected String getNormalized(String name) {
+		String parameter = getParameter(name).orElse(null);
+		String trimmed = null == parameter ? null : parameter.trim();
+		return null == trimmed || trimmed.isEmpty() ? null : trimmed;
 	}
 
 	@Override
-	public Integer getIntegerParameter(String name) {
+	public Optional<Integer> getIntegerParameter(@Nonnull String name) {
 		checkNotNull(name, "null String");
-		String parameter = getNormalizedParameter(name);
-		return null == parameter ? null : Integer.parseInt(parameter);
+		String parameter = getNormalized(name);
+		Integer parsed = null == parameter ? null : Integer.parseInt(parameter);
+		return Optional.ofNullable(parsed);
 	}
 
 	@Override
-	public Long getLongParameter(String name) {
+	public Optional<Long> getLongParameter(@Nonnull String name) {
 		checkNotNull(name, "null String");
-		String parameter = getNormalizedParameter(name);
-		return null == parameter ? null : Long.parseLong(parameter);
+		String parameter = getNormalized(name);
+		Long parsed = null == parameter ? null : Long.parseLong(parameter);
+		return Optional.ofNullable(parsed);
 	}
 
 	@Override
-	public <T extends Enum<T>> T getEnumParameter(Class<T> type, String name) {
+	public <T extends Enum<T>> Optional<T> getEnumParameter(@Nonnull Class<T> type, @Nonnull String name) {
 		checkNotNull(type, "null Class");
 		checkNotNull(name, "null String");
-		String parameter = getNormalizedParameter(name);
-		return null == parameter ? null : Enum.valueOf(type, parameter);
+		String parameter = getNormalized(name);
+		T cast = null == parameter ? null : Enum.valueOf(type, parameter);
+		return Optional.ofNullable(cast);
 	}
 }

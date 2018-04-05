@@ -83,7 +83,8 @@ public class DelegateMartiniController extends GenericController implements Clon
 	protected LoopIterationListener getListener() {
 		Parameterized configuration = JMeterContextUtil.getProperty(this, Parameterized.class)
 			.orElseThrow(() -> new IllegalStateException("unable to find Parameterized property"));
-		String spelFilter = configuration.getNormalizedParameter(PROPERTY_SPEL_FILTER);
+		String parameter = configuration.getParameter(PROPERTY_SPEL_FILTER).orElse("").trim();
+		String spelFilter = parameter.isEmpty() ? null : parameter.trim();
 		ApplicationContext springContext = MartiniSpringPreProcessor.getApplicationContext();
 		return new MartiniLoopIterationListener(springContext, spelFilter);
 	}

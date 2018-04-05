@@ -16,8 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+
 import org.apache.jmeter.testelement.TestElement;
 
+@SuppressWarnings("unused")
 public interface Parameterized {
 
 	TestElement getSource();
@@ -31,17 +36,13 @@ public interface Parameterized {
 	 * @param name parameter to fetch
 	 * @return null if not present or set to null, otherwise value
 	 */
-	String getParameter(String name);
+	Optional<String> getParameter(@Nonnull String name);
 
-	/**
-	 * @param name parameter to fetch
-	 * @return null if not present or an empty string otherwise populated value
-	 */
-	String getNormalizedParameter(String name);
+	Optional<Boolean> getBooleanParameter(@Nonnull String name);
 
-	Integer getIntegerParameter(String name) throws NumberFormatException;
+	Optional<Integer> getIntegerParameter(@Nonnull String name) throws NumberFormatException;
 
-	Long getLongParameter(String name) throws NumberFormatException;
+	Optional<Long> getLongParameter(@Nonnull String name) throws NumberFormatException;
 
-	<T extends Enum<T>> T getEnumParameter(Class<T> type, String name);
+	<T extends Enum<T>> Optional<T> getEnumParameter(@Nonnull Class<T> type, @Nonnull String name);
 }
