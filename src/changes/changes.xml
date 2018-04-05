@@ -10,6 +10,12 @@
 	</properties>
 
 	<body>
+		<release version="2.2.1" date="2018-04-05" description="Release 2.2.1">
+			<action dev="pcurich" type="add">
+				Class guru.qas.martini.jmeter.sampler.MartiniSamplerClient now calls
+				setupTest(JavaSamplerContext) on its delegate.
+			</action>
+		</release>
 		<release version="2.2.0" date="2018-04-05" description="Release 2.2.0">
 			<action dev="pcurich" type="add">
 				Class guru.qas.martini.jmeter.Parameterized now returns Optional objects and

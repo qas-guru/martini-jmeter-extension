@@ -72,6 +72,7 @@ public class MartiniSamplerClient implements Serializable, Interruptible, JavaSa
 		assertBeanIdentified(context, name, type);
 		delegate = SpringBeanUtil.getBean(name, type, JavaSamplerClient.class);
 		asInterruptible = Interruptible.class.isInstance(delegate) ? Interruptible.class.cast(delegate) : null;
+		delegate.setupTest(context);
 	}
 
 	protected void assertBeanIdentified(JavaSamplerContext context, String name, String type) {
