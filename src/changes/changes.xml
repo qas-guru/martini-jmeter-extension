@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="2.4.0" date="2018-04-30" description="Release 2.4.0">
+			<action dev="pcurich" type="add">
+				New MartiniBeanSampler interfaces/support.
+			</action>
+		</release>
 		<release version="2.3.0" date="2018-04-20" description="Release 2.3.0">
 			<action dev="pcurich" type="update">
 				Updating martini-core dependency version.

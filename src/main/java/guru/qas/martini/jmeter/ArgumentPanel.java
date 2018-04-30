@@ -62,6 +62,7 @@ import org.apache.jorphan.reflect.Functor;
  * arguments (or parameters) are usually used to provide configuration values
  * for some other component.
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 
 	private static final long serialVersionUID = 240L;
@@ -398,26 +399,27 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if (!disableButtons) {
 			String action = e.getActionCommand();
-			if (action.equals(DELETE)) {
-				deleteArgument();
-			}
-			else if (action.equals(ADD)) {
-				addArgument();
-			}
-			else if (action.equals(ADD_FROM_CLIPBOARD)) {
-				addFromClipboard();
-			}
-			else if (action.equals(UP)) {
-				moveUp();
-			}
-			else if (action.equals(DOWN)) {
-				moveDown();
-			}
-			else if (action.equals(DETAIL)) {
-				showDetail();
+			switch (action) {
+				case DELETE:
+					deleteArgument();
+					break;
+				case ADD:
+					addArgument();
+					break;
+				case ADD_FROM_CLIPBOARD:
+					addFromClipboard();
+					break;
+				case UP:
+					moveUp();
+					break;
+				case DOWN:
+					moveDown();
+					break;
+				case DETAIL:
+					showDetail();
+					break;
 			}
 		}
-
 	}
 
 	/**
@@ -624,7 +626,7 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 	 * @return a new Argument object
 	 */
 	protected Argument makeNewArgument() {
-		return new Argument("", ""); // $NON-NLS-1$ // $NON-NLS-2$
+		return new Argument("", "", ""); // $NON-NLS-1$ // $NON-NLS-2$
 	}
 
 	/**
@@ -641,30 +643,17 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 	 */
 	protected void initializeTableModel() {
 		if (tableModel == null) {
-			if (standalone) {
-				tableModel = new ObjectTableModel(new String[]{COLUMN_RESOURCE_NAMES_0, COLUMN_RESOURCE_NAMES_1, COLUMN_RESOURCE_NAMES_2},
-					Argument.class,
-					new Functor[]{
-						new Functor("getName"), // $NON-NLS-1$
-						new Functor("getValue"),  // $NON-NLS-1$
-						new Functor("getDescription")},  // $NON-NLS-1$
-					new Functor[]{
-						new Functor("setName"), // $NON-NLS-1$
-						new Functor("setValue"), // $NON-NLS-1$
-						new Functor("setDescription")},  // $NON-NLS-1$
-					new Class[]{String.class, String.class, String.class});
-			}
-			else {
-				tableModel = new ObjectTableModel(new String[]{COLUMN_RESOURCE_NAMES_0, COLUMN_RESOURCE_NAMES_1},
-					Argument.class,
-					new Functor[]{
-						new Functor("getName"), // $NON-NLS-1$
-						new Functor("getValue")},  // $NON-NLS-1$
-					new Functor[]{
-						new Functor("setName"), // $NON-NLS-1$
-						new Functor("setValue")}, // $NON-NLS-1$
-					new Class[]{String.class, String.class});
-			}
+			tableModel = new ObjectTableModel(new String[]{COLUMN_RESOURCE_NAMES_0, COLUMN_RESOURCE_NAMES_1, COLUMN_RESOURCE_NAMES_2},
+				Argument.class,
+				new Functor[]{
+					new Functor("getName"), // $NON-NLS-1$
+					new Functor("getValue"),  // $NON-NLS-1$
+					new Functor("getDescription")},  // $NON-NLS-1$
+				new Functor[]{
+					new Functor("setName"), // $NON-NLS-1$
+					new Functor("setValue"), // $NON-NLS-1$
+					new Functor("setDescription")},  // $NON-NLS-1$
+				new Class[]{String.class, String.class, String.class});
 		}
 	}
 
