@@ -23,16 +23,16 @@ import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 
-import guru.qas.martini.jmeter.sampler.MartiniBeanSampler;
-
-import static guru.qas.martini.jmeter.sampler.MartiniBeanSampler.*;
-
 /**
  * Modeled after JavaConfig.
  */
 public class MartiniBeanConfig extends ConfigTestElement implements Serializable {
 
 	private static final long serialVersionUID = -6043459626018958853L;
+
+	public static final String PROPERTY_ARGUMENTS = "martini.bean.arguments";
+	public static final String ARGUMENT_BEAN_NAME = "martini.bean.name";
+	public static final String ARGUMENT_BEAN_TYPE = "martini.bean.type";
 
 	public MartiniBeanConfig() {
 		setArguments(new Arguments());
@@ -44,7 +44,7 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 	}
 
 	public Arguments getArguments() {
-		JMeterProperty property = getProperty(MartiniBeanSampler.PROPERTY_ARGUMENTS);
+		JMeterProperty property = getProperty(PROPERTY_ARGUMENTS);
 		Object o = property.getObjectValue();
 		return Arguments.class.isInstance(o) ? Arguments.class.cast(o) : null;
 	}

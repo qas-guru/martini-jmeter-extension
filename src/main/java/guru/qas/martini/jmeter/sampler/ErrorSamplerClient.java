@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * Modeled after JavaSamplerClient.ErrorSamplerClient
  */
 @SuppressWarnings("WeakerAccess")
-public class ErrorSamplerClient extends AbstractJavaSamplerClient implements MartiniBeanSamplerClient {
+public class ErrorSamplerClient extends AbstractJavaSamplerClient {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ErrorSamplerClient.class);
 

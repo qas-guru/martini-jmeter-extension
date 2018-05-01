@@ -18,6 +18,7 @@ package guru.qas.martini.jmeter.sampler.gui;
 
 import java.awt.BorderLayout;
 
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.util.JMeterUtils;
@@ -77,15 +78,19 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 	@Override
 	public void modifyTestElement(TestElement element) {
 		element.clear();
-		MartiniBeanConfig config = configurationPanel.createTestElement();
 		configureTestElement(element);
-		element.addTestElement(config);
+		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
+		MartiniBeanConfig config = configurationPanel.createTestElement();
+		Arguments arguments = config.getArguments();
+		sampler.setArguments(arguments);
 	}
 
 	@Override
-	public void configure(TestElement el) {
-		super.configure(el);
-		configurationPanel.configure(el);
+	public void configure(TestElement element) {
+		super.configure(element);
+		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
+		Arguments arguments = sampler.getArguments();
+		configurationPanel.setConfiguration(arguments);
 	}
 
 	@Override

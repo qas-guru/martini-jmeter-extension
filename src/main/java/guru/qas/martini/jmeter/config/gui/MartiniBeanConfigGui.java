@@ -37,6 +37,7 @@ import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.AbstractConfigGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
+import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.util.JMeterUtils;
@@ -50,7 +51,6 @@ import com.google.common.collect.Lists;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
-import guru.qas.martini.jmeter.sampler.MartiniBeanSamplerClient;
 
 /**
  * Modeled after JavaConfigGui.
@@ -118,7 +118,7 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 	protected SortedSet<String> getBeanImplementations() {
 		final SortedSet<String> implementations = new TreeSet<>();
 		try {
-			List<MartiniBeanSamplerClient> candidates = getRegisteredClients();
+			List<JavaSamplerClient> candidates = getRegisteredClients();
 			candidates.forEach(s -> {
 				String className = s.getClass().getName();
 				implementations.add(className);
@@ -130,8 +130,8 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 		return implementations;
 	}
 
-	protected List<MartiniBeanSamplerClient> getRegisteredClients() {
-		ServiceLoader<MartiniBeanSamplerClient> serviceLoader = ServiceLoader.load(MartiniBeanSamplerClient.class);
+	protected List<JavaSamplerClient> getRegisteredClients() {
+		ServiceLoader<JavaSamplerClient> serviceLoader = ServiceLoader.load(JavaSamplerClient.class);
 		return Lists.newArrayList(serviceLoader.iterator());
 	}
 
@@ -142,13 +142,20 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 		}
 	}
 
-	protected MartiniBeanSamplerClient getConfiguredClientInstance() {
+	public void setConfiguration(Arguments arguments) {
+		Map<String, String> index = arguments.getArgumentsAsMap();
+		String type = index.get(MartiniBeanConfig.ARGUMENT_BEAN_TYPE);
+		argumentPanel.configure(arguments);
+		implementationChoice.setText(type);
+	}
+
+	protected JavaSamplerClient getConfiguredClientInstance() {
 		String text = implementationChoice.getText();
 		String className = null == text ? null : text.trim();
 
-		MartiniBeanSamplerClient client = null;
+		JavaSamplerClient client = null;
 		if (null != className && !className.isEmpty()) {
-			List<MartiniBeanSamplerClient> candidates = getRegisteredClients();
+			List<JavaSamplerClient> candidates = getRegisteredClients();
 			client = candidates.stream()
 				.filter(s -> className.equals(s.getClass().getName()))
 				.findFirst()
@@ -161,7 +168,7 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 		String className = implementationChoice.getText().trim();
 		try {
 			Arguments updated = new Arguments();
-			MartiniBeanSamplerClient client = getConfiguredClientInstance();
+			JavaSamplerClient client = getConfiguredClientInstance();
 			if (null != client) {
 				Arguments current = new Arguments();
 				argumentPanel.modifyTestElement(current);

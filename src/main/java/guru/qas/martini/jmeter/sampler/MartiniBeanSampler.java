@@ -25,6 +25,7 @@ import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.config.gui.AbstractConfigGui;
 import org.apache.jmeter.config.gui.SimpleConfigGui;
 import org.apache.jmeter.protocol.java.config.gui.JavaConfigGui;
+import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
@@ -42,6 +43,8 @@ import com.google.common.collect.ImmutableSet;
 import guru.qas.martini.jmeter.SpringBeanUtil;
 import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui;
 
+import static guru.qas.martini.jmeter.config.MartiniBeanConfig.*;
+
 /**
  * Modeled after JavaSampler.
  */
@@ -52,17 +55,14 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanSampler.class);
 
-	public static final String PROPERTY_ARGUMENTS = "martini.bean.arguments";
-	public static final String ARGUMENT_BEAN_NAME = "martini.bean.name";
-	public static final String ARGUMENT_BEAN_TYPE = "martini.bean.type";
-
 	protected static final ImmutableSet<Class<? extends AbstractConfigGui>> GUIS = ImmutableSet.of(
 		MartiniBeanConfigGui.class, JavaConfigGui.class, SimpleConfigGui.class);
 
-	private transient AtomicReference<MartiniBeanSamplerClient> delegateRef;
+	private transient AtomicReference<JavaSamplerClient> delegateRef;
 	private transient AtomicReference<JavaSamplerContext> contextRef;
 
 	public MartiniBeanSampler() {
+		super();
 		delegateRef = new AtomicReference<>();
 		contextRef = new AtomicReference<>();
 		setArguments(new Arguments());
@@ -123,16 +123,16 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 
 	@Override
 	public void testStarted() {
-		MartiniBeanSamplerClient delegate = getDelegate();
+		JavaSamplerClient delegate = getDelegate();
 		TestStateListener listener = getAs(TestStateListener.class, delegate);
 		if (null != listener) {
-			safelyRun(listener::testStarted, "");
+			safelyRun(listener::testStarted, "unable to execute testStarted() on delegate " + delegate);
 		}
 	}
 
 	@Override
 	public void testStarted(String host) {
-		MartiniBeanSamplerClient delegate = getDelegate();
+		JavaSamplerClient delegate = getDelegate();
 		TestStateListener listener = getAs(TestStateListener.class, delegate);
 		if (null != listener) {
 			Runnable runnable = () -> listener.testStarted(host);
@@ -149,13 +149,13 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 		}
 	}
 
-	private MartiniBeanSamplerClient getDelegate() {
-		MartiniBeanSamplerClient delegate = delegateRef.get();
+	private JavaSamplerClient getDelegate() {
+		JavaSamplerClient delegate = delegateRef.get();
 		if (null == delegate) {
 			String beanName = getBeanName();
 			String beanType = getBeanType();
 			try {
-				delegate = SpringBeanUtil.getBean(beanName, beanType, MartiniBeanSamplerClient.class);
+				delegate = SpringBeanUtil.getBean(beanName, beanType, JavaSamplerClient.class);
 			}
 			catch (Exception e) {
 				LOGGER.error(
@@ -173,7 +173,7 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 
 	@Override
 	public SampleResult sample(Entry entry) {
-		MartiniBeanSamplerClient delegate = getDelegate();
+		JavaSamplerClient delegate = getDelegate();
 		JavaSamplerContext context = getJavaSamplerContext();
 
 		delegate.setupTest(context);
