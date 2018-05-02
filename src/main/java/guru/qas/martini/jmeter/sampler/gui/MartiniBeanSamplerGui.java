@@ -83,6 +83,8 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 		MartiniBeanConfig config = configurationPanel.createTestElement();
 		Arguments arguments = config.getArguments();
 		sampler.setArguments(arguments);
+		String beanType = config.getBeanType();
+		sampler.setBeanType(beanType);
 	}
 
 	@Override
@@ -91,6 +93,8 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
 		Arguments arguments = sampler.getArguments();
 		configurationPanel.setConfiguration(arguments);
+		String beanType = sampler.getBeanType();
+		configurationPanel.setBeanType(beanType);
 	}
 
 	@Override

@@ -30,12 +30,20 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 
 	private static final long serialVersionUID = -6043459626018958853L;
 
+	public static final String PROPERTY_BEAN_TYPE = "martini.bean.type";
 	public static final String PROPERTY_ARGUMENTS = "martini.bean.arguments";
 	public static final String ARGUMENT_BEAN_NAME = "martini.bean.name";
-	public static final String ARGUMENT_BEAN_TYPE = "martini.bean.type";
 
 	public MartiniBeanConfig() {
 		setArguments(new Arguments());
+	}
+
+	public void setBeanType(String type) {
+		setProperty(PROPERTY_BEAN_TYPE, type);
+	}
+
+	public String getBeanType() {
+		return super.getPropertyAsString(PROPERTY_BEAN_TYPE);
 	}
 
 	public void setArguments(Arguments args) {

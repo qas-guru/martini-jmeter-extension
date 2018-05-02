@@ -125,7 +125,7 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 			});
 		}
 		catch (Exception e) {
-			LOGGER.warn("unable to find MartiniBeanSamplerClient implementations", e);
+			LOGGER.warn("unable to find JavaSamplerClient implementations registered with ServiceLoader", e);
 		}
 		return implementations;
 	}
@@ -144,28 +144,30 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 
 	public void setConfiguration(Arguments arguments) {
 		Map<String, String> index = arguments.getArgumentsAsMap();
-		String type = index.get(MartiniBeanConfig.ARGUMENT_BEAN_TYPE);
 		argumentPanel.configure(arguments);
-		implementationChoice.setText(type);
+	}
+
+	public void setBeanType(String beanType) {
+		implementationChoice.setText(beanType);
 	}
 
 	protected JavaSamplerClient getConfiguredClientInstance() {
-		String text = implementationChoice.getText();
-		String className = null == text ? null : text.trim();
-
-		JavaSamplerClient client = null;
+		String className = implementationChoice.getText();
+		JavaSamplerClient instance = null;
 		if (null != className && !className.isEmpty()) {
-			List<JavaSamplerClient> candidates = getRegisteredClients();
-			client = candidates.stream()
-				.filter(s -> className.equals(s.getClass().getName()))
-				.findFirst()
-				.orElseThrow(() -> new IllegalStateException("no class of type found in ServiceLoader: " + className));
+			try {
+				Class<?> implementation = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+				Object o = implementation.newInstance();
+				instance = JavaSamplerClient.class.cast(o);
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("unable to load class of type " + className, e);
+			}
 		}
-		return client;
+		return instance;
 	}
 
 	protected void configureClassName() {
-		String className = implementationChoice.getText().trim();
 		try {
 			Arguments updated = new Arguments();
 			JavaSamplerClient client = getConfiguredClientInstance();
@@ -202,6 +204,7 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 			warningLabel.setVisible(false);
 		}
 		catch (Exception e) {
+			String className = implementationChoice.getText().trim();
 			LOGGER.error("Error getting argument list for " + className, e);
 			warningLabel.setVisible(true);
 		}
@@ -234,6 +237,9 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 	public void modifyTestElement(TestElement config) {
 		configureTestElement(config);
 		Arguments arguments = Arguments.class.cast(argumentPanel.createTestElement());
-		MartiniBeanConfig.class.cast(config).setArguments(arguments);
+		MartiniBeanConfig beanConfig = MartiniBeanConfig.class.cast(config);
+		beanConfig.setArguments(arguments);
+		String beanType = implementationChoice.getText();
+		beanConfig.setBeanType(beanType);
 	}
 }
