@@ -31,8 +31,12 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -51,11 +55,18 @@ import org.apache.jmeter.config.gui.AbstractConfigGui;
 import org.apache.jmeter.config.gui.RowDetailDialog;
 import org.apache.jmeter.gui.util.HeaderAsPropertyRenderer;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.GuiUtils;
 import org.apache.jorphan.gui.ObjectTableModel;
 import org.apache.jorphan.reflect.Functor;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import guru.qas.martini.jmeter.json.ArgumentDeserializer;
+import guru.qas.martini.jmeter.json.ArgumentSerializer;
+import guru.qas.martini.jmeter.json.ArgumentsDeserializer;
+import guru.qas.martini.jmeter.json.ArgumentsSerializer;
 
 /**
  * A GUI panel allowing the user to enter name-value argument pairs. These
@@ -174,6 +185,16 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 
 	public static final String COLUMN_RESOURCE_NAMES_2 = "description"; // $NON-NLS-1$
 
+	protected static final Gson SERIALIZER = new GsonBuilder()
+		.registerTypeAdapter(Argument.class, new ArgumentSerializer())
+		.registerTypeAdapter(Arguments.class, new ArgumentsSerializer())
+		.create();
+
+	protected static final Gson DESERIALIZER = new GsonBuilder()
+		.registerTypeAdapter(Argument.class, new ArgumentDeserializer())
+		.registerTypeAdapter(Arguments.class, new ArgumentsDeserializer())
+		.create();
+
 	public ArgumentPanel() {
 		this(null, null, true, true);
 	}
@@ -272,46 +293,97 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 		return args;
 	}
 
-	/* Implements JMeterGUIComponent.modifyTestElement(TestElement) */
 	@Override
-	public void modifyTestElement(TestElement args) {
+	public void modifyTestElement(TestElement element) {
 		GuiUtils.stopTableEditing(table);
-		if (args instanceof Arguments) {
-			Arguments arguments = (Arguments) args;
-			arguments.clear();
-			@SuppressWarnings("unchecked") // only contains Argument (or HTTPArgument)
-				Iterator<Argument> modelData = (Iterator<Argument>) tableModel.iterator();
-			while (modelData.hasNext()) {
-				Argument arg = modelData.next();
-				if (StringUtils.isEmpty(arg.getName()) && StringUtils.isEmpty(arg.getValue())) {
-					continue;
-				}
-				arg.setMetaData("="); // $NON-NLS-1$
-				arguments.addArgument(arg);
-			}
+		if (Arguments.class.isInstance(element)) {
+			Arguments arguments = Arguments.class.cast(element);
+			modify(arguments);
 		}
-		super.configureTestElement(args);
+		super.configureTestElement(element);
 	}
 
-	/**
-	 * A newly created component can be initialized with the contents of a Test
-	 * Element object by calling this method. The component is responsible for
-	 * querying the Test Element object for the relevant information to display
-	 * in its GUI.
-	 *
-	 * @param el the TestElement to configure
-	 */
+	protected void modify(Arguments arguments) {
+		arguments.clear();
+
+		Map<String, List<Argument>> index = new LinkedHashMap<>();
+		for (Iterator<?> i = tableModel.iterator(); i.hasNext(); ) {
+			Object o = i.next();
+			Argument argument = getArgument(o);
+			String name = argument.getName();
+			List<Argument> values = index.computeIfAbsent(name, v -> new ArrayList<>());
+			values.add(argument);
+		}
+
+		for (Map.Entry<String, List<Argument>> entry : index.entrySet()) {
+			String name = entry.getKey();
+			List<Argument> values = entry.getValue();
+			Argument argument = getArgument(name, values);
+			if (null != argument) {
+				arguments.addArgument(argument);
+			}
+		}
+	}
+
+	protected Argument getArgument(Object o) {
+		Argument argument = null;
+		if (Argument.class.isInstance(o)) {
+			argument = Argument.class.cast(o);
+			String name = argument.getName();
+			String value = argument.getValue();
+			if (!StringUtils.isEmpty(argument.getName()) && !StringUtils.isEmpty(argument.getValue())) {
+				argument.setMetaData("=");
+			}
+		}
+		return argument;
+	}
+
+	protected Argument getArgument(String name, List<Argument> arguments) {
+		Argument argument = arguments.iterator().next();
+		if (arguments.size() > 1) {
+			Argument clone = Argument.class.cast(argument.clone());
+			clone.setMetaData("multiple");
+			String json = SERIALIZER.toJson(arguments);
+			clone.setValue(json);
+			argument = clone;
+		}
+		return argument;
+	}
+
 	@Override
-	public void configure(TestElement el) {
-		super.configure(el);
-		if (el instanceof Arguments) {
+	public void configure(TestElement element) {
+		super.configure(element);
+		if (Arguments.class.isInstance(element)) {
+			Arguments arguments = Arguments.class.cast(element);
 			tableModel.clearData();
-			for (JMeterProperty jMeterProperty : (Arguments) el) {
-				Argument arg = (Argument) jMeterProperty.getObjectValue();
-				tableModel.addRow(arg);
+			int argumentCount = arguments.getArgumentCount();
+			for (int i = 0; i < argumentCount; i++) {
+				Argument argument = arguments.getArgument(i);
+				addTableRows(argument);
 			}
 		}
 		checkButtonsStatus();
+	}
+
+	protected void addTableRows(Argument argument) {
+		String metaData = argument.getMetaData();
+		if ("multiple".equals(metaData)) {
+			String json = argument.getValue();
+			Arguments arguments = DESERIALIZER.fromJson(json, Arguments.class);
+			if (null == arguments) {
+				tableModel.addRow(argument);
+			}
+			else {
+				int argumentCount = arguments.getArgumentCount();
+				for (int i = 0; i < argumentCount; i++) {
+					Argument item = arguments.getArgument(i);
+					tableModel.addRow(item);
+				}
+			}
+		}
+		else {
+			tableModel.addRow(argument);
+		}
 	}
 
 	/**
@@ -742,10 +814,7 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 		return buttonPanel;
 	}
 
-	/**
-	 * Initialize the components and layout of this component.
-	 */
-	private void init() { // WARNING: called from ctor so must not be overridden (i.e. must be private or final)
+	private void init() {
 		JPanel p = this;
 
 		if (standalone) {
