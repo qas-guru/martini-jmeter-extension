@@ -32,7 +32,7 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 
 	public static final String PROPERTY_BEAN_TYPE = "martini.bean.type";
 	public static final String PROPERTY_ARGUMENTS = "martini.bean.arguments";
-	public static final String ARGUMENT_BEAN_NAME = "martini.bean.name";
+	public static final String PROPERTY_BEAN_NAME = "martini.bean.name";
 
 	public MartiniBeanConfig() {
 		setArguments(new Arguments());

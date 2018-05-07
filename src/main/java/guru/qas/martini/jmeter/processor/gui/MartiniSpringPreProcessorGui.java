@@ -79,7 +79,7 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 		VerticalPanel panel = new VerticalPanel();
 		MessageSource messageSource = getMessageSource();
 		String text = messageSource.getMessage(key, null, key, JMeterUtils.getLocale());
-		JLabel label = Gui.getJLabel(text, 2);
+		JLabel label = Gui.getJLabel(null == text ? key : text, 2);
 		panel.add(label);
 		return panel;
 	}

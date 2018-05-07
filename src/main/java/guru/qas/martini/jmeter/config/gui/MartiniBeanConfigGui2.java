@@ -19,11 +19,13 @@ package guru.qas.martini.jmeter.config.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -37,7 +39,6 @@ import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.AbstractConfigGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
-import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.util.JMeterUtils;
@@ -46,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import guru.qas.martini.i18n.MessageSources;
@@ -56,22 +58,28 @@ import guru.qas.martini.jmeter.config.MartiniBeanConfig;
  * Modeled after JavaConfigGui.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
-public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeListener {
+public class MartiniBeanConfigGui2<T> extends AbstractConfigGui implements ChangeListener {
 
 	private static final long serialVersionUID = -308150274609539850L;
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanConfigGui.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanConfigGui2.class);
 
-	protected final boolean standalone;
+	protected Class<T> implementation;
+	protected boolean standalone;
 	protected ArgumentPanel argumentPanel;
 	protected JLabel warningLabel;
 	protected JLabeledChoice implementationChoice;
 
-	public MartiniBeanConfigGui() {
-		this(false);
+	public MartiniBeanConfigGui2() {
+		super();
 	}
 
-	public MartiniBeanConfigGui(boolean standalone) {
+	public MartiniBeanConfigGui2(Class<T> implementation) {
+		this(implementation, false);
+	}
+
+	public MartiniBeanConfigGui2(Class<T> implementation, boolean standalone) {
 		super();
+		this.implementation = implementation;
 		this.standalone = standalone;
 		init();
 	}
@@ -118,21 +126,25 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 	protected SortedSet<String> getBeanImplementations() {
 		final SortedSet<String> implementations = new TreeSet<>();
 		try {
-			List<JavaSamplerClient> candidates = getRegisteredClients(); // TODO: subclass this
+			List<T> candidates = getRegisteredCandidates();
 			candidates.forEach(s -> {
 				String className = s.getClass().getName();
 				implementations.add(className);
 			});
 		}
 		catch (Exception e) {
-			LOGGER.warn("unable to find JavaSamplerClient implementations registered with ServiceLoader", e);
+			LOGGER.warn("unable to find {} implementations registered with ServiceLoader", implementation, e);
 		}
 		return implementations;
 	}
 
-	protected List<JavaSamplerClient> getRegisteredClients() {
-		ServiceLoader<JavaSamplerClient> serviceLoader = ServiceLoader.load(JavaSamplerClient.class);
-		return Lists.newArrayList(serviceLoader.iterator());
+	protected List<T> getRegisteredCandidates() {
+		List<T> candidates = null;
+		if (null != implementation) {
+			ServiceLoader<T> serviceLoader = ServiceLoader.load(implementation);
+			candidates = Lists.newArrayList(serviceLoader.iterator());
+		}
+		return null == candidates ? ImmutableList.of() : candidates;
 	}
 
 	@Override
@@ -151,31 +163,33 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 		implementationChoice.setText(beanType);
 	}
 
-	protected JavaSamplerClient getConfiguredClientInstance() {
+	protected T getConfiguredInstance() {
 		String className = implementationChoice.getText();
-		JavaSamplerClient instance = null;
-		if (null != className && !className.isEmpty()) {
+		T configuredInstance = null;
+		if (null != implementation && null != className && !className.isEmpty()) {
 			try {
-				Class<?> implementation = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-				Object o = implementation.newInstance();
-				instance = JavaSamplerClient.class.cast(o);
+				Class<?> chosen = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+				Object o = chosen.newInstance();
+				configuredInstance = this.implementation.cast(o);
 			}
 			catch (Exception e) {
 				throw new IllegalStateException("unable to load class of type " + className, e);
 			}
 		}
-		return instance;
+		return configuredInstance;
 	}
 
 	protected void configureClassName() {
 		try {
 			Arguments updated = new Arguments();
-			JavaSamplerClient client = getConfiguredClientInstance();
-			if (null != client) {
+			T configuredInstance = getConfiguredInstance();
+			if (null != configuredInstance) {
 				Arguments current = new Arguments();
 				argumentPanel.modifyTestElement(current);
 
-				Arguments clientParameters = client.getDefaultParameters();
+				Method method = getDefaultParametersMethod();
+				Arguments clientParameters = null == method ? null : (Arguments) method.invoke(configuredInstance);
+
 				if (clientParameters != null) {
 					Map<String, String> index = current.getArgumentsAsMap();
 
@@ -208,6 +222,17 @@ public class MartiniBeanConfigGui extends AbstractConfigGui implements ChangeLis
 			LOGGER.error("Error getting argument list for " + className, e);
 			warningLabel.setVisible(true);
 		}
+	}
+
+	private Method getDefaultParametersMethod() {
+		Method[] methods = implementation.getMethods();
+
+		return Stream.of(methods)
+			.filter(m -> 0 == m.getParameterCount())
+			.filter(m -> "getDefaultParameters".equals(m.getName()))
+			.filter(m -> Arguments.class.isAssignableFrom(m.getReturnType()))
+			.findFirst()
+			.orElse(null);
 	}
 
 	@Override

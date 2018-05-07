@@ -69,7 +69,8 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		startScenario();
+		//startScenario(); // TODO: NOPE this gets called at once for ALL controllers
+		martiniResult = null;
 	}
 
 	protected void startScenario() {
@@ -91,6 +92,14 @@ public class MartiniScenarioController extends GenericController implements Test
 			eventManager = eventManagerRef.compareAndSet(null, instance) ? instance : eventManagerRef.get();
 		}
 		return eventManager;
+	}
+
+	@Override
+	public Sampler next() {
+		if (null == martiniResult) {
+			startScenario();
+		}
+		return super.next();
 	}
 
 	@Override
@@ -120,6 +129,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	@Override
 	public void testEnded() {
+		endScenario();
 		eventManagerRef.set(null);
 	}
 

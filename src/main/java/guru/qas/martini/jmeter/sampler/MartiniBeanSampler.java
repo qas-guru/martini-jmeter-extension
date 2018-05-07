@@ -89,11 +89,11 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 	}
 
 	public void setBeanName(String s) {
-		setArgument(ARGUMENT_BEAN_NAME, s);
+		setArgument(PROPERTY_BEAN_NAME, s);
 	}
 
 	public String getBeanName() {
-		return getArgument(ARGUMENT_BEAN_NAME);
+		return getArgument(PROPERTY_BEAN_NAME);
 	}
 
 	public void setBeanType(String type) {
