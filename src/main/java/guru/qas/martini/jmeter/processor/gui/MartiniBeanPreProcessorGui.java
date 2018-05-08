@@ -27,13 +27,13 @@ import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
-import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui2;
+import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui;
 import guru.qas.martini.jmeter.processor.MartiniBeanPreProcessor;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 
-	protected MartiniBeanConfigGui2<PreProcessor> configurationPanel;
+	protected MartiniBeanConfigGui<PreProcessor> configurationPanel;
 
 	public MartiniBeanPreProcessorGui() {
 		super();
@@ -44,7 +44,7 @@ public class MartiniBeanPreProcessorGui extends AbstractPreProcessorGui {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
-		configurationPanel = new MartiniBeanConfigGui2<>(PreProcessor.class, false);
+		configurationPanel = new MartiniBeanConfigGui<>(PreProcessor.class, false);
 		add(configurationPanel, BorderLayout.CENTER);
 	}
 

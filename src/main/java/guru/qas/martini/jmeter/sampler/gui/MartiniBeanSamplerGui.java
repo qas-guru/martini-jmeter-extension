@@ -19,6 +19,7 @@ package guru.qas.martini.jmeter.sampler.gui;
 import java.awt.BorderLayout;
 
 import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.util.JMeterUtils;
@@ -37,7 +38,7 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 
 	private static final long serialVersionUID = -1683323856943095659L;
 
-	protected MartiniBeanConfigGui configurationPanel;
+	protected MartiniBeanConfigGui<JavaSamplerClient> configurationPanel;
 
 	public MartiniBeanSamplerGui() {
 		super();
@@ -48,7 +49,7 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
-		configurationPanel = new MartiniBeanConfigGui(false);
+		configurationPanel = new MartiniBeanConfigGui<>(JavaSamplerClient.class, false);
 		add(configurationPanel, BorderLayout.CENTER);
 	}
 
