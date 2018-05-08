@@ -69,19 +69,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		//startScenario(); // TODO: NOPE this gets called at once for ALL controllers
 		martiniResult = null;
-	}
-
-	protected void startScenario() {
-		endScenario();
-		JMeterMartini martini = JMeterMartini.builder()
-			.setFeatureName(JMeterContextService.getContext().getThreadGroup().getName())
-			.setScenarioName(super.getName())
-			.build();
-		martiniResult = JMeterMartiniResult.builder().setJMeterMartini(martini).build();
-		EventManager eventManager = getEventManager();
-		eventManager.publishBeforeScenario(this, martiniResult);
 	}
 
 	protected EventManager getEventManager() {
@@ -100,6 +88,17 @@ public class MartiniScenarioController extends GenericController implements Test
 			startScenario();
 		}
 		return super.next();
+	}
+
+	protected void startScenario() {
+		endScenario();
+		JMeterMartini martini = JMeterMartini.builder()
+			.setFeatureName(JMeterContextService.getContext().getThreadGroup().getName())
+			.setScenarioName(super.getName())
+			.build();
+		martiniResult = JMeterMartiniResult.builder().setJMeterMartini(martini).build();
+		EventManager eventManager = getEventManager();
+		eventManager.publishBeforeScenario(this, martiniResult);
 	}
 
 	@Override
