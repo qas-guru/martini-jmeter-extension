@@ -53,16 +53,16 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 
 	private static final long serialVersionUID = 1813073201707263835L;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanSampler.class);
-
 	protected static final ImmutableSet<Class<? extends AbstractConfigGui>> GUIS = ImmutableSet.of(
 		MartiniBeanConfigGui.class, JavaConfigGui.class, SimpleConfigGui.class);
 
-	private transient AtomicReference<JavaSamplerClient> delegateRef;
-	private transient AtomicReference<JavaSamplerContext> contextRef;
+	protected transient Logger logger;
+	protected transient AtomicReference<JavaSamplerClient> delegateRef;
+	protected transient AtomicReference<JavaSamplerContext> contextRef;
 
 	public MartiniBeanSampler() {
 		super();
+		logger = LoggerFactory.getLogger(this.getClass());
 		delegateRef = new AtomicReference<>();
 		contextRef = new AtomicReference<>();
 		setArguments(new Arguments());
@@ -83,7 +83,7 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 			evaluation = GUIS.stream().anyMatch(g -> g.isAssignableFrom(implementation));
 		}
 		catch (ClassNotFoundException e) {
-			LOGGER.warn("configured GUI not available", e);
+			logger.warn("configured GUI not available", e);
 		}
 		return evaluation;
 	}
@@ -145,7 +145,7 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 			runnable.run();
 		}
 		catch (Exception e) {
-			LOGGER.warn(errorMessage, e);
+			logger.warn(errorMessage, e);
 		}
 	}
 
@@ -158,8 +158,8 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 				delegate = SpringBeanUtil.getBean(beanName, beanType, JavaSamplerClient.class);
 			}
 			catch (Exception e) {
-				LOGGER.error(
-					"{}\nerror creating bean specified by name {} and type {}", toString(), beanName, beanType, e);
+				logger.error(
+					"{}: error creating bean specified by name {} and type {}", toString(), beanName, beanType, e);
 				delegate = new ErrorSamplerClient(getClass(), toString());
 			}
 			delegate = delegateRef.compareAndSet(null, delegate) ? delegate : delegateRef.get();
@@ -217,7 +217,7 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 			evaluation = callable.call();
 		}
 		catch (Exception e) {
-			LOGGER.warn(errorMessage, e);
+			logger.warn(errorMessage, e);
 		}
 		return evaluation;
 	}
@@ -242,6 +242,7 @@ public class MartiniBeanSampler extends AbstractSampler implements TestStateList
 	}
 
 	protected void cleanup() {
+		SpringBeanUtil.destroy(getName(), delegateRef.get());
 		delegateRef.set(null);
 		contextRef.set(null);
 	}

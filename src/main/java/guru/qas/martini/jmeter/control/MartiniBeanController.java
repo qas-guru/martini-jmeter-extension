@@ -21,6 +21,7 @@ import org.apache.jmeter.control.Controller;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
+import org.springframework.beans.factory.DisposableBean;
 
 import guru.qas.martini.jmeter.DefaultParameterized;
 import guru.qas.martini.jmeter.Parameterized;

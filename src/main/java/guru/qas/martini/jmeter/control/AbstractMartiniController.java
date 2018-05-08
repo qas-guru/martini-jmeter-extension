@@ -27,6 +27,10 @@ import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.TestCompilerHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import guru.qas.martini.jmeter.SpringBeanUtil;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -35,6 +39,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
+	protected transient Logger logger;
 	protected transient Controller delegate;
 	protected transient TestStateListener asTestStateListener;
 	protected transient LoopIterationListener asLoopIterationListener;
@@ -42,6 +47,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	public AbstractMartiniController() {
 		super();
+		logger = LoggerFactory.getLogger(this.getClass());
 	}
 
 	@Override
@@ -175,6 +181,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	}
 
 	protected void releaseMembers() {
+		SpringBeanUtil.destroy(getName(), delegate);
 		delegate = null;
 		asTestStateListener = null;
 		asLoopIterationListener = null;
