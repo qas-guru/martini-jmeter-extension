@@ -17,6 +17,9 @@ limitations under the License.
 package guru.qas.martini.jmeter.control;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
+
+import javax.annotation.Nonnull;
 
 import org.apache.jmeter.control.Controller;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
@@ -26,11 +29,13 @@ import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.TestCompilerHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 
-import guru.qas.martini.jmeter.SpringBeanUtil;
+import guru.qas.martini.jmeter.Gui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -41,47 +46,71 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	protected transient Logger logger;
 	protected transient Controller delegate;
-	protected transient TestStateListener asTestStateListener;
-	protected transient LoopIterationListener asLoopIterationListener;
-	protected transient TestCompilerHelper asTestCompilerHelper;
 
 	public AbstractMartiniController() {
 		super();
-		logger = LoggerFactory.getLogger(this.getClass());
+		logger = LoggerFactory.getLogger(getClass());
 	}
 
 	@Override
 	public Object clone() {
 		AbstractMartiniController clone = AbstractMartiniController.class.cast(super.clone());
 		if (NoThreadClone.class.isInstance(delegate)) {
-			clone.cast(delegate);
+			clone.delegate = delegate;
 		}
-		else if (Cloneable.class.isInstance(delegate)) {
-			clone.cast(delegate.clone());
+		else if (Controller.class.isInstance(delegate)) {
+			clone.delegate = Controller.class.cast(delegate.clone());
 		}
 		return clone;
 	}
 
-	protected void cast(Object o) {
-		delegate = Controller.class.isInstance(o) ? Controller.class.cast(o) : null;
-		asTestStateListener = TestStateListener.class.isInstance(o) ? TestStateListener.class.cast(o) : null;
-		asLoopIterationListener = LoopIterationListener.class.isInstance(o) ? LoopIterationListener.class.cast(o) : null;
-		asTestCompilerHelper = TestCompilerHelper.class.isInstance(o) ? TestCompilerHelper.class.cast(o) : null;
-	}
-
 	@Override
 	public void testStarted() {
-		initializeDelegate();
-		if (null != asTestStateListener) {
-			asTestStateListener.testStarted();
+		try {
+			initializeDelegate();
+			TestStateListener listener = getAs(TestStateListener.class, delegate);
+			if (null != listener) {
+				listener.testStarted();
+			}
+		}
+		catch (Exception e) {
+			delegate = null;
+			this.clearTestElementChildren();
+			logger.error("{}: testStarted() failure", getName(), e);
+			Gui.reportError(this, "An error occurred during startup; see logs for details.");
+		}
+	}
+
+	protected <T> T getAs(Class<T> implementation, Object o) {
+		return implementation.isInstance(o) ? implementation.cast(o) : null;
+	}
+
+	protected void stopTestNowOnException(Runnable runnable, String message) {
+		try {
+			runnable.run();
+		}
+		catch (Exception e) {
+			this.clearTestElementChildren();
+			logger.error(message, e);
+			Gui.reportError(this, "An error occurred during startup; see logs for details.");
+			JMeterContextService.getContext().getEngine().stopTest(true);
 		}
 	}
 
 	protected void initializeDelegate() {
-		cast(checkNotNull(createDelegate()));
+		try {
+			delegate = createDelegate();
+			checkNotNull(delegate, "method createDelegate() returned null");
+			delegate.setName(getName());
+			delegate.setComment(getComment());
+		}
+		catch (Exception e) {
+			throw new RuntimeException("unable to initialize delegate", e);
+		}
 	}
 
-	protected abstract Controller createDelegate();
+	@Nonnull
+	protected abstract Controller createDelegate() throws Exception;
 
 	@Override
 	public void addIterationListener(LoopIterationListener listener) {
@@ -92,19 +121,19 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void addTestElement(TestElement element) {
-		if (null != asTestCompilerHelper) {
-			asTestCompilerHelper.addTestElementOnce(element);
+		if (null != delegate) {
+			delegate.addTestElement(element);
 		}
 	}
 
 	@Override
 	public boolean addTestElementOnce(TestElement child) {
+		TestCompilerHelper helper = getAs(TestCompilerHelper.class, delegate);
 		boolean evaluation = false;
-		if (null != asTestCompilerHelper) {
-			evaluation = asTestCompilerHelper.addTestElementOnce(child);
+		if (null != helper) {
+			evaluation = helper.addTestElementOnce(child);
 		}
 		else if (null != delegate) {
-			evaluation = true;
 			delegate.addTestElement(child);
 		}
 		return evaluation;
@@ -112,78 +141,123 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void testStarted(String host) {
-		initializeDelegate();
-		if (null != asTestStateListener) {
-			asTestStateListener.testStarted(host);
+		try {
+			initializeDelegate();
+			TestStateListener listener = getAs(TestStateListener.class, delegate);
+			if (null != listener) {
+				listener.testStarted(host);
+			}
+		}
+		catch (Exception e) {
+			delegate = null;
+			this.clearTestElementChildren();
+			logger.error("{}: testStarted(String) failure", getName(), e);
+			Gui.reportError(this, "An error occurred during startup; see logs for details.");
 		}
 	}
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		if (null != asLoopIterationListener) {
-			asLoopIterationListener.iterationStart(event);
-		}
+		stopTestNowOnException(() -> {
+			LoopIterationListener listener = getAs(LoopIterationListener.class, delegate);
+			if (null != listener) {
+				listener.iterationStart(event);
+			}
+		}, String.format("%s: %s.iterationStart(LoopIterationEvent) failure", getName(), delegate));
 	}
 
 	@Override
 	public void initialize() {
 		if (null != delegate) {
-			delegate.initialize();
+			stopTestNowOnException(() -> delegate.initialize(),
+				String.format("%s: %s.initialize() failure", getName(), delegate));
 		}
 	}
 
 	@Override
 	public Sampler next() {
-		return null == delegate ? null : delegate.next();
+		return null == delegate ? null : stopTestNowOnException(() -> delegate.next(),
+			String.format("%s: %s.next() failure", getName(), delegate));
+	}
+
+	protected <T> T stopTestNowOnException(Callable<T> callable, String message) {
+		T evaluation = null;
+		try {
+			evaluation = callable.call();
+		}
+		catch (Exception e) {
+			this.clearTestElementChildren();
+			logger.error(message, e);
+			Gui.reportError(this, "An error occurred during startup; see logs for details.");
+			JMeterContextService.getContext().getEngine().stopTest(true);
+		}
+		return evaluation;
 	}
 
 	@Override
 	public boolean isDone() {
-		return null == delegate || delegate.isDone();
+		return null == delegate ? true : stopTestNowOnException(() -> delegate.isDone(),
+			String.format("%s: %s.isDone() failure", getName(), delegate));
 	}
 
 	@Override
 	public void triggerEndOfLoop() {
 		if (null != delegate) {
-			delegate.triggerEndOfLoop();
+			stopTestNowOnException(() -> delegate.triggerEndOfLoop(),
+				String.format("%s: %s.triggerEndOfLoop() failure", getName(), delegate));
 		}
 	}
 
 	@Override
 	public void removeIterationListener(LoopIterationListener listener) {
 		if (null != delegate) {
-			delegate.removeIterationListener(listener);
+			stopTestNowOnException(() -> delegate.removeIterationListener(listener),
+				String.format("%s: %s.removeIterationListener(LoopIterationListener) failure", getName(), delegate));
 		}
 	}
 
 	@Override
 	public void testEnded() {
 		try {
-			if (null != asTestStateListener) {
-				asTestStateListener.testEnded();
+			TestStateListener listener = getAs(TestStateListener.class, delegate);
+			if (null != listener) {
+				listener.testEnded();
 			}
 		}
+		catch (Exception e) {
+			logger.warn("{}: unable to execute testEnded on delegate {}", getName(), delegate, e);
+		}
 		finally {
-			releaseMembers();
+			destroyDelegate();
 		}
 	}
 
 	@Override
 	public void testEnded(String host) {
 		try {
-			if (null != asTestStateListener) {
-				asTestStateListener.testEnded(host);
+			TestStateListener listener = getAs(TestStateListener.class, delegate);
+			if (null != listener) {
+				listener.testEnded(host);
 			}
 		}
+		catch (Exception e) {
+			logger.warn("{}: unable to execute testEnded(String) on delegate {}", getName(), delegate, e);
+		}
 		finally {
-			releaseMembers();
+			destroyDelegate();
 		}
 	}
 
-	protected void releaseMembers() {
-		SpringBeanUtil.destroy(getName(), delegate);
+	protected void destroyDelegate() {
+		DisposableBean disposable = getAs(DisposableBean.class, delegate);
+		if (null != disposable) {
+			try {
+				disposable.destroy();
+			}
+			catch (Exception e) {
+				logger.warn("{}: unable to execute destroy() on delegate {}", getName(), delegate, e);
+			}
+		}
 		delegate = null;
-		asTestStateListener = null;
-		asLoopIterationListener = null;
 	}
 }

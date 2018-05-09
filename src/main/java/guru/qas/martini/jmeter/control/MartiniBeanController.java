@@ -16,68 +16,106 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.control;
 
-import org.apache.jmeter.config.Arguments;
-import org.apache.jmeter.control.Controller;
-import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.ObjectProperty;
-import org.apache.jmeter.testelement.property.TestElementProperty;
-import org.springframework.beans.factory.DisposableBean;
+import java.util.Collection;
+import java.util.Map;
 
-import guru.qas.martini.jmeter.DefaultParameterized;
-import guru.qas.martini.jmeter.Parameterized;
+import javax.annotation.Nonnull;
+
+import org.apache.jmeter.config.Argument;
+import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.config.gui.AbstractConfigGui;
+import org.apache.jmeter.config.gui.SimpleConfigGui;
+import org.apache.jmeter.control.Controller;
+import org.apache.jmeter.protocol.java.config.gui.JavaConfigGui;
+import org.apache.jmeter.testelement.property.CollectionProperty;
+import org.apache.jmeter.testelement.property.JMeterProperty;
+import org.apache.jmeter.testelement.property.TestElementProperty;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+
 import guru.qas.martini.jmeter.SpringBeanUtil;
+import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui;
+
+import static guru.qas.martini.jmeter.config.MartiniBeanConfig.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanController extends AbstractMartiniController {
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
-	protected static final String PROPERTY_BEAN_NAME = "martini.bean.controller.bean.name";
-	protected static final String PROPERTY_BEAN_TYPE = "martini.bean.controller.bean.type";
-	protected static final String PROPERTY_ARGUMENTS = "martini.bean.controller.arguments";
+	protected static final ImmutableSet<Class<? extends AbstractConfigGui>> GUIS = ImmutableSet.of(
+		MartiniBeanConfigGui.class, JavaConfigGui.class, SimpleConfigGui.class);
 
 	public MartiniBeanController() {
 		super();
+		setArguments(new Arguments());
+	}
+
+	public void setArguments(Arguments arguments) {
+		TestElementProperty property = new TestElementProperty(PROPERTY_ARGUMENTS, arguments);
+		setProperty(property);
 	}
 
 	public void setBeanName(String s) {
-		super.setProperty(PROPERTY_BEAN_NAME, null == s ? null : s.trim());
+		Arguments arguments = getArguments();
+		arguments.removeArgument(PROPERTY_BEAN_NAME);
+		arguments.addArgument(PROPERTY_BEAN_NAME, s);
 	}
 
 	public String getBeanName() {
-		return super.getPropertyAsString(PROPERTY_BEAN_NAME).trim();
+		Arguments arguments = getArguments();
+		Map<String, String> index = arguments.getArgumentsAsMap();
+		return index.get(PROPERTY_BEAN_NAME);
 	}
 
-	public void setBeanType(String s) {
-		super.setProperty(PROPERTY_BEAN_TYPE, null == s ? null : s.trim());
+	public void setBeanType(String type) {
+		setProperty(PROPERTY_BEAN_TYPE, type);
 	}
 
 	public String getBeanType() {
-		return super.getPropertyAsString(PROPERTY_BEAN_TYPE.trim());
-	}
-
-	public void setArguments(Arguments a) {
-		TestElementProperty property = new TestElementProperty(PROPERTY_ARGUMENTS, a);
-		super.setProperty(property);
+		return getPropertyAsString(PROPERTY_BEAN_TYPE);
 	}
 
 	public Arguments getArguments() {
-		JMeterProperty property = super.getProperty(PROPERTY_ARGUMENTS);
+		JMeterProperty property = getProperty(PROPERTY_ARGUMENTS);
 		Object o = property.getObjectValue();
 		return Arguments.class.isInstance(o) ? Arguments.class.cast(o) : null;
 	}
 
-	protected void initializeDelegate() {
-		super.initializeDelegate();
+	@Override
+	@Nonnull
+	protected Controller createDelegate() {
+		Controller delegate = createDelegateController();
 		Arguments parameters = getArguments();
-		DefaultParameterized parameterized = new DefaultParameterized(this, null == parameters ? new Arguments() : parameters);
-		ObjectProperty property = new ObjectProperty(Parameterized.class.getName(), parameterized);
-		delegate.setProperty(property);
-		delegate.setTemporary(property);
+
+		Multimap<String, String> index = ArrayListMultimap.create();
+		int size = parameters.getArgumentCount();
+		for (int i = 0; i < size; i++) {
+			Argument argument = parameters.getArgument(i);
+			String name = argument.getName();
+			String value = argument.getValue();
+			if (null != name && null != value) {
+				index.put(name, value);
+			}
+		}
+
+		index.keySet().forEach(k -> {
+			Collection<String> values = index.get(k);
+			if (1 == values.size()) {
+				delegate.setProperty(k, Iterables.getOnlyElement(values));
+			}
+			else {
+				CollectionProperty property = new CollectionProperty(k, values);
+				delegate.setProperty(property);
+			}
+		});
+		return delegate;
 	}
 
-	@Override
-	protected Controller createDelegate() {
+	protected Controller createDelegateController() {
 		String beanName = getBeanName();
 		String beanType = getBeanType();
 		return SpringBeanUtil.getBean(beanName, beanType, Controller.class);

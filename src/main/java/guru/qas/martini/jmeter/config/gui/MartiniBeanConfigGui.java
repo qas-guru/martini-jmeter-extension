@@ -19,6 +19,7 @@ package guru.qas.martini.jmeter.config.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,8 @@ import com.google.common.collect.Lists;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
+
+import static guru.qas.martini.jmeter.config.MartiniBeanConfig.PROPERTY_BEAN_NAME;
 
 /**
  * Modeled after JavaConfigGui.
@@ -187,31 +190,27 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 				Arguments current = new Arguments();
 				argumentPanel.modifyTestElement(current);
 
-				Method method = getDefaultParametersMethod();
-				Arguments clientParameters = null == method ? null : (Arguments) method.invoke(configuredInstance);
+				Arguments parameters = getDefaultParameters(configuredInstance);
 
-				if (clientParameters != null) {
-					Map<String, String> index = current.getArgumentsAsMap();
+				Map<String, String> index = current.getArgumentsAsMap();
+				for (JMeterProperty jMeterProperty : parameters.getArguments()) {
+					Argument arg = (Argument) jMeterProperty.getObjectValue();
+					String name = arg.getName();
+					String value = arg.getValue();
+					String metadata = arg.getMetaData();
+					String description = arg.getDescription();
 
-					for (JMeterProperty jMeterProperty : clientParameters.getArguments()) {
-						Argument arg = (Argument) jMeterProperty.getObjectValue();
-						String name = arg.getName();
-						String value = arg.getValue();
-						String metadata = arg.getMetaData();
-						String description = arg.getDescription();
-
-						// If a user has set parameters in one test, and then
-						// selects a different test which supports the same
-						// parameters, those parameters should have the same
-						// values that they did in the original test.
-						if (index.containsKey(name)) {
-							String newVal = index.get(name);
-							if (newVal != null && newVal.length() > 0) {
-								value = newVal;
-							}
+					// If a user has set parameters in one test, and then
+					// selects a different test which supports the same
+					// parameters, those parameters should have the same
+					// values that they did in the original test.
+					if (index.containsKey(name)) {
+						String newVal = index.get(name);
+						if (newVal != null && newVal.length() > 0) {
+							value = newVal;
 						}
-						updated.addArgument(name, value, metadata, description);
 					}
+					updated.addArgument(name, value, metadata, description);
 				}
 			}
 			argumentPanel.configure(updated);
@@ -224,8 +223,26 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		}
 	}
 
-	private Method getDefaultParametersMethod() {
-		Method[] methods = implementation.getMethods();
+	protected Arguments getDefaultParameters(Object configuredInstance) throws InvocationTargetException, IllegalAccessException {
+		Method method = getDefaultParametersMethod(configuredInstance);
+		Arguments configured = null == method ? new Arguments() : (Arguments) method.invoke(configuredInstance);
+
+		Arguments parameters = new Arguments();
+		if (!configured.getArgumentsAsMap().containsKey(PROPERTY_BEAN_NAME)) {
+			parameters.addArgument(PROPERTY_BEAN_NAME, null, null, "(optional) Spring @Qualifier value");
+		}
+
+		int argumentCount = configured.getArgumentCount();
+		for (int i = 0; i < argumentCount; i++) {
+			Argument argument = configured.getArgument(i);
+			parameters.addArgument(argument);
+		}
+
+		return parameters;
+	}
+
+	protected Method getDefaultParametersMethod(Object o) {
+		Method[] methods = o.getClass().getMethods();
 
 		return Stream.of(methods)
 			.filter(m -> 0 == m.getParameterCount())

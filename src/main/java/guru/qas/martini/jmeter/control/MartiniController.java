@@ -16,6 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.control;
 
+import javax.annotation.Nonnull;
+
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.control.Controller;
 
@@ -43,6 +45,7 @@ public class MartiniController extends AbstractMartiniController {
 	}
 
 	@Override
+	@Nonnull
 	protected Controller createDelegate() {
 		return new DelegateMartiniController();
 	}
