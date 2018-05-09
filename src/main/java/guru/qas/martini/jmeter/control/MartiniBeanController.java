@@ -23,21 +23,16 @@ import javax.annotation.Nonnull;
 
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
-import org.apache.jmeter.config.gui.AbstractConfigGui;
-import org.apache.jmeter.config.gui.SimpleConfigGui;
 import org.apache.jmeter.control.Controller;
-import org.apache.jmeter.protocol.java.config.gui.JavaConfigGui;
 import org.apache.jmeter.testelement.property.CollectionProperty;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
 import guru.qas.martini.jmeter.SpringBeanUtil;
-import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui;
 
 import static guru.qas.martini.jmeter.config.MartiniBeanConfig.*;
 
@@ -46,11 +41,17 @@ public class MartiniBeanController extends AbstractMartiniController {
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
-	protected static final ImmutableSet<Class<? extends AbstractConfigGui>> GUIS = ImmutableSet.of(
-		MartiniBeanConfigGui.class, JavaConfigGui.class, SimpleConfigGui.class);
-
 	public MartiniBeanController() {
 		super();
+		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
+	}
+
+	private void init() {
 		setArguments(new Arguments());
 	}
 

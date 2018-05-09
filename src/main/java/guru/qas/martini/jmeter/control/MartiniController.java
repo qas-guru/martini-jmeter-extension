@@ -47,15 +47,11 @@ public class MartiniController extends AbstractMartiniController {
 	@Override
 	@Nonnull
 	protected Controller createDelegate() {
-		return new DelegateMartiniController();
-	}
-
-	protected void initializeDelegate() {
-		super.initializeDelegate();
-
+		DelegateMartiniController delegate = new DelegateMartiniController();
 		Arguments arguments = new Arguments();
 		arguments.addArgument(PROPERTY_SPEL_FILTER, getSpelFilter());
 		DefaultParameterized parameterized = new DefaultParameterized(this, arguments);
 		JMeterContextUtil.setTemporaryProperty(delegate, parameterized, Parameterized.class);
+		return delegate;
 	}
 }

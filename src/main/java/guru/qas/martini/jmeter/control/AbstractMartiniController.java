@@ -18,6 +18,7 @@ package guru.qas.martini.jmeter.control;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
@@ -45,21 +46,33 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	private static final long serialVersionUID = -3785811213682702141L;
 
 	protected transient Logger logger;
-	protected transient Controller delegate;
+	protected transient AtomicReference<Controller> delegateRef;
 
 	public AbstractMartiniController() {
 		super();
+		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
+	}
+
+	private void init() {
 		logger = LoggerFactory.getLogger(getClass());
+		delegateRef = new AtomicReference<>();
 	}
 
 	@Override
 	public Object clone() {
 		AbstractMartiniController clone = AbstractMartiniController.class.cast(super.clone());
+		Controller delegate = delegateRef.get();
 		if (NoThreadClone.class.isInstance(delegate)) {
-			clone.delegate = delegate;
+			clone.delegateRef = delegateRef;
 		}
 		else if (Controller.class.isInstance(delegate)) {
-			clone.delegate = Controller.class.cast(delegate.clone());
+			Controller delegateClone = Controller.class.cast(delegate.clone());
+			clone.delegateRef.set(delegateClone);
 		}
 		return clone;
 	}
@@ -68,14 +81,14 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	public void testStarted() {
 		try {
 			initializeDelegate();
+			Controller delegate = delegateRef.get();
 			TestStateListener listener = getAs(TestStateListener.class, delegate);
 			if (null != listener) {
 				listener.testStarted();
 			}
 		}
 		catch (Exception e) {
-			delegate = null;
-			this.clearTestElementChildren();
+			destroyDelegate();
 			logger.error("{}: testStarted() failure", getName(), e);
 			Gui.reportError(this, "An error occurred during startup; see logs for details.");
 		}
@@ -90,7 +103,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 			runnable.run();
 		}
 		catch (Exception e) {
-			this.clearTestElementChildren();
 			logger.error(message, e);
 			Gui.reportError(this, "An error occurred during startup; see logs for details.");
 			JMeterContextService.getContext().getEngine().stopTest(true);
@@ -99,10 +111,11 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	protected void initializeDelegate() {
 		try {
-			delegate = createDelegate();
+			Controller delegate = createDelegate();
 			checkNotNull(delegate, "method createDelegate() returned null");
 			delegate.setName(getName());
 			delegate.setComment(getComment());
+			delegateRef.set(delegate);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("unable to initialize delegate", e);
@@ -114,6 +127,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void addIterationListener(LoopIterationListener listener) {
+		Controller delegate = delegateRef.get();
 		if (null != delegate) {
 			delegate.addIterationListener(listener);
 		}
@@ -121,6 +135,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void addTestElement(TestElement element) {
+		Controller delegate = delegateRef.get();
 		if (null != delegate) {
 			delegate.addTestElement(element);
 		}
@@ -128,6 +143,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public boolean addTestElementOnce(TestElement child) {
+		Controller delegate = delegateRef.get();
 		TestCompilerHelper helper = getAs(TestCompilerHelper.class, delegate);
 		boolean evaluation = false;
 		if (null != helper) {
@@ -143,14 +159,14 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	public void testStarted(String host) {
 		try {
 			initializeDelegate();
+			Controller delegate = delegateRef.get();
 			TestStateListener listener = getAs(TestStateListener.class, delegate);
 			if (null != listener) {
 				listener.testStarted(host);
 			}
 		}
 		catch (Exception e) {
-			delegate = null;
-			this.clearTestElementChildren();
+			destroyDelegate();
 			logger.error("{}: testStarted(String) failure", getName(), e);
 			Gui.reportError(this, "An error occurred during startup; see logs for details.");
 		}
@@ -158,6 +174,11 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
+		Controller delegate = delegateRef.get();
+		if (null == delegate) {
+			event.getSource().getThreadContext().getEngine().stopTest(true);
+		}
+
 		stopTestNowOnException(() -> {
 			LoopIterationListener listener = getAs(LoopIterationListener.class, delegate);
 			if (null != listener) {
@@ -168,15 +189,17 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void initialize() {
+		Controller delegate = delegateRef.get();
 		if (null != delegate) {
-			stopTestNowOnException(() -> delegate.initialize(),
+			stopTestNowOnException(delegate::initialize,
 				String.format("%s: %s.initialize() failure", getName(), delegate));
 		}
 	}
 
 	@Override
 	public Sampler next() {
-		return null == delegate ? null : stopTestNowOnException(() -> delegate.next(),
+		Controller delegate = delegateRef.get();
+		return null == delegate ? null : stopTestNowOnException(delegate::next,
 			String.format("%s: %s.next() failure", getName(), delegate));
 	}
 
@@ -186,7 +209,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 			evaluation = callable.call();
 		}
 		catch (Exception e) {
-			this.clearTestElementChildren();
 			logger.error(message, e);
 			Gui.reportError(this, "An error occurred during startup; see logs for details.");
 			JMeterContextService.getContext().getEngine().stopTest(true);
@@ -196,20 +218,23 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public boolean isDone() {
-		return null == delegate ? true : stopTestNowOnException(() -> delegate.isDone(),
+		Controller delegate = delegateRef.get();
+		return null == delegate ? true : stopTestNowOnException(delegate::isDone,
 			String.format("%s: %s.isDone() failure", getName(), delegate));
 	}
 
 	@Override
 	public void triggerEndOfLoop() {
+		Controller delegate = delegateRef.get();
 		if (null != delegate) {
-			stopTestNowOnException(() -> delegate.triggerEndOfLoop(),
+			stopTestNowOnException(delegate::triggerEndOfLoop,
 				String.format("%s: %s.triggerEndOfLoop() failure", getName(), delegate));
 		}
 	}
 
 	@Override
 	public void removeIterationListener(LoopIterationListener listener) {
+		Controller delegate = delegateRef.get();
 		if (null != delegate) {
 			stopTestNowOnException(() -> delegate.removeIterationListener(listener),
 				String.format("%s: %s.removeIterationListener(LoopIterationListener) failure", getName(), delegate));
@@ -218,8 +243,9 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void testEnded() {
+		Controller delegate = delegateRef.get();
+		TestStateListener listener = getAs(TestStateListener.class, delegate);
 		try {
-			TestStateListener listener = getAs(TestStateListener.class, delegate);
 			if (null != listener) {
 				listener.testEnded();
 			}
@@ -234,8 +260,9 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 
 	@Override
 	public void testEnded(String host) {
+		Controller delegate = delegateRef.get();
+		TestStateListener listener = getAs(TestStateListener.class, delegate);
 		try {
-			TestStateListener listener = getAs(TestStateListener.class, delegate);
 			if (null != listener) {
 				listener.testEnded(host);
 			}
@@ -249,6 +276,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 	}
 
 	protected void destroyDelegate() {
+		Controller delegate = delegateRef.get();
 		DisposableBean disposable = getAs(DisposableBean.class, delegate);
 		if (null != disposable) {
 			try {
@@ -258,6 +286,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 				logger.warn("{}: unable to execute destroy() on delegate {}", getName(), delegate, e);
 			}
 		}
-		delegate = null;
+		delegateRef.set(null);
 	}
 }

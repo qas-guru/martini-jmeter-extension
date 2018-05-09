@@ -38,11 +38,16 @@ public final class MartiniBeanControllerGui extends AbstractControllerGui {
 
 	private static final long serialVersionUID = 7525337451765228984L;
 
-	protected MartiniBeanConfigGui<Controller> configurationPanel;
+	protected transient MartiniBeanConfigGui<Controller> configurationPanel;
 
 	public MartiniBeanControllerGui() {
 		super();
 		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
 	}
 
 	protected void init() {

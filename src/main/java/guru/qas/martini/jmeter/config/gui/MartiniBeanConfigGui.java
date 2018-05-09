@@ -35,7 +35,6 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.AbstractConfigGui;
@@ -73,7 +72,7 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 	protected JLabeledChoice implementationChoice;
 
 	public MartiniBeanConfigGui() {
-		super();
+		this(null);
 	}
 
 	public MartiniBeanConfigGui(Class<T> implementation) {
@@ -85,6 +84,11 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		this.implementation = implementation;
 		this.standalone = standalone;
 		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
 	}
 
 	protected void init() {
@@ -111,7 +115,8 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 	protected JPanel createBeanPanel() {
 		SortedSet<String> implementations = getBeanImplementations();
 		String label = JMeterUtils.getResString("protocol_java_classname");
-		implementationChoice = new JLabeledChoice(label, implementations.toArray(ArrayUtils.EMPTY_STRING_ARRAY), true, false);
+		implementationChoice = new JLabeledChoice(label, new String[]{null}, true, false);
+		implementations.forEach(i -> implementationChoice.addValue(i));
 		implementationChoice.addChangeListener(this);
 
 		VerticalPanel panel = new VerticalPanel();
@@ -235,9 +240,9 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		int argumentCount = configured.getArgumentCount();
 		for (int i = 0; i < argumentCount; i++) {
 			Argument argument = configured.getArgument(i);
-			parameters.addArgument(argument);
+			Argument cloned = Argument.class.cast(argument.clone());
+			parameters.addArgument(cloned);
 		}
-
 		return parameters;
 	}
 
@@ -283,5 +288,12 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		beanConfig.setArguments(arguments);
 		String beanType = implementationChoice.getText();
 		beanConfig.setBeanType(beanType);
+	}
+
+	@Override
+	public void clearGui() {
+		super.clearGui();
+		implementationChoice.setText(null);
+		argumentPanel.clearGui();
 	}
 }

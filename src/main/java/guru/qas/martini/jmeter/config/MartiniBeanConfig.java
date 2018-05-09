@@ -35,6 +35,16 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 	public static final String PROPERTY_BEAN_NAME = "martini.bean.name";
 
 	public MartiniBeanConfig() {
+		super();
+		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
+	}
+
+	private void init() {
 		setArguments(new Arguments());
 	}
 
