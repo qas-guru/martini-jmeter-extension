@@ -18,7 +18,6 @@ package guru.qas.martini.jmeter.sampler.gui;
 
 import java.awt.BorderLayout;
 
-import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
@@ -36,12 +35,11 @@ import guru.qas.martini.jmeter.sampler.MartiniBeanSampler;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 
-	private static final long serialVersionUID = -1683323856943095659L;
-
-	protected MartiniBeanConfigGui<JavaSamplerClient> configurationPanel;
+	protected final MartiniBeanConfigGui<JavaSamplerClient> configurationPanel;
 
 	public MartiniBeanSamplerGui() {
 		super();
+		configurationPanel = new MartiniBeanConfigGui<>(JavaSamplerClient.class, false);
 		init();
 	}
 
@@ -49,7 +47,6 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());
 		add(makeTitlePanel(), BorderLayout.NORTH);
-		configurationPanel = new MartiniBeanConfigGui<>(JavaSamplerClient.class, false);
 		add(configurationPanel, BorderLayout.CENTER);
 	}
 
@@ -82,20 +79,15 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 		configureTestElement(element);
 		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
 		MartiniBeanConfig config = configurationPanel.createTestElement();
-		Arguments arguments = config.getArguments();
-		sampler.setArguments(arguments);
-		String beanType = config.getBeanType();
-		sampler.setBeanType(beanType);
+		sampler.setConfig(config);
 	}
 
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
 		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
-		Arguments arguments = sampler.getArguments();
-		configurationPanel.setConfiguration(arguments);
-		String beanType = sampler.getBeanType();
-		configurationPanel.setBeanType(beanType);
+		MartiniBeanConfig config = sampler.getConfig();
+		configurationPanel.setConfig(config);
 	}
 
 	@Override

@@ -17,22 +17,37 @@ limitations under the License.
 package guru.qas.martini.jmeter.config;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.ConfigTestElement;
+import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
+import org.apache.jmeter.testelement.property.CollectionProperty;
 import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.TestElementProperty;
+import org.apache.jmeter.testelement.property.NullProperty;
+import org.apache.jmeter.testelement.property.ObjectProperty;
+import org.apache.jmeter.testelement.property.StringProperty;
+
+import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.gson.JsonArray;
+
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Modeled after JavaConfig.
  */
+@SuppressWarnings("WeakerAccess")
 public class MartiniBeanConfig extends ConfigTestElement implements Serializable {
 
-	private static final long serialVersionUID = -6043459626018958853L;
+	private static final long serialVersionUID = -874529623770552997L;
 
-	public static final String PROPERTY_BEAN_TYPE = "martini.bean.type";
-	public static final String PROPERTY_ARGUMENTS = "martini.bean.arguments";
-	public static final String PROPERTY_BEAN_NAME = "martini.bean.name";
+	protected static final String BEAN_TYPE = "martini.bean.type";
+	protected static final String BEAN_NAME = "martini.bean.name";
+	protected static final String PARAMETERS = "martini.bean.parameters";
 
 	public MartiniBeanConfig() {
 		super();
@@ -44,26 +59,92 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 		return this;
 	}
 
-	private void init() {
-		setArguments(new Arguments());
+	protected void init() {
+		setParameters(new Arguments());
 	}
 
 	public void setBeanType(String type) {
-		setProperty(PROPERTY_BEAN_TYPE, type);
+		setProperty(BEAN_TYPE, type);
 	}
 
 	public String getBeanType() {
-		return super.getPropertyAsString(PROPERTY_BEAN_TYPE);
+		return getPropertyAsString(BEAN_TYPE);
 	}
 
-	public void setArguments(Arguments args) {
-		TestElementProperty property = new TestElementProperty(PROPERTY_ARGUMENTS, args);
-		setProperty(property);
+	public String getBeanName() {
+		Arguments parameters = getParameters();
+		String parameter = parameters.getArgumentsAsMap().getOrDefault(BEAN_NAME, "").trim();
+		return parameter.isEmpty() ? null : parameter;
 	}
 
-	public Arguments getArguments() {
-		JMeterProperty property = getProperty(PROPERTY_ARGUMENTS);
+	public void setParameters(Arguments arguments) {
+		ObjectProperty property = new ObjectProperty(PARAMETERS, arguments);
+		super.setProperty(property);
+	}
+
+	public Arguments getParameters() {
+		JMeterProperty property = getProperty(PARAMETERS);
 		Object o = property.getObjectValue();
-		return Arguments.class.isInstance(o) ? Arguments.class.cast(o) : null;
+		checkState(Arguments.class.isInstance(o),
+			"property %s not of type %s: %s", PARAMETERS, Arguments.class, null == o ? null : o.getClass());
+		return Arguments.class.cast(o);
+	}
+
+	public JavaSamplerContext getAsJavaSamplerContext() {
+		Arguments arguments = new Arguments();
+		LinkedHashMultimap<String, String> index = getIndex();
+		Set<String> keys = index.keySet();
+		keys.stream().map(k -> {
+			Set<String> values = index.get(k);
+			int count = values.size();
+			String value = null;
+			if (1 == count) {
+				value = Iterables.getOnlyElement(values);
+			}
+			else if (1 < count) {
+				JsonArray array = new JsonArray();
+				values.forEach(array::add);
+				value = array.toString();
+			}
+			return new Argument(k, value);
+		}).forEach(arguments::addArgument);
+		return new JavaSamplerContext(arguments);
+	}
+
+	public List<JMeterProperty> getAsProperties() {
+		LinkedHashMultimap<String, String> index = getIndex();
+		Set<String> keys = index.keySet();
+		return keys.stream().map(k -> {
+			Set<String> values = index.get(k);
+			int count = values.size();
+			JMeterProperty property;
+			if (0 == count) {
+				property = new NullProperty(k);
+			}
+			else if (1 == count) {
+				property = new StringProperty(k, Iterables.getOnlyElement(values));
+			}
+			else {
+				property = new CollectionProperty(k, values);
+			}
+			return property;
+		}).collect(Collectors.toList());
+	}
+
+	protected LinkedHashMultimap<String, String> getIndex() {
+		LinkedHashMultimap<String, String> index = LinkedHashMultimap.create();
+		Arguments arguments = getParameters();
+		int count = arguments.getArgumentCount();
+		for (int i = 0; i < count; i++) {
+			Argument argument = arguments.getArgument(i);
+			String name = argument.getName();
+			String value = argument.getValue();
+			index.put(name, value);
+		}
+		return index;
+	}
+
+	public Argument getDefaultBeanNameArgument() {
+		return new Argument(BEAN_NAME, null, null, "(optional) Spring @Qualifier");
 	}
 }

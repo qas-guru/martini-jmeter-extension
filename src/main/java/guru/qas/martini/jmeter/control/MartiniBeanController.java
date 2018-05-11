@@ -16,109 +16,63 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.control;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import org.apache.jmeter.config.Argument;
-import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.control.Controller;
-import org.apache.jmeter.testelement.property.CollectionProperty;
 import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.TestElementProperty;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
+import org.apache.jmeter.testelement.property.ObjectProperty;
 
 import guru.qas.martini.jmeter.SpringBeanUtil;
+import guru.qas.martini.jmeter.config.MartiniBeanConfig;
 
-import static guru.qas.martini.jmeter.config.MartiniBeanConfig.*;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanController extends AbstractMartiniController {
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
+	protected static final String MARTINI_BEAN_CONFIG = "martini.bean.config";
+
 	public MartiniBeanController() {
 		super();
 		init();
 	}
 
-	protected Object readResolve() {
-		init();
-		return this;
+	protected void init() {
+		super.init();
+		setConfig(new MartiniBeanConfig());
 	}
 
-	private void init() {
-		setArguments(new Arguments());
+	public void setConfig(MartiniBeanConfig config) {
+		ObjectProperty property = new ObjectProperty(MARTINI_BEAN_CONFIG, config);
+		super.setProperty(property);
 	}
 
-	public void setArguments(Arguments arguments) {
-		TestElementProperty property = new TestElementProperty(PROPERTY_ARGUMENTS, arguments);
-		setProperty(property);
-	}
-
-	public void setBeanName(String s) {
-		Arguments arguments = getArguments();
-		arguments.removeArgument(PROPERTY_BEAN_NAME);
-		arguments.addArgument(PROPERTY_BEAN_NAME, s);
-	}
-
-	public String getBeanName() {
-		Arguments arguments = getArguments();
-		Map<String, String> index = arguments.getArgumentsAsMap();
-		return index.get(PROPERTY_BEAN_NAME);
-	}
-
-	public void setBeanType(String type) {
-		setProperty(PROPERTY_BEAN_TYPE, type);
-	}
-
-	public String getBeanType() {
-		return getPropertyAsString(PROPERTY_BEAN_TYPE);
-	}
-
-	public Arguments getArguments() {
-		JMeterProperty property = getProperty(PROPERTY_ARGUMENTS);
+	public MartiniBeanConfig getConfig() {
+		JMeterProperty property = super.getProperty(MARTINI_BEAN_CONFIG);
 		Object o = property.getObjectValue();
-		return Arguments.class.isInstance(o) ? Arguments.class.cast(o) : null;
+		checkState(MartiniBeanConfig.class.isInstance(o), "parameter %s is not of type %s: %s",
+			MARTINI_BEAN_CONFIG, MartiniBeanConfig.class, null == o ? null : o.getClass());
+		return MartiniBeanConfig.class.cast(o);
 	}
 
 	@Override
 	@Nonnull
 	protected Controller createDelegate() {
-		Controller delegate = createDelegateController();
-		Arguments parameters = getArguments();
-
-		Multimap<String, String> index = ArrayListMultimap.create();
-		int size = parameters.getArgumentCount();
-		for (int i = 0; i < size; i++) {
-			Argument argument = parameters.getArgument(i);
-			String name = argument.getName();
-			String value = argument.getValue();
-			if (null != name && null != value) {
-				index.put(name, value);
-			}
-		}
-
-		index.keySet().forEach(k -> {
-			Collection<String> values = index.get(k);
-			if (1 == values.size()) {
-				delegate.setProperty(k, Iterables.getOnlyElement(values));
-			}
-			else {
-				CollectionProperty property = new CollectionProperty(k, values);
-				delegate.setProperty(property);
-			}
-		});
+		Controller delegate = createController();
+		MartiniBeanConfig config = getConfig();
+		List<JMeterProperty> properties = config.getAsProperties();
+		properties.forEach(delegate::setProperty);
 		return delegate;
 	}
 
-	protected Controller createDelegateController() {
-		String beanName = getBeanName();
-		String beanType = getBeanType();
+	protected Controller createController() {
+		MartiniBeanConfig config = getConfig();
+		String beanName = config.getBeanName();
+		String beanType = config.getBeanType();
 		return SpringBeanUtil.getBean(beanName, beanType, Controller.class);
 	}
 }

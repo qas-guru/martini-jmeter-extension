@@ -18,7 +18,6 @@ package guru.qas.martini.jmeter.control.gui;
 
 import java.awt.BorderLayout;
 
-import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.control.Controller;
 import org.apache.jmeter.control.gui.AbstractControllerGui;
 import org.apache.jmeter.testelement.TestElement;
@@ -87,20 +86,15 @@ public final class MartiniBeanControllerGui extends AbstractControllerGui {
 		configureTestElement(element);
 		MartiniBeanController controller = MartiniBeanController.class.cast(element);
 		MartiniBeanConfig config = configurationPanel.createTestElement();
-		Arguments arguments = config.getArguments();
-		controller.setArguments(arguments);
-		String beanType = config.getBeanType();
-		controller.setBeanType(beanType);
+		controller.setConfig(config);
 	}
 
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
-		MartiniBeanController sampler = MartiniBeanController.class.cast(element);
-		Arguments arguments = sampler.getArguments();
-		configurationPanel.setConfiguration(arguments);
-		String beanType = sampler.getBeanType();
-		configurationPanel.setBeanType(beanType);
+		MartiniBeanController controller = MartiniBeanController.class.cast(element);
+		MartiniBeanConfig config = controller.getConfig();
+		configurationPanel.setConfig(config);
 	}
 
 	@Override

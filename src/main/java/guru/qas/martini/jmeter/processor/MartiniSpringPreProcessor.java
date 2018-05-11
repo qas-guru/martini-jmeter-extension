@@ -43,6 +43,7 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import guru.qas.martini.MartiniException;
@@ -197,8 +198,9 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 
 	private String[] getRuntimeConfigurationLocations() {
 		String joined = getConfigLocations();
-		List<String> configured = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
-		return configured.toArray(new String[configured.size()]);
+		List<String> configured = null == joined ?
+			ImmutableList.of() : Splitter.on(',').omitEmptyStrings().trimResults().splitToList(joined);
+		return configured.toArray(new String[0]);
 	}
 
 	public void testEnded() {
@@ -229,7 +231,7 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	}
 
 	public void setConfigLocations(String s) {
-		setStringProperty(s, PROPERTY_CONFIG_LOCATIONS, DEFAULT_RESOURCES_CONTEXT);
+		setProperty(PROPERTY_CONFIG_LOCATIONS, s);
 	}
 
 	public String getConfigLocations() {
@@ -237,16 +239,11 @@ public final class MartiniSpringPreProcessor extends AbstractTestElement impleme
 	}
 
 	public void setFeatureLocations(String s) {
-		setStringProperty(s, PROPERTY_FEATURE_LOCATIONS, DEFAULT_RESOURCES_FEATURES);
+		setProperty(PROPERTY_FEATURE_LOCATIONS, s);
 	}
 
 	public String getFeatureLocations() {
 		return getPropertyAsString(PROPERTY_FEATURE_LOCATIONS);
-	}
-
-	protected void setStringProperty(String s, String propertyName, String defaultValue) {
-		String trimmed = null == s ? "" : s.trim();
-		setProperty(propertyName, trimmed.isEmpty() ? defaultValue : trimmed);
 	}
 
 	public void setEnvironment(Arguments environment) {

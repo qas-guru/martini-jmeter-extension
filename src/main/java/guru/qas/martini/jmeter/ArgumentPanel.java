@@ -31,12 +31,8 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -48,7 +44,6 @@ import javax.swing.JTable;
 import javax.swing.JViewport;
 import javax.swing.ListSelectionModel;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.AbstractConfigGui;
@@ -60,13 +55,7 @@ import org.apache.jorphan.gui.GuiUtils;
 import org.apache.jorphan.gui.ObjectTableModel;
 import org.apache.jorphan.reflect.Functor;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import guru.qas.martini.jmeter.json.ArgumentDeserializer;
-import guru.qas.martini.jmeter.json.ArgumentSerializer;
-import guru.qas.martini.jmeter.json.ArgumentsDeserializer;
-import guru.qas.martini.jmeter.json.ArgumentsSerializer;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * A GUI panel allowing the user to enter name-value argument pairs. These
@@ -185,16 +174,6 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 
 	public static final String COLUMN_RESOURCE_NAMES_2 = "description"; // $NON-NLS-1$
 
-	protected static final Gson SERIALIZER = new GsonBuilder()
-		.registerTypeAdapter(Argument.class, new ArgumentSerializer())
-		.registerTypeAdapter(Arguments.class, new ArgumentsSerializer())
-		.create();
-
-	protected static final Gson DESERIALIZER = new GsonBuilder()
-		.registerTypeAdapter(Argument.class, new ArgumentDeserializer())
-		.registerTypeAdapter(Arguments.class, new ArgumentsDeserializer())
-		.create();
-
 	public ArgumentPanel() {
 		this(null, null, true, true);
 	}
@@ -306,48 +285,12 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 	protected void modify(Arguments arguments) {
 		arguments.clear();
 
-		Map<String, List<Argument>> index = new LinkedHashMap<>();
 		for (Iterator<?> i = tableModel.iterator(); i.hasNext(); ) {
 			Object o = i.next();
-			Argument argument = getArgument(o);
-			String name = argument.getName();
-			List<Argument> values = index.computeIfAbsent(name, v -> new ArrayList<>());
-			values.add(argument);
+			checkState(Argument.class.isInstance(o), "table contains objects other than Argument: %s", null == o ? null : o.getClass());
+			Argument argument = Argument.class.cast(o);
+			arguments.addArgument(argument);
 		}
-
-		for (Map.Entry<String, List<Argument>> entry : index.entrySet()) {
-			String name = entry.getKey();
-			List<Argument> values = entry.getValue();
-			Argument argument = getArgument(name, values);
-			if (null != argument) {
-				arguments.addArgument(argument);
-			}
-		}
-	}
-
-	protected Argument getArgument(Object o) {
-		Argument argument = null;
-		if (Argument.class.isInstance(o)) {
-			argument = Argument.class.cast(o);
-			String name = argument.getName();
-			String value = argument.getValue();
-			if (!StringUtils.isEmpty(argument.getName()) && !StringUtils.isEmpty(argument.getValue())) {
-				argument.setMetaData("=");
-			}
-		}
-		return argument;
-	}
-
-	protected Argument getArgument(String name, List<Argument> arguments) {
-		Argument argument = arguments.iterator().next();
-		if (arguments.size() > 1) {
-			Argument clone = Argument.class.cast(argument.clone());
-			clone.setMetaData("multiple");
-			String json = SERIALIZER.toJson(arguments);
-			clone.setValue(json);
-			argument = clone;
-		}
-		return argument;
 	}
 
 	@Override
@@ -359,31 +302,10 @@ public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 			int argumentCount = arguments.getArgumentCount();
 			for (int i = 0; i < argumentCount; i++) {
 				Argument argument = arguments.getArgument(i);
-				addTableRows(argument);
+				tableModel.addRow(argument);
 			}
 		}
 		checkButtonsStatus();
-	}
-
-	protected void addTableRows(Argument argument) {
-		String metaData = argument.getMetaData();
-		if ("multiple".equals(metaData)) {
-			String json = argument.getValue();
-			Arguments arguments = DESERIALIZER.fromJson(json, Arguments.class);
-			if (null == arguments) {
-				tableModel.addRow(argument);
-			}
-			else {
-				int argumentCount = arguments.getArgumentCount();
-				for (int i = 0; i < argumentCount; i++) {
-					Argument item = arguments.getArgument(i);
-					tableModel.addRow(item);
-				}
-			}
-		}
-		else {
-			tableModel.addRow(argument);
-		}
 	}
 
 	/**

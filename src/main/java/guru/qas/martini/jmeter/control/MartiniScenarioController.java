@@ -28,9 +28,9 @@ import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.slf4j.Logger;
-import org.springframework.context.ApplicationContext;
+import org.slf4j.LoggerFactory;
 
-import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
+import guru.qas.martini.jmeter.SpringBeanUtil;
 import guru.qas.martini.jmeter.result.JMeterMartini;
 import guru.qas.martini.jmeter.result.JMeterMartiniResult;
 import guru.qas.martini.result.MartiniResult;
@@ -39,7 +39,8 @@ import guru.qas.martini.runtime.event.EventManager;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniScenarioController extends GenericController implements TestStateListener, LoopIterationListener {
 
-	private static final long serialVersionUID = 4383114502659399221L;
+	private static final long serialVersionUID = 9021149216602507240L;
+
 	protected static final String KEY = JMeterMartiniResult.class.getName();
 
 	protected transient Logger logger;
@@ -48,18 +49,31 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	public MartiniScenarioController() {
 		super();
+		init();
+	}
+
+	protected Object readResolve() {
+		init();
+		return this;
+	}
+
+	private void init() {
+		logger = LoggerFactory.getLogger(getClass());
 		eventManagerRef = new AtomicReference<>();
 	}
 
 	@Override
 	public Object clone() {
 		MartiniScenarioController clone = MartiniScenarioController.class.cast(super.clone());
+		clone.logger = logger;
 		clone.eventManagerRef = eventManagerRef;
 		return clone;
 	}
 
 	@Override
 	public void testStarted() {
+		EventManager eventManager = SpringBeanUtil.getBean(null, EventManager.class.getName(), EventManager.class);
+		eventManagerRef.set(eventManager);
 	}
 
 	@Override
@@ -70,16 +84,6 @@ public class MartiniScenarioController extends GenericController implements Test
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
 		martiniResult = null;
-	}
-
-	protected EventManager getEventManager() {
-		EventManager eventManager = eventManagerRef.get();
-		if (null == eventManager) {
-			ApplicationContext context = MartiniSpringPreProcessor.getApplicationContext();
-			EventManager instance = context.getBean(EventManager.class);
-			eventManager = eventManagerRef.compareAndSet(null, instance) ? instance : eventManagerRef.get();
-		}
-		return eventManager;
 	}
 
 	@Override
@@ -97,8 +101,7 @@ public class MartiniScenarioController extends GenericController implements Test
 			.setScenarioName(super.getName())
 			.build();
 		martiniResult = JMeterMartiniResult.builder().setJMeterMartini(martini).build();
-		EventManager eventManager = getEventManager();
-		eventManager.publishBeforeScenario(this, martiniResult);
+		eventManagerRef.get().publishBeforeScenario(this, martiniResult);
 	}
 
 	@Override
@@ -120,8 +123,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	protected void endScenario() {
 		if (null != martiniResult) {
-			EventManager eventManager = getEventManager();
-			eventManager.publishAfterScenario(this, martiniResult);
+			eventManagerRef.get().publishAfterScenario(this, martiniResult);
 			martiniResult = null;
 		}
 	}

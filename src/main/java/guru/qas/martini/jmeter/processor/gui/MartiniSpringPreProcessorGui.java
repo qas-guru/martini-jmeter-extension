@@ -20,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.processor.gui.AbstractPreProcessorGui;
 import org.apache.jmeter.testelement.TestElement;
@@ -28,7 +29,6 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
-import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 
@@ -43,12 +43,12 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 
 	protected final JTextField configLocationsField;
 	protected final JTextField featureLocationsField;
-	protected final ArgumentPanel environmentPanel;
+	protected final ArgumentsPanel environmentPanel;
 
 	public MartiniSpringPreProcessorGui() {
 		configLocationsField = new JTextField(6);
 		featureLocationsField = new JTextField(6);
-		environmentPanel = new ArgumentPanel(null, true);
+		environmentPanel = new ArgumentsPanel(null, true);
 		init();
 	}
 

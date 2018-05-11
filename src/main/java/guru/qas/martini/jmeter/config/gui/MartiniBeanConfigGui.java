@@ -21,6 +21,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -41,6 +42,7 @@ import org.apache.jmeter.config.gui.AbstractConfigGui;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.property.JMeterProperty;
+import org.apache.jmeter.testelement.property.PropertyIterator;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.JLabeledChoice;
 import org.slf4j.Logger;
@@ -49,12 +51,13 @@ import org.springframework.context.MessageSource;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.ArgumentPanel;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
 
-import static guru.qas.martini.jmeter.config.MartiniBeanConfig.PROPERTY_BEAN_NAME;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Modeled after JavaConfigGui.
@@ -62,9 +65,9 @@ import static guru.qas.martini.jmeter.config.MartiniBeanConfig.PROPERTY_BEAN_NAM
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements ChangeListener {
 
-	private static final long serialVersionUID = -308150274609539850L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanConfigGui.class);
 
+	protected final MartiniBeanConfig config;
 	protected Class<T> implementation;
 	protected boolean standalone;
 	protected ArgumentPanel argumentPanel;
@@ -72,7 +75,7 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 	protected JLabeledChoice implementationChoice;
 
 	public MartiniBeanConfigGui() {
-		this(null);
+		this(null, false);
 	}
 
 	public MartiniBeanConfigGui(Class<T> implementation) {
@@ -81,19 +84,15 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 
 	public MartiniBeanConfigGui(Class<T> implementation, boolean standalone) {
 		super();
+		config = new MartiniBeanConfig();
 		this.implementation = implementation;
 		this.standalone = standalone;
 		init();
 	}
 
-	protected Object readResolve() {
-		init();
-		return this;
-	}
-
 	protected void init() {
-		String argumentsPanelLabel = JMeterUtils.getResString("paramtable");
-		argumentPanel = new ArgumentPanel(argumentsPanelLabel, null, true, false);
+		String label = JMeterUtils.getResString("paramtable");
+		argumentPanel = new ArgumentPanel(label, null, true, false);
 
 		ImageIcon image = JMeterUtils.getImage("warning.png");
 		warningLabel = new JLabel(JMeterUtils.getResString("java_request_warning"), image, SwingConstants.LEFT);
@@ -135,10 +134,9 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		final SortedSet<String> implementations = new TreeSet<>();
 		try {
 			List<T> candidates = getRegisteredCandidates();
-			candidates.forEach(s -> {
-				String className = s.getClass().getName();
-				implementations.add(className);
-			});
+			candidates.stream()
+				.map(c -> c.getClass().getName())
+				.forEach(implementations::add);
 		}
 		catch (Exception e) {
 			LOGGER.warn("unable to find {} implementations registered with ServiceLoader", implementation, e);
@@ -171,7 +169,7 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		implementationChoice.setText(beanType);
 	}
 
-	protected T getConfiguredInstance() {
+	protected T getDefaultInstance() {
 		String className = implementationChoice.getText();
 		T configuredInstance = null;
 		if (null != implementation && null != className && !className.isEmpty()) {
@@ -189,61 +187,39 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 
 	protected void configureClassName() {
 		try {
-			Arguments updated = new Arguments();
-			T configuredInstance = getConfiguredInstance();
-			if (null != configuredInstance) {
-				Arguments current = new Arguments();
-				argumentPanel.modifyTestElement(current);
-
-				Arguments parameters = getDefaultParameters(configuredInstance);
-
-				Map<String, String> index = current.getArgumentsAsMap();
-				for (JMeterProperty jMeterProperty : parameters.getArguments()) {
-					Argument arg = (Argument) jMeterProperty.getObjectValue();
-					String name = arg.getName();
-					String value = arg.getValue();
-					String metadata = arg.getMetaData();
-					String description = arg.getDescription();
-
-					// If a user has set parameters in one test, and then
-					// selects a different test which supports the same
-					// parameters, those parameters should have the same
-					// values that they did in the original test.
-					if (index.containsKey(name)) {
-						String newVal = index.get(name);
-						if (newVal != null && newVal.length() > 0) {
-							value = newVal;
-						}
-					}
-					updated.addArgument(name, value, metadata, description);
+			T defaultInstance = getDefaultInstance();
+			Arguments arguments;
+			if (null == defaultInstance) {
+				arguments = new Arguments();
+			}
+			else {
+				arguments = getDefaultParameters(defaultInstance);
+				Argument defaultBeanNameArgument = config.getDefaultBeanNameArgument();
+				if (!arguments.getArgumentsAsMap().containsKey(defaultBeanNameArgument.getName())) {
+					ArrayList<Argument> argumentList = Lists.newArrayListWithExpectedSize(arguments.getArgumentCount() + 1);
+					argumentList.add(defaultBeanNameArgument);
+					PropertyIterator i = arguments.getArguments().iterator();
+					Streams.stream(i).map(JMeterProperty::getObjectValue)
+						.filter(Argument.class::isInstance)
+						.map(Argument.class::cast)
+						.forEach(argumentList::add);
+					arguments.setArguments(argumentList);
 				}
 			}
-			argumentPanel.configure(updated);
+			argumentPanel.configure(arguments);
 			warningLabel.setVisible(false);
 		}
 		catch (Exception e) {
 			String className = implementationChoice.getText().trim();
-			LOGGER.error("Error getting argument list for " + className, e);
+			LOGGER.warn("unable to obtain arguments for {}", className, e);
 			warningLabel.setVisible(true);
 		}
 	}
 
-	protected Arguments getDefaultParameters(Object configuredInstance) throws InvocationTargetException, IllegalAccessException {
-		Method method = getDefaultParametersMethod(configuredInstance);
-		Arguments configured = null == method ? new Arguments() : (Arguments) method.invoke(configuredInstance);
-
-		Arguments parameters = new Arguments();
-		if (!configured.getArgumentsAsMap().containsKey(PROPERTY_BEAN_NAME)) {
-			parameters.addArgument(PROPERTY_BEAN_NAME, null, null, "(optional) Spring @Qualifier value");
-		}
-
-		int argumentCount = configured.getArgumentCount();
-		for (int i = 0; i < argumentCount; i++) {
-			Argument argument = configured.getArgument(i);
-			Argument cloned = Argument.class.cast(argument.clone());
-			parameters.addArgument(cloned);
-		}
-		return parameters;
+	protected Arguments getDefaultParameters(Object o) throws InvocationTargetException, IllegalAccessException {
+		Method method = getDefaultParametersMethod(o);
+		Arguments arguments = null == method ? new Arguments() : (Arguments) method.invoke(o);
+		return null == arguments ? new Arguments() : Arguments.class.cast(arguments.clone());
 	}
 
 	protected Method getDefaultParametersMethod(Object o) {
@@ -285,9 +261,17 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		configureTestElement(config);
 		Arguments arguments = Arguments.class.cast(argumentPanel.createTestElement());
 		MartiniBeanConfig beanConfig = MartiniBeanConfig.class.cast(config);
-		beanConfig.setArguments(arguments);
+		beanConfig.setParameters(arguments);
 		String beanType = implementationChoice.getText();
 		beanConfig.setBeanType(beanType);
+	}
+
+	public void setConfig(MartiniBeanConfig config) {
+		checkNotNull(config, "null MartiniBeanConfig");
+		Arguments cloned = Arguments.class.cast(config.getParameters().clone());
+		this.config.setParameters(cloned);
+		implementationChoice.setText(config.getBeanType());
+		argumentPanel.configure(cloned);
 	}
 
 	@Override
