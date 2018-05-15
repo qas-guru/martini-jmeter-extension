@@ -41,7 +41,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	private static final long serialVersionUID = 9021149216602507240L;
 
-	protected static final String KEY = JMeterMartiniResult.class.getName();
+	public static final String KEY = JMeterMartiniResult.class.getName();
 
 	protected transient Logger logger;
 	protected transient AtomicReference<EventManager> eventManagerRef;
@@ -91,7 +91,13 @@ public class MartiniScenarioController extends GenericController implements Test
 		if (null == martiniResult) {
 			startScenario();
 		}
-		return super.next();
+		Sampler sampler = super.next();
+		if (null != sampler) {
+			JMeterContext threadContext = sampler.getThreadContext();
+			Map<String, Object> samplerContext = threadContext.getSamplerContext();
+			samplerContext.put(KEY, martiniResult);
+		}
+		return sampler;
 	}
 
 	protected void startScenario() {
@@ -102,17 +108,6 @@ public class MartiniScenarioController extends GenericController implements Test
 			.build();
 		martiniResult = JMeterMartiniResult.builder().setJMeterMartini(martini).build();
 		eventManagerRef.get().publishBeforeScenario(this, martiniResult);
-	}
-
-	@Override
-	protected Sampler nextIsASampler(Sampler element) throws NextIsNullException {
-		Sampler sampler = super.nextIsASampler(element);
-		if (null != sampler) {
-			JMeterContext threadContext = sampler.getThreadContext();
-			Map<String, Object> samplerContext = threadContext.getSamplerContext();
-			samplerContext.put(KEY, martiniResult);
-		}
-		return sampler;
 	}
 
 	@Override

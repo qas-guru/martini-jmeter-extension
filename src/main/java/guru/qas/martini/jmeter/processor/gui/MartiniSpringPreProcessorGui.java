@@ -16,8 +16,9 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor.gui;
 
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.JTextArea;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
@@ -41,21 +42,21 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 	protected static final String KEY_FEATURE_LABEL = "feature.panel.label";
 	protected static final String KEY_ENVIRONMENT_LABEL = "spring.environment.label";
 
-	protected final JTextField configLocationsField;
-	protected final JTextField featureLocationsField;
+	protected final JTextArea configLocationsField;
+	protected final JTextArea featureLocationsField;
 	protected final ArgumentsPanel environmentPanel;
 
 	public MartiniSpringPreProcessorGui() {
-		configLocationsField = new JTextField(6);
-		featureLocationsField = new JTextField(6);
+		configLocationsField = new JTextArea("", 2, 6);
+		featureLocationsField = new JTextArea("", 2, 6);
 		environmentPanel = new ArgumentsPanel(null, true);
 		init();
 	}
 
 	protected void init() {
+		setBorder(makeBorder());
 		setLayout(new VerticalLayout(5, VerticalLayout.BOTH, VerticalLayout.TOP));
 
-		setBorder(makeBorder());
 		add(makeTitlePanel());
 
 		VerticalPanel springPanel = getSpringPanel();
@@ -64,8 +65,18 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 		VerticalPanel featurePanel = getFeaturePanel();
 		add(featurePanel);
 
+		style(configLocationsField);
+		style(featureLocationsField);
+
 		VerticalPanel environmentDisplayPanel = getEnvironmentDisplayPanel();
 		add(environmentDisplayPanel);
+	}
+
+	protected void style(JTextArea area) {
+		area.setColumns(6);
+		area.setRows(1);
+		area.setLineWrap(true);
+		area.setBorder(BorderFactory.createEtchedBorder());
 	}
 
 	protected VerticalPanel getSpringPanel() {

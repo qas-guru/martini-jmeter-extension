@@ -16,6 +16,10 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.AbstractSampler;
@@ -24,14 +28,18 @@ import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.ObjectProperty;
+import org.apache.jmeter.threads.JMeterContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 
 import com.google.common.base.Throwables;
 
+import guru.qas.martini.Martini;
 import guru.qas.martini.jmeter.SpringBeanUtil;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
+import guru.qas.martini.jmeter.control.MartiniScenarioController;
+import guru.qas.martini.result.MartiniResult;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -79,8 +87,11 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 
 	@Override
 	public SampleResult sample(Entry entry) {
+		Martini martini = null;
 		SampleResult result;
 		try {
+			martini = getMartini();
+
 			setDelegate();
 			JavaSamplerContext javaSamplerContext = getConfig().getAsJavaSamplerContext();
 
@@ -102,8 +113,17 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 			destroyDelegate();
 		}
 
-		setLabel(result);
+		setLabel(martini, result);
 		return result;
+	}
+
+	@Nullable
+	protected Martini getMartini() {
+		JMeterContext threadContext = super.getThreadContext();
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		Object o = samplerContext.get(MartiniScenarioController.KEY);
+		MartiniResult result = MartiniResult.class.isInstance(o) ? MartiniResult.class.cast(o) : null;
+		return null == result ? null : result.getMartini();
 	}
 
 	protected void setDelegate() {
@@ -128,9 +148,11 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 		}
 	}
 
-	protected void setLabel(SampleResult result) {
+	protected void setLabel(@Nullable Martini martini, SampleResult result) {
 		if (result != null && result.getSampleLabel().trim().isEmpty()) {
-			result.setSampleLabel(getName());
+			String label = null == martini ? getName() :
+				String.format("%s:%s:%s", martini.getFeatureName(), martini.getScenarioName(), getName());
+			result.setSampleLabel(label);
 		}
 	}
 
