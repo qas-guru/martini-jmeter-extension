@@ -151,7 +151,7 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 	protected void setLabel(@Nullable Martini martini, SampleResult result) {
 		if (result != null && result.getSampleLabel().trim().isEmpty()) {
 			String label = null == martini ? getName() :
-				String.format("%s:%s:%s", martini.getFeatureName(), martini.getScenarioName(), getName());
+				String.format("%s:%s", martini.getScenarioName(), getName());
 			result.setSampleLabel(label);
 		}
 	}
