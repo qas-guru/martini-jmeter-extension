@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.control;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.control.NextIsNullException;
@@ -29,12 +28,16 @@ import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.config.Scope;
+import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.jmeter.SpringBeanUtil;
 import guru.qas.martini.jmeter.result.JMeterMartini;
 import guru.qas.martini.jmeter.result.JMeterMartiniResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
+import guru.qas.martini.scope.ScenarioScope;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniScenarioController extends GenericController implements TestStateListener, LoopIterationListener {
@@ -44,7 +47,9 @@ public class MartiniScenarioController extends GenericController implements Test
 	public static final String KEY = JMeterMartiniResult.class.getName();
 
 	protected transient Logger logger;
-	protected transient AtomicReference<EventManager> eventManagerRef;
+	protected transient EventManager eventManager;
+	protected transient ScenarioScope scenarioScope;
+
 	protected transient MartiniResult martiniResult;
 
 	public MartiniScenarioController() {
@@ -59,21 +64,37 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	private void init() {
 		logger = LoggerFactory.getLogger(getClass());
-		eventManagerRef = new AtomicReference<>();
 	}
 
 	@Override
 	public Object clone() {
 		MartiniScenarioController clone = MartiniScenarioController.class.cast(super.clone());
 		clone.logger = logger;
-		clone.eventManagerRef = eventManagerRef;
+		clone.eventManager = eventManager;
+		clone.scenarioScope = scenarioScope;
 		return clone;
 	}
 
 	@Override
 	public void testStarted() {
-		EventManager eventManager = SpringBeanUtil.getBean(null, EventManager.class.getName(), EventManager.class);
-		eventManagerRef.set(eventManager);
+		setUpEventManager();
+		setUpScenarioScope();
+	}
+
+	protected void setUpEventManager() {
+		eventManager = SpringBeanUtil.getBean(null, EventManager.class.getName(), EventManager.class);
+	}
+
+	protected void setUpScenarioScope() {
+		ApplicationContext applicationContext = SpringBeanUtil.getApplicationContext();
+		ConfigurableBeanFactory beanFactory =
+			ConfigurableBeanFactory.class.cast(applicationContext.getAutowireCapableBeanFactory());
+		String[] names = beanFactory.getRegisteredScopeNames();
+		for (int i = 0; null == scenarioScope && i < names.length; i++) {
+			String name = names[i];
+			Scope registeredScope = beanFactory.getRegisteredScope(name);
+			scenarioScope = ScenarioScope.class.isInstance(registeredScope) ? ScenarioScope.class.cast(registeredScope) : null;
+		}
 	}
 
 	@Override
@@ -107,7 +128,7 @@ public class MartiniScenarioController extends GenericController implements Test
 			.setScenarioName(super.getName())
 			.build();
 		martiniResult = JMeterMartiniResult.builder().setJMeterMartini(martini).build();
-		eventManagerRef.get().publishBeforeScenario(this, martiniResult);
+		eventManager.publishBeforeScenario(this, martiniResult);
 	}
 
 	@Override
@@ -117,16 +138,22 @@ public class MartiniScenarioController extends GenericController implements Test
 	}
 
 	protected void endScenario() {
-		if (null != martiniResult) {
-			eventManagerRef.get().publishAfterScenario(this, martiniResult);
-			martiniResult = null;
+		if (null != martiniResult && null != eventManager) {
+			eventManager.publishAfterScenario(this, martiniResult);
 		}
+		martiniResult = null;
 	}
 
 	@Override
 	public void testEnded() {
 		endScenario();
-		eventManagerRef.set(null);
+		if (null != scenarioScope) {
+			scenarioScope.clear();
+			scenarioScope = null;
+		}
+		eventManager = null;
+		martiniResult = null;
+		logger = null;
 	}
 
 	@Override

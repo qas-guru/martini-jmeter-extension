@@ -75,22 +75,4 @@ public class MartiniBeanController extends AbstractMartiniController {
 		String beanType = config.getBeanType();
 		return SpringBeanUtil.getBean(beanName, beanType, Controller.class);
 	}
-
-	@Override
-	public void setTemporary(JMeterProperty property) {
-		super.setTemporary(property);
-		Controller delegate = delegateRef.get();
-		if (null != delegate) {
-			delegate.setTemporary(property);
-		}
-	}
-
-	@Override
-	public void setRunningVersion(boolean runningVersion) {
-		super.setRunningVersion(runningVersion);
-		Controller delegate = delegateRef.get();
-		if (null != delegate) {
-			delegate.setRunningVersion(runningVersion);
-		}
-	}
 }

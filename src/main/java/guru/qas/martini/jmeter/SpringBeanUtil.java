@@ -18,9 +18,6 @@ package guru.qas.martini.jmeter;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
@@ -29,8 +26,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 public class SpringBeanUtil {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(SpringBeanUtil.class);
 
 	public static <T> T getBean(String name, String type, @Nonnull Class<T> expectedType) {
 		checkNotNull(expectedType, "null Class");
@@ -57,6 +52,10 @@ public class SpringBeanUtil {
 		return expectedType.cast(bean);
 	}
 
+	public static ApplicationContext getApplicationContext() {
+		return MartiniSpringPreProcessor.getApplicationContext();
+	}
+
 	protected static String getNormalized(String text) {
 		String trimmed = null == text ? "" : text.trim();
 		return trimmed.isEmpty() ? null : trimmed;
@@ -69,18 +68,6 @@ public class SpringBeanUtil {
 		}
 		catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
-		}
-	}
-
-	public  static void destroy(String name, Object delegate) {
-		if (DisposableBean.class.isInstance(delegate)) {
-			DisposableBean disposableBean = DisposableBean.class.cast(delegate);
-			try {
-				disposableBean.destroy();
-			}
-			catch (Exception e) {
-				LOGGER.warn("Exception encountered during destroy() call on {} delegate {}", name, delegate, e);
-			}
 		}
 	}
 }

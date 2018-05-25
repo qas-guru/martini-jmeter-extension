@@ -30,6 +30,7 @@ import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.TestCompilerHelper;
@@ -44,7 +45,8 @@ import guru.qas.martini.jmeter.Gui;
 import static com.google.common.base.Preconditions.checkState;
 
 @SuppressWarnings("WeakerAccess")
-public abstract class AbstractMartiniController extends AbstractTestElement implements Controller, Serializable, TestStateListener, TestCompilerHelper, LoopIterationListener {
+public abstract class AbstractMartiniController extends AbstractTestElement
+	implements Controller, Serializable, TestStateListener, TestCompilerHelper, LoopIterationListener {
 
 	private static final long serialVersionUID = -3785811213682702141L;
 
@@ -162,6 +164,10 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 		if (null != delegate) {
 			try {
 				delegate.addTestElement(element);
+				if (LoopIterationListener.class.isInstance(element)) {
+					LoopIterationListener listener = LoopIterationListener.class.cast(element);
+					this.addIterationListener(listener);
+				}
 			}
 			catch (Exception e) {
 				logger.error("{}: addTestElement(TestElement) failure", getName(), e);
@@ -332,6 +338,25 @@ public abstract class AbstractMartiniController extends AbstractTestElement impl
 		finally {
 			delegateRef.set(null);
 			monitor.leave();
+		}
+	}
+
+	@Override
+	public void setTemporary(JMeterProperty property) {
+		super.setTemporary(property);
+		Controller delegate = delegateRef.get();
+		if (null != delegate) {
+			delegate.setProperty(property);
+			delegate.setTemporary(property);
+		}
+	}
+
+	@Override
+	public void setRunningVersion(boolean runningVersion) {
+		super.setRunningVersion(runningVersion);
+		Controller delegate = delegateRef.get();
+		if (null != delegate) {
+			delegate.setRunningVersion(runningVersion);
 		}
 	}
 }
