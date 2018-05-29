@@ -16,6 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.processor.gui;
 
+import java.awt.Dimension;
+
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
@@ -50,6 +52,9 @@ public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui 
 		configLocationsField = new JTextArea("", 2, 6);
 		featureLocationsField = new JTextArea("", 2, 6);
 		environmentPanel = new ArgumentsPanel(null, true);
+		Dimension size = environmentPanel.getPreferredSize();
+		Dimension dimension = new Dimension(size.width, size.height + 200);
+		environmentPanel.setPreferredSize(dimension);
 		init();
 	}
 
