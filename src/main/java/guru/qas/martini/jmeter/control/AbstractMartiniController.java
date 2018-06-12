@@ -59,12 +59,6 @@ public abstract class AbstractMartiniController extends AbstractTestElement
 		init();
 	}
 
-	@SuppressWarnings("UnusedReturnValue")
-	protected Object readResolve() {
-		init();
-		return this;
-	}
-
 	protected void init() {
 		logger = LoggerFactory.getLogger(getClass());
 		monitor = new Monitor();
@@ -180,7 +174,7 @@ public abstract class AbstractMartiniController extends AbstractTestElement
 	public boolean addTestElementOnce(TestElement child) {
 		TestCompilerHelper testCompilerHelper = getDelegateAs(TestCompilerHelper.class);
 
-		boolean evaluation = false;
+		boolean evaluation = true;
 		if (null != testCompilerHelper) {
 			try {
 				evaluation = testCompilerHelper.addTestElementOnce(child);

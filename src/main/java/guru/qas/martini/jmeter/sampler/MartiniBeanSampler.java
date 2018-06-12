@@ -104,8 +104,8 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 			}
 		}
 		catch (Exception e) {
+			logger.error("exception occurred while executing {} {}", this.getName(), delegate, e);
 			result = new SampleResult();
-			result.setStopTestNow(true);
 			String stacktrace = Throwables.getStackTraceAsString(e);
 			result.setResponseMessage(stacktrace);
 		}

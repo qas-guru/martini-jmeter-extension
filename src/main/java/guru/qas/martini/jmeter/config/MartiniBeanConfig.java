@@ -51,15 +51,6 @@ public class MartiniBeanConfig extends ConfigTestElement implements Serializable
 
 	public MartiniBeanConfig() {
 		super();
-		init();
-	}
-
-	protected Object readResolve() {
-		init();
-		return this;
-	}
-
-	protected void init() {
 		setParameters(new Arguments());
 	}
 

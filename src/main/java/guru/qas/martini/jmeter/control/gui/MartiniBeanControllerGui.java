@@ -44,11 +44,6 @@ public final class MartiniBeanControllerGui extends AbstractControllerGui {
 		init();
 	}
 
-	protected Object readResolve() {
-		init();
-		return this;
-	}
-
 	protected void init() {
 		setLayout(new BorderLayout(0, 5));
 		setBorder(makeBorder());

@@ -13,6 +13,8 @@
 		<release version="2.4.1" date="2018-06-06" description="Release 2.4.1">
 			<action dev="pcurich" type="add">
 				Added debugging statements to SpringBeanUtil.
+				No longer terminating run on setup failure; this is up to delegates.
+				Correcting serialization issues.
 			</action>
 		</release>
 		<release version="2.4.0" date="2018-04-30" description="Release 2.4.0">
