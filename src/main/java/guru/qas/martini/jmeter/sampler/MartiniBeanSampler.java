@@ -58,18 +58,13 @@ public class MartiniBeanSampler extends AbstractSampler implements Interruptible
 
 	public MartiniBeanSampler() {
 		super();
-		init();
-
+		setConfig(new MartiniBeanConfig());
+		logger = LoggerFactory.getLogger(this.getClass());
 	}
 
 	protected Object readResolve() {
-		init();
-		return this;
-	}
-
-	protected void init() {
-		setConfig(new MartiniBeanConfig());
 		logger = LoggerFactory.getLogger(this.getClass());
+		return this;
 	}
 
 	public void setConfig(MartiniBeanConfig config) {

@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="2.4.2" date="2018-06-22" description="Release 2.4.2">
+			<action dev="pcurich" type="update">
+				Correcting serialization issues.
+			</action>
+		</release>
 		<release version="2.4.1" date="2018-06-06" description="Release 2.4.1">
 			<action dev="pcurich" type="add">
 				Added debugging statements to SpringBeanUtil.

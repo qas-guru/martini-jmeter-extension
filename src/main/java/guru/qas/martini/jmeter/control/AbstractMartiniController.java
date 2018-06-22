@@ -65,6 +65,11 @@ public abstract class AbstractMartiniController extends AbstractTestElement
 		delegateRef = new AtomicReference<>();
 	}
 
+	protected Object readResolve() {
+		init();
+		return this;
+	}
+
 	@Override
 	public Object clone() {
 		AbstractMartiniController clone = AbstractMartiniController.class.cast(super.clone());

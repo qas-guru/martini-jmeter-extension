@@ -38,11 +38,6 @@ public class MartiniBeanController extends AbstractMartiniController {
 
 	public MartiniBeanController() {
 		super();
-		init();
-	}
-
-	protected void init() {
-		super.init();
 		setConfig(new MartiniBeanConfig());
 	}
 
