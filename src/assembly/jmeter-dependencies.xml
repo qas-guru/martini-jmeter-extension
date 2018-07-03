@@ -18,6 +18,7 @@
 			<excludes>
 				<exclude>org.slf4j:slf4j-api</exclude>
 				<exclude>org.apache.httpcomponents:httpcore</exclude>
+				<exclude>org.jodd:jodd-core</exclude>
 			</excludes>
 		</dependencySet>
 	</dependencySets>

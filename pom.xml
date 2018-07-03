@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-jmeter</artifactId>
-	<version>2.4.2</version>
+	<version>3.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -45,8 +45,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.target>1.8</maven.compiler.target>
-		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.source>10</maven.compiler.source>
+		<maven.compiler.target>10</maven.compiler.target>
 		<jmeter.version>4.0</jmeter.version>
 	</properties>
 
@@ -64,9 +64,19 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.7.0</version>
 				<configuration>
-					<showWarnings>true</showWarnings>
-					<showDeprecation>true</showDeprecation>
+					<release>10</release>
+					<source>10</source>
+					<target>10</target>
+					<verbose>false</verbose>
+					<debug>false</debug>
 				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>6.2</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -84,13 +94,26 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.0.1</version>
+				<configuration>
+				</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<source>10</source>
+							<additionalJOption>-html5</additionalJOption>
+							<additionalJOption>-Xdoclint:none</additionalJOption>
+							<includeTransitiveDependencySources>false</includeTransitiveDependencySources>
+							<includeDependencySources>false</includeDependencySources>
+							<applyJavadocSecurityFix>true</applyJavadocSecurityFix>
+							<failOnError>false</failOnError>
+							<failOnWarnings>false</failOnWarnings>
+							<skip>false</skip>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -140,7 +163,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.0.2</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<goals>
@@ -196,7 +219,7 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>2.3.0</version>
+			<version>3.0.0</version>
 			<scope>compile</scope>
 		</dependency>
 
@@ -212,6 +235,19 @@
 			<artifactId>ApacheJMeter_java</artifactId>
 			<version>${jmeter.version}</version>
 			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.jodd</groupId>
+					<artifactId>jodd-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jodd</groupId>
+			<artifactId>jodd-core</artifactId>
+			<version>5.0.2</version>
+			<scope>compile</scope>
 		</dependency>
 
 	</dependencies>

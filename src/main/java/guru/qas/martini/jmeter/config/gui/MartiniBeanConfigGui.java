@@ -19,6 +19,7 @@ package guru.qas.martini.jmeter.config.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -175,7 +176,8 @@ public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements Change
 		if (null != implementation && null != className && !className.isEmpty()) {
 			try {
 				Class<?> chosen = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-				Object o = chosen.newInstance();
+				Constructor<?> constructor = chosen.getDeclaredConstructor();
+				Object o = constructor.newInstance();
 				configuredInstance = this.implementation.cast(o);
 			}
 			catch (Exception e) {

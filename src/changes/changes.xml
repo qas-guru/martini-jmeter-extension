@@ -10,6 +10,12 @@
 	</properties>
 
 	<body>
+		<release version="3.0.0" date="2018-07-03" description="Release 3.0.0">
+			<action dev="pcurich" type="update">
+				Upgrading to Java 10.
+				Updating dependencies and plugin versions.
+			</action>
+		</release>
 		<release version="2.4.2" date="2018-06-22" description="Release 2.4.2">
 			<action dev="pcurich" type="update">
 				Correcting serialization issues.
