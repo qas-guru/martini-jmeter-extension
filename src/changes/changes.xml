@@ -10,6 +10,12 @@
 	</properties>
 
 	<body>
+		<release version="2.4.3" date="2018-07-24" description="Release 2.4.3">
+			<action dev="pcurich" type="update">
+				Adding current timestamp to failed samples.
+				Removing newlines from stacktrace exceptions.
+			</action>
+		</release>
 		<release version="2.4.2" date="2018-06-22" description="Release 2.4.2">
 			<action dev="pcurich" type="update">
 				Correcting serialization issues.
