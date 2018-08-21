@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="2.5.0" date="2018-08-21" description="Release 2.5.0">
+			<action dev="pcurich" type="update">
+				Updating version dependencies.
+			</action>
+		</release>
 		<release version="2.4.3" date="2018-07-24" description="Release 2.4.3">
 			<action dev="pcurich" type="update">
 				Adding current timestamp to failed samples.
