@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="2.6.0" date="2018-08-22" description="Release 2.6.0">
+			<action dev="pcurich" type="update">
+				Updating version dependencies.
+			</action>
+		</release>
 		<release version="2.5.0" date="2018-08-21" description="Release 2.5.0">
 			<action dev="pcurich" type="update">
 				Updating version dependencies.

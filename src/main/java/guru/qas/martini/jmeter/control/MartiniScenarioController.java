@@ -28,8 +28,6 @@ import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.beans.factory.config.Scope;
 import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.jmeter.SpringBeanUtil;
@@ -37,7 +35,7 @@ import guru.qas.martini.jmeter.result.JMeterMartini;
 import guru.qas.martini.jmeter.result.JMeterMartiniResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
-import guru.qas.martini.scope.ScenarioScope;
+import guru.qas.martini.scope.MartiniScenarioScope;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class MartiniScenarioController extends GenericController implements TestStateListener, LoopIterationListener {
@@ -48,7 +46,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	protected transient Logger logger;
 	protected transient EventManager eventManager;
-	protected transient ScenarioScope scenarioScope;
+	protected transient MartiniScenarioScope scenarioScope;
 
 	protected transient MartiniResult martiniResult;
 
@@ -87,14 +85,7 @@ public class MartiniScenarioController extends GenericController implements Test
 
 	protected void setUpScenarioScope() {
 		ApplicationContext applicationContext = SpringBeanUtil.getApplicationContext();
-		ConfigurableBeanFactory beanFactory =
-			ConfigurableBeanFactory.class.cast(applicationContext.getAutowireCapableBeanFactory());
-		String[] names = beanFactory.getRegisteredScopeNames();
-		for (int i = 0; null == scenarioScope && i < names.length; i++) {
-			String name = names[i];
-			Scope registeredScope = beanFactory.getRegisteredScope(name);
-			scenarioScope = ScenarioScope.class.isInstance(registeredScope) ? ScenarioScope.class.cast(registeredScope) : null;
-		}
+		scenarioScope = applicationContext.getBean(MartiniScenarioScope.class);
 	}
 
 	@Override
