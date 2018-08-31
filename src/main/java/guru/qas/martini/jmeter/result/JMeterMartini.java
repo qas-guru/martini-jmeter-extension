@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
+import guru.qas.martini.gate.MartiniGate;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.MartiniTag;
 
@@ -111,6 +112,11 @@ public class JMeterMartini implements Martini {
 			.findAny()
 			.orElse(null);
 		return null != match;
+	}
+
+	@Override
+	public Collection<MartiniGate> getGates() {
+		throw new UnsupportedOperationException();
 	}
 
 	public static Builder builder() {
