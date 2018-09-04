@@ -19,6 +19,7 @@ package guru.qas.martini.jmeter.processor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.jmeter.threads.JMeterContext;
@@ -83,18 +84,18 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 	}
 
 	@Override
-	public String getHostname() {
-		return hostname;
+	public Optional<String> getHostName() {
+		return Optional.ofNullable(hostname);
 	}
 
 	@Override
-	public String getHostAddress() {
-		return hostAddress;
+	public Optional<String> getHostAddress() {
+		return Optional.ofNullable(hostAddress);
 	}
 
 	@Override
-	public String getUsername() {
-		return username;
+	public Optional<String> getUsername() {
+		return Optional.ofNullable(username);
 	}
 
 	@Override
