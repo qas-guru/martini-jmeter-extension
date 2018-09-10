@@ -68,16 +68,10 @@ public class MartiniSampler extends AbstractSampler {
 		SampleResult result = initializeSampleResult();
 		try {
 			Martini martini = JMeterContextUtil.getSamplerData(Martini.class).orElse(null);
-			if (null == martini) {
-				result.setIgnore();
-				super.getThreadContext().setStartNextThreadLoop(true);
-			}
-			else {
-				setSampleLabel(result, martini);
-				MartiniCallable callable = getCallable(martini);
-				MartiniResult martiniResult = callable.call();
-				update(result, martiniResult);
-			}
+			setSampleLabel(result, martini);
+			MartiniCallable callable = getCallable(martini);
+			MartiniResult martiniResult = callable.call();
+			update(result, martiniResult);
 		}
 		catch (Exception exception) {
 			String stackTrace = Throwables.getStackTraceAsString(exception);
