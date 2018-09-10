@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.Header;
@@ -53,10 +54,12 @@ import guru.qas.martini.runtime.harness.MartiniCallable;
 public class MartiniSampler extends AbstractSampler {
 
 	protected final Logger logger;
+	protected final AtomicBoolean interrupted;
 
 	public MartiniSampler() {
 		super();
 		logger = LoggerFactory.getLogger(getClass());
+		interrupted = new AtomicBoolean(false);
 	}
 
 	@Override
@@ -64,12 +67,17 @@ public class MartiniSampler extends AbstractSampler {
 
 		SampleResult result = initializeSampleResult();
 		try {
-			Martini martini = getMartini();
-			setSampleLabel(result, martini);
-
-			MartiniCallable callable = getCallable(martini);
-			MartiniResult martiniResult = callable.call();
-			update(result, martiniResult);
+			Martini martini = JMeterContextUtil.getSamplerData(Martini.class).orElse(null);
+			if (null == martini) {
+				result.setIgnore();
+				super.getThreadContext().setStartNextThreadLoop(true);
+			}
+			else {
+				setSampleLabel(result, martini);
+				MartiniCallable callable = getCallable(martini);
+				MartiniResult martiniResult = callable.call();
+				update(result, martiniResult);
+			}
 		}
 		catch (Exception exception) {
 			String stackTrace = Throwables.getStackTraceAsString(exception);

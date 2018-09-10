@@ -126,7 +126,6 @@ public class JMeterContextUtil {
 		Object o = null == map ? null : map.get(getKey(implementation));
 		T instance = implementation.isInstance(o) ? implementation.cast(o) : null;
 		return Optional.ofNullable(instance);
-
 	}
 
 	public static void setTemporaryProperty(
