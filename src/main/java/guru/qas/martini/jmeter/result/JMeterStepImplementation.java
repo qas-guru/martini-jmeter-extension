@@ -17,6 +17,7 @@ limitations under the License.
 package guru.qas.martini.jmeter.result;
 
 import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import gherkin.ast.Step;
@@ -43,8 +44,8 @@ public class JMeterStepImplementation implements StepImplementation {
 	}
 
 	@Override
-	public Pattern getPattern() {
-		return pattern;
+	public Optional<Pattern> getPattern() {
+		return Optional.ofNullable(pattern);
 	}
 
 	public void setMethod(Method method) {
@@ -52,8 +53,8 @@ public class JMeterStepImplementation implements StepImplementation {
 	}
 
 	@Override
-	public Method getMethod() {
-		return method;
+	public Optional<Method> getMethod() {
+		return Optional.ofNullable(method);
 	}
 
 	public JMeterStepImplementation() {

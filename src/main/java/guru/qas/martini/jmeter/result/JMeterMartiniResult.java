@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
@@ -52,6 +52,9 @@ public class JMeterMartiniResult implements MartiniResult {
 	protected final JMeterMartini martini;
 	protected final LinkedHashSet<String> categorizations;
 	protected final List<StepResult> stepResults;
+
+	protected Exception exception;
+	protected Status status;
 
 	@Override
 	public SuiteIdentifier getSuiteIdentifier() {
@@ -83,6 +86,11 @@ public class JMeterMartiniResult implements MartiniResult {
 		return ImmutableList.copyOf(stepResults);
 	}
 
+	@Override
+	public JMeterMartini getMartini() {
+		return martini;
+	}
+
 	protected JMeterMartiniResult(
 		SuiteIdentifier identifier,
 		JMeterMartini martini,
@@ -98,76 +106,53 @@ public class JMeterMartiniResult implements MartiniResult {
 		stepResults = new ArrayList<>();
 	}
 
+	@Override
+	public Optional<Long> getStartTimestamp() {
+		return stepResults.stream()
+			.map(result -> result.getStartTimestamp().orElse(null))
+			.filter(Objects::nonNull)
+			.distinct()
+			.min(Ordering.natural());
+	}
+
+	@Override
+	public Optional<Long> getEndTimestamp() {
+		return stepResults.stream()
+			.map(result -> result.getEndTimestamp().orElse(null))
+			.filter(Objects::nonNull)
+			.distinct()
+			.max(Ordering.natural());
+	}
+
+	@Override
+	public Optional<Long> getExecutionTimeMs() {
+		Long evaluation = null;
+		if (getStartTimestamp().isPresent() && getEndTimestamp().isPresent()) {
+			evaluation = getEndTimestamp().get() - getStartTimestamp().get();
+		}
+		return Optional.ofNullable(evaluation);
+	}
+
+	@Override
+	public Optional<Status> getStatus() {
+		return stepResults.stream()
+			.map(result -> result.getStatus().orElse(null))
+			.filter(Objects::nonNull)
+			.distinct()
+			.max(Ordering.natural());
+	}
+
+	@Override
+	public Optional<Exception> getException() {
+		return stepResults.stream()
+			.map(result -> result.getException().orElse(null))
+			.filter(Objects::nonNull)
+			.findFirst();
+	}
+
 	public void addStepResult(StepResult stepResult) {
 		stepResults.add(checkNotNull(stepResult, "null StepResult"));
 		martini.add(stepResult.getStep(), stepResult.getStepImplementation());
-	}
-
-	@Override
-	public JMeterMartini getMartini() {
-		return martini;
-	}
-
-	@Override
-	public Exception getException() {
-		return stepResults.stream().map(StepResult::getException).filter(Objects::nonNull).findFirst().orElse(null);
-	}
-
-	@Override
-	public Status getStatus() {
-		AtomicInteger failed = new AtomicInteger();
-		AtomicInteger skipped = new AtomicInteger();
-		AtomicInteger passed = new AtomicInteger();
-
-		stepResults.forEach(r -> {
-			Status status = r.getStatus();
-			switch (status) {
-				case FAILED:
-					failed.incrementAndGet();
-					break;
-				case PASSED:
-					passed.incrementAndGet();
-					break;
-				case SKIPPED:
-					skipped.incrementAndGet();
-					break;
-			}
-		});
-
-		Status evaluation = Status.SKIPPED;
-		if (failed.get() > 0) {
-			evaluation = Status.FAILED;
-		}
-		else if (skipped.get() > 0) {
-			evaluation = Status.SKIPPED;
-		}
-		else if (passed.get() > 0) {
-			evaluation = Status.PASSED;
-		}
-
-		return evaluation;
-	}
-
-	@Override
-	public Long getStartTimestamp() {
-		StepResult firstStep = stepResults.isEmpty() ? null : stepResults.get(0);
-		return null == firstStep ? null : firstStep.getStartTimestamp();
-	}
-
-	@Override
-	public Long getEndTimestamp() {
-		return stepResults.stream()
-			.map(StepResult::getEndTimestamp)
-			.filter(Objects::nonNull)
-			.max(Ordering.natural())
-			.orElse(null);
-	}
-
-	@Override
-	public Long getExecutionTimeMs() {
-		Long start = getStartTimestamp();
-		Long end = null == start ? null : getEndTimestamp();
-		return null == end ? null : end - start;
 	}
 
 	public static Builder builder() {

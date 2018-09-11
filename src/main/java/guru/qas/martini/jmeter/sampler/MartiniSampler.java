@@ -122,13 +122,13 @@ public class MartiniSampler extends AbstractSampler {
 	}
 
 	protected void update(SampleResult sampleResult, MartiniResult martiniResult) {
-		Long timestamp = martiniResult.getEndTimestamp();
-		Long elapsed = martiniResult.getExecutionTimeMs();
-		sampleResult.setStampAndTime(null == timestamp ? System.currentTimeMillis() : timestamp, elapsed);
-		List<StepResult> stepResults = martiniResult.getStepResults();
-		stepResults.forEach(r -> populate(sampleResult, r));
-		Status status = martiniResult.getStatus();
-		sampleResult.setSuccessful(Status.PASSED == status);
+
+		martiniResult.getStartTimestamp()
+			.ifPresent(timestamp -> martiniResult.getExecutionTimeMs()
+				.ifPresent(millis -> sampleResult.setStampAndTime(timestamp, millis)));
+
+		martiniResult.getStepResults().forEach(r -> populate(sampleResult, r));
+		martiniResult.getStatus().ifPresent(status -> sampleResult.setSuccessful(Status.PASSED == status));
 	}
 
 	protected void populate(SampleResult result, StepResult r) {
@@ -149,29 +149,25 @@ public class MartiniSampler extends AbstractSampler {
 		result.setSampleLabel(label);
 	}
 
-	protected void setElapsed(SampleResult result, StepResult r) {
-		Long startTimestamp = r.getStartTimestamp();
-		Long executionTime = r.getExecutionTime(TimeUnit.MILLISECONDS);
-		if (null != startTimestamp) {
-			result.setStampAndTime(startTimestamp, null == executionTime ? 0 : executionTime);
-		}
+	protected void setElapsed(SampleResult subResult, StepResult stepResult) {
+		stepResult.getStartTimestamp()
+			.ifPresent(timestamp -> stepResult.getExecutionTime(TimeUnit.MILLISECONDS)
+				.ifPresent(millis -> subResult.setStampAndTime(timestamp, millis)));
 	}
 
-	protected void setStatus(SampleResult result, StepResult r) {
-		Status status = r.getStatus();
-		result.setSuccessful(Status.PASSED == status);
+	protected void setStatus(SampleResult subResult, StepResult stepResult) {
+		stepResult.getStatus().ifPresent(status -> subResult.setSuccessful(Status.PASSED == status));
 	}
 
-	protected void setException(SampleResult result, StepResult r) {
-		Exception exception = r.getException();
-		if (null != exception) {
+	protected void setException(SampleResult subResult, StepResult stepResult) {
+		stepResult.getException().ifPresent(exception -> {
 			AssertionResult assertionResult = new AssertionResult("Exception");
 			assertionResult.setError(false);
 			assertionResult.setFailure(true);
 			String stackTrace = Throwables.getStackTraceAsString(exception);
 			assertionResult.setFailureMessage(stackTrace);
-			result.addAssertionResult(assertionResult);
-		}
+			subResult.addAssertionResult(assertionResult);
+		});
 	}
 
 	protected void setHttpEntities(SampleResult result, StepResult r) {

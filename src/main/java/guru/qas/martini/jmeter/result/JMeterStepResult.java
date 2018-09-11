@@ -18,6 +18,7 @@ package guru.qas.martini.jmeter.result;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpEntity;
@@ -47,8 +48,8 @@ public class JMeterStepResult implements StepResult {
 	}
 
 	@Override
-	public Status getStatus() {
-		return status;
+	public Optional<Status> getStatus() {
+		return Optional.ofNullable(status);
 	}
 
 	@Override
@@ -66,8 +67,8 @@ public class JMeterStepResult implements StepResult {
 	}
 
 	@Override
-	public Exception getException() {
-		return exception;
+	public Optional<Exception> getException() {
+		return Optional.ofNullable(exception);
 	}
 
 	public void setStartTimestamp(Long startTimestamp) {
@@ -75,8 +76,8 @@ public class JMeterStepResult implements StepResult {
 	}
 
 	@Override
-	public Long getStartTimestamp() {
-		return startTimestamp;
+	public Optional<Long> getStartTimestamp() {
+		return Optional.ofNullable(startTimestamp);
 	}
 
 	public void setEndTimestamp(Long endTimestamp) {
@@ -84,8 +85,8 @@ public class JMeterStepResult implements StepResult {
 	}
 
 	@Override
-	public Long getEndTimestamp() {
-		return endTimestamp;
+	public Optional<Long> getEndTimestamp() {
+		return Optional.ofNullable(endTimestamp);
 	}
 
 	@Override
@@ -106,12 +107,11 @@ public class JMeterStepResult implements StepResult {
 	}
 
 	@Override
-	public Long getExecutionTime(TimeUnit unit) {
+	public Optional<Long> getExecutionTime(TimeUnit unit) {
 		Long evaluation = null;
-		if (null != startTimestamp && null != endTimestamp) {
-			long millisElapsed = endTimestamp - startTimestamp;
-			evaluation = unit.convert(millisElapsed, TimeUnit.MILLISECONDS);
+		if (getStartTimestamp().isPresent() && getEndTimestamp().isPresent()) {
+			evaluation = getEndTimestamp().get() - getStartTimestamp().get();
 		}
-		return evaluation;
+		return Optional.ofNullable(evaluation);
 	}
 }
