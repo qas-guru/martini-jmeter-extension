@@ -39,5 +39,5 @@ scenarios, the end result is a total execution of 30 scenarios a single time.
 
 ### Where can I find more information? <a name="info"></a>
 
-#### In Progress: [Martini Standalone Wiki](https://github.com/qas-guru/martini-standalone/wiki) 
+#### In Progress: [Martini Standalone Wiki](https://github.com/qas-guru/martini-jmeter-extension/wiki) 
 #### In Progress: [__Martini - swank software testing in Java__](https://leanpub.com/martini) 
