@@ -68,7 +68,9 @@ public class ScenarioController extends GenericController
 	}
 
 	@Autowired
-	void set(Categories c) { this.categories = c; }
+	void set(Categories c) {
+		this.categories = c;
+	}
 
 	@Override
 	public Object clone() {
@@ -128,9 +130,8 @@ public class ScenarioController extends GenericController
 	}
 
 	protected MartiniResult getNewMartiniResult() {
-		// TODO: get martini out of variables if possible
-		// TODO: add MartiniController
-		// TODO: add Martini Sampler
+		// TODO: Suite Controller, which selects Martinis
+		// TODO: ScenarioSampler, which samples Martinis
 		return DefaultMartiniResult.builder()
 			.setMartiniSuiteIdentifier(suiteIdentifier)
 			.setMartini(new JMeterMartini())
