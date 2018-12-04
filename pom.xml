@@ -9,7 +9,7 @@
 
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-jmeter</artifactId>
-	<version>4.0.1-JDK10-SNAPSHOT</version>
+	<version>4.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -41,10 +41,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>10</maven.compiler.source>
-		<maven.compiler.target>10</maven.compiler.target>
-		<maven.compiler.release>10</maven.compiler.release>
-		<jmeter.version>4.0</jmeter.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.release>11</maven.compiler.release>
+		<jmeter.version>5.0</jmeter.version>
 	</properties>
 
 	<distributionManagement>
@@ -197,7 +197,7 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>4.0.0-JDK10</version>
+			<version>4.1.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 

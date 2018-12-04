@@ -13,9 +13,10 @@
 		<release version="4.1.0" date="2018-12-04" description="Release 4.1.0 for Java 11">
 			<action dev="pcurich" type="update">
 				Updated to Java 11.
+				Updated to Apache JMeter 5.0.
 				Updating version dependencies.
-				Updating code to accomodate dependency changes.
 				Removed MIT license.
+				Major rewrite.
 			</action>
 		</release>
 		<release version="2.6.0" date="2018-08-22" description="Release 2.6.0">
