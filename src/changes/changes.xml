@@ -10,6 +10,12 @@
 	</properties>
 
 	<body>
+		<release version="4.1.0.1" date="2018-12-08" description="Release 4.1.0.1 for Java 11">
+			<action dev="pcurich" type="update">
+				Updated to Java 11.
+				Updating version dependencies.
+			</action>
+		</release>
 		<release version="4.0.0-JDK10" date="2018-09-04" description="Release 4.0.0 for Java 10">
 			<action dev="pcurich" type="update">
 				Updated to Java 10.

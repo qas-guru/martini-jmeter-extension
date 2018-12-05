@@ -17,11 +17,16 @@ limitations under the License.
 package guru.qas.martini.jmeter.result;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -102,16 +107,26 @@ public class JMeterMartini implements Martini {
 
 	@Override
 	public boolean isAnyStepAnnotated(Class<? extends Annotation> implementation) {
-		StepImplementation match = getStepIndex().values().stream()
+		return getStepImplementationMethods()
+			.anyMatch(method -> method.isAnnotationPresent(implementation));
+	}
+
+	@Override
+	public <T extends Annotation> List<T> getStepAnnotations(Class<T> implementation) {
+		checkNotNull(implementation, "null Class");
+
+		return getStepImplementationMethods()
+			.flatMap(method -> {
+				T[] annotations = method.getDeclaredAnnotationsByType(implementation);
+				return Arrays.stream(annotations);
+			}).collect(Collectors.toList());
+	}
+
+	protected Stream<Method> getStepImplementationMethods() {
+		return getStepIndex().values().stream()
 			.filter(Objects::nonNull)
-			.filter(i -> {
-				Class c = i.getClass();
-				Annotation[] annotations = c.getAnnotationsByType(implementation);
-				return annotations.length > 0;
-			})
-			.findAny()
-			.orElse(null);
-		return null != match;
+			.map(stepImplementation -> stepImplementation.getMethod().orElse(null))
+			.filter(Objects::nonNull);
 	}
 
 	@Override
