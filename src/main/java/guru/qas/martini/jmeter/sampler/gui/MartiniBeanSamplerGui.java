@@ -33,6 +33,7 @@ import guru.qas.martini.jmeter.sampler.MartiniBeanSampler;
  * Modeled after JavaTestSamplerGui.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 
 	protected final MartiniBeanConfigGui<JavaSamplerClient> configurationPanel;

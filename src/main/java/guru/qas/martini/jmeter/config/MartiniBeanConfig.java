@@ -41,6 +41,7 @@ import static com.google.common.base.Preconditions.checkState;
  * Modeled after JavaConfig.
  */
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class MartiniBeanConfig extends ConfigTestElement implements Serializable {
 
 	private static final long serialVersionUID = -874529623770552997L;

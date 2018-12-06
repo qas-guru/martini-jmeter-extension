@@ -51,6 +51,7 @@ import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.harness.MartiniCallable;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class MartiniSampler extends AbstractSampler {
 
 	protected final Logger logger;

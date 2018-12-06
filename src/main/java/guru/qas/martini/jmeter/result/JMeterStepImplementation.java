@@ -24,6 +24,7 @@ import gherkin.ast.Step;
 import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
+@Deprecated
 public class JMeterStepImplementation implements StepImplementation {
 
 	protected String keyword;

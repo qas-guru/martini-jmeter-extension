@@ -64,6 +64,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Modeled after JavaConfigGui.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class MartiniBeanConfigGui<T> extends AbstractConfigGui implements ChangeListener {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniBeanConfigGui.class);

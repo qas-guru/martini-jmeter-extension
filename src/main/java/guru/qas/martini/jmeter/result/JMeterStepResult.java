@@ -33,6 +33,7 @@ import guru.qas.martini.step.StepImplementation;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class JMeterStepResult implements StepResult {
 
 	protected Status status;

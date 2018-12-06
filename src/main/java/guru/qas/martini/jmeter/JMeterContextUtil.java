@@ -33,6 +33,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class JMeterContextUtil {
 
 	public static <T> Optional<T> getProperty(@Nonnull TestElement element, @Nonnull Class<T> implementation) {

@@ -38,6 +38,7 @@ import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 import static guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public final class MartiniSpringPreProcessorGui extends AbstractPreProcessorGui {
 
 	protected static final String KEY_SPRING_LABEL = "spring.panel.label";

@@ -40,6 +40,7 @@ import guru.qas.martini.tag.MartiniTag;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class JMeterMartini implements Martini {
 
 	protected final JMeterRecipe recipe;

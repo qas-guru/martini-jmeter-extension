@@ -28,6 +28,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import static org.apache.jmeter.util.JMeterUtils.getLocale;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class Gui {
 
 	protected static final Gui INSTANCE = new Gui();

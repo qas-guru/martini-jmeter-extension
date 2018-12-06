@@ -56,6 +56,7 @@ import guru.qas.martini.runtime.event.EventManager;
 import static guru.qas.martini.jmeter.JMeterContextUtil.*;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public final class MartiniSpringPreProcessor extends AbstractTestElement implements PreProcessor, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 6143536078921717477L;

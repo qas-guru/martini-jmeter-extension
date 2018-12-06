@@ -43,6 +43,7 @@ import guru.qas.martini.result.StepResult;
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class JMeterMartiniResult implements MartiniResult {
 
 	protected final SuiteIdentifier identifier;

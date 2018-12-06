@@ -23,6 +23,7 @@ import gherkin.pickles.PickleLocation;
 import guru.qas.martini.gherkin.FeatureWrapper;
 import guru.qas.martini.gherkin.Recipe;
 
+@Deprecated
 public class JMeterRecipe implements Recipe {
 
 	@Override

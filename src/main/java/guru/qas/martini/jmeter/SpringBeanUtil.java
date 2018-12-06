@@ -27,6 +27,7 @@ import guru.qas.martini.jmeter.processor.MartiniSpringPreProcessor;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class SpringBeanUtil {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SpringBeanUtil.class);

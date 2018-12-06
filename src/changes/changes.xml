@@ -10,6 +10,19 @@
 	</properties>
 
 	<body>
+		<release version="4.2" date="2018-12-08" description="Release 4.2 for Java 11">
+			<action dev="pcurich" type="add">
+				Adding new Spring PreProcessor.
+				Adding new Martini Suite PreProcessor.
+				Adding new Martini Filter Controller.
+				Adding new Martini Scope Controller.
+				Adding new Martini Sampler.
+				Adding new Bean Sampler.
+			</action>
+			<action dev="pcurich" type="remove">
+				Removing old code.
+			</action>
+		</release>
 		<release version="4.1.0.1" date="2018-12-08" description="Release 4.1.0.1 for Java 11">
 			<action dev="pcurich" type="update">
 				Updated to Java 11.

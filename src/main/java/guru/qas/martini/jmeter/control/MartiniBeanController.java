@@ -30,6 +30,7 @@ import guru.qas.martini.jmeter.config.MartiniBeanConfig;
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class MartiniBeanController extends AbstractMartiniController {
 
 	private static final long serialVersionUID = -3785811213682702141L;

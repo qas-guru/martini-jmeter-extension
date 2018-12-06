@@ -48,6 +48,7 @@ import guru.qas.martini.jmeter.Gui;
 import guru.qas.martini.jmeter.JMeterContextUtil;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class MartiniController extends GenericController implements TestStateListener, LoopIterationListener {
 
 	protected static final String PROPERTY_SPEL_FILTER = "spel.filter";

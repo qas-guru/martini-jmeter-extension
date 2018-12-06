@@ -47,6 +47,7 @@ import static com.google.common.base.Preconditions.checkState;
  * Modeled after JavaSampler.
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
+@Deprecated
 public class MartiniBeanSampler extends AbstractSampler implements Interruptible {
 
 	private static final long serialVersionUID = 1813073201707263835L;

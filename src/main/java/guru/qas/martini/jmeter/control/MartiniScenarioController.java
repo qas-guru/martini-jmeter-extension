@@ -38,6 +38,7 @@ import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.scope.MartiniScenarioScope;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class MartiniScenarioController extends GenericController implements TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 9021149216602507240L;

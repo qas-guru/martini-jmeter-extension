@@ -26,6 +26,7 @@ import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.sampler.MartiniSampler;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	public MartiniSamplerGui() {

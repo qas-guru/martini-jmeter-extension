@@ -63,6 +63,7 @@ import static com.google.common.base.Preconditions.checkState;
  * for some other component.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Deprecated
 public class ArgumentPanel extends AbstractConfigGui implements ActionListener {
 
 	private static final long serialVersionUID = 240L;

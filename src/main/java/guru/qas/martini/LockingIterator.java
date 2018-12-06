@@ -28,6 +28,7 @@ import com.google.common.collect.ForwardingIterator;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class LockingIterator<T> extends ForwardingIterator<T> implements Lock {
 
 	protected final Iterator<T> iterator;

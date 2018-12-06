@@ -45,6 +45,7 @@ import guru.qas.martini.jmeter.Gui;
 import static com.google.common.base.Preconditions.checkState;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public abstract class AbstractMartiniController extends AbstractTestElement
 	implements Controller, Serializable, TestStateListener, TestCompilerHelper, LoopIterationListener {
 

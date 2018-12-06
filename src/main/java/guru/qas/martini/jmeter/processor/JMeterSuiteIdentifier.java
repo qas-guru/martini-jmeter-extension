@@ -37,6 +37,7 @@ import guru.qas.martini.event.SuiteIdentifier;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
+@Deprecated
 public class JMeterSuiteIdentifier implements SuiteIdentifier {
 
 	private final UUID id;
