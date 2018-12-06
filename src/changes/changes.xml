@@ -10,7 +10,7 @@
 	</properties>
 
 	<body>
-		<release version="4.2" date="2018-12-08" description="Release 4.2 for Java 11">
+		<release version="4.2" date="2018-12-06" description="Release 4.2 for Java 11">
 			<action dev="pcurich" type="add">
 				Adding new Spring PreProcessor.
 				Adding new Martini Suite PreProcessor.
