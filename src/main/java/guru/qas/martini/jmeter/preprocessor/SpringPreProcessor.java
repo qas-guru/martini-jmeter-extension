@@ -17,24 +17,36 @@ limitations under the License.
 package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
+import org.apache.jorphan.util.JMeterStopTestException;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
 
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
+import guru.qas.martini.jmeter.ArgumentListPropertySource;
 
+import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessorMessages.*;
+import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME;
 
 /**
  * Manages a Spring ClassPathXmlApplicationContext, making the context accessible to setup and test threads
@@ -50,38 +62,127 @@ public class SpringPreProcessor
 
 	private static final long serialVersionUID = -1582951167073002597L;
 
+	// These must match field names exactly.
+	static final String PROPERTY_SPRING_CONFIG_LOCATIONS = "configurationLocations";
+	static final String PROPERTY_ENVIRONMENT_VARIABLES = "environmentVariables";
+
 	public static final String VARIABLE = "martini.spring.application.context";
+
+	// Serialized.
+	protected List<Argument> environmentVariables;
+	protected List<String> configurationLocations;
 
 	// Shared.
 	protected transient ClassPathXmlApplicationContext springContext;
+	protected transient SpringPreProcessorBeanInfo beanInfo;
+	protected transient IMessageConveyor messageConveyor;
 	protected transient LocLogger logger;
 
-	public SpringPreProcessor() {
-		super();
+	public List<Argument> getEnvironmentVariables() {
+		return environmentVariables;
+	}
+
+	@SuppressWarnings("unused") // Accessed via bean introspection.
+	public void setEnvironmentVariables(List<Argument> environmentVariables) {
+		this.environmentVariables = environmentVariables;
+	}
+
+	public List<String> getConfigurationLocations() {
+		return configurationLocations;
+	}
+
+	@SuppressWarnings("unused") // Accessed via bean introspection.
+	public void setConfigurationLocations(List<String> configurationLocations) {
+		this.configurationLocations = configurationLocations;
 	}
 
 	@Override
 	public void testStarted() {
-		System.out.println("Yo! testStarted()");
 		setUp();
 	}
 
 	@Override
 	public void testStarted(String host) {
-		System.out.println("Yo! testStarted(String)");
 		setUp();
 	}
 
 	protected void setUp() {
+		System.out.println("SET UP");
 		setUpLogger();
-		logger.info(STARTING, super.getName(), System.identityHashCode(this));
+		logger.info(STARTING, super.getName());
+
+		setUpBeanInfo();
+		setUpSpringContext();
 	}
 
 	protected void setUpLogger() {
 		Locale locale = JMeterUtils.getLocale();
-		IMessageConveyor messageConveyor = new MessageConveyor(locale);
+		messageConveyor = new MessageConveyor(locale);
 		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
 		logger = loggerFactory.getLocLogger(this.getClass());
+	}
+
+	protected void setUpBeanInfo() {
+		beanInfo = new SpringPreProcessorBeanInfo();
+	}
+
+	protected void setUpSpringContext() {
+		try {
+			String[] locations = getLocations();
+			setUpSpringContext(locations);
+		}
+		catch (Exception e) {
+			logger.error(SPRING_STARTUP_ERROR, getName(), e);
+			String errorMessage = messageConveyor.getMessage(ERROR_MESSAGE);
+			String title = messageConveyor.getMessage(ERROR_TITLE, getName());
+			JMeterUtils.reportErrorToUser(errorMessage, title, e);
+			throw new JMeterStopTestException(errorMessage, e);
+		}
+	}
+
+	protected String[] getLocations() {
+		List<String> configured = getConfigurationLocations();
+		checkNotNull(configured,
+			messageConveyor.getMessage(MISSING_PROPERTY, beanInfo.getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+
+		List<String> locations = configured.stream()
+			.filter(Objects::nonNull)
+			.map(String::trim)
+			.filter(item -> !item.isEmpty())
+			.collect(Collectors.toList());
+		checkArgument(!locations.isEmpty(),
+			messageConveyor.getMessage(EMPTY_PROPERTY, beanInfo.getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+		return locations.toArray(new String[]{});
+	}
+
+	protected void setUpSpringContext(String[] locations) {
+		ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext(locations, false);
+		setEnvironment(springContext);
+		springContext.refresh();
+		springContext.registerShutdownHook();
+		this.springContext = springContext;
+		setUpSpringContextVariable();
+	}
+
+	protected void setEnvironment(ClassPathXmlApplicationContext context) {
+		ConfigurableEnvironment environment = context.getEnvironment();
+		MutablePropertySources propertySources = environment.getPropertySources();
+		ArgumentListPropertySource propertySource = getJMeterPropertySource();
+		propertySources.addAfter(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, propertySource);
+	}
+
+	protected ArgumentListPropertySource getJMeterPropertySource() {
+		String name = super.getName();
+		List<Argument> environmentVariables = getEnvironmentVariables();
+		checkNotNull(environmentVariables,
+			messageConveyor.getMessage(MISSING_PROPERTY, beanInfo.getDisplayName(PROPERTY_ENVIRONMENT_VARIABLES)));
+		return ArgumentListPropertySource.builder().setName(name).setArguments(environmentVariables).build();
+	}
+
+	protected void setUpSpringContextVariable() {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		variables.putObject(VARIABLE, springContext);
 	}
 
 	@Override
@@ -112,17 +213,21 @@ public class SpringPreProcessor
 	}
 
 	protected void tearDown() {
+		tearDownSpring();
+		springContext = null;
+		logger = null;
+	}
+
+	private void tearDownSpring() {
 		synchronized (ApplicationContext.class) {
 			if (null != springContext) {
 				try {
 					springContext.close();
 				}
 				catch (Exception e) {
-					logger.warn(SPRING_CLOSE_EXCEPTION, e);
+					logger.warn(SPRING_CLOSE_EXCEPTION, getName(), e);
 				}
 			}
 		}
-		springContext = null;
-		logger = null;
 	}
 }

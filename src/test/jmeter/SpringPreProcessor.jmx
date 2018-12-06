@@ -12,7 +12,10 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Spring PreProcessor" enabled="true"/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Spring PreProcessor" enabled="true">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations"/>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group One" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>

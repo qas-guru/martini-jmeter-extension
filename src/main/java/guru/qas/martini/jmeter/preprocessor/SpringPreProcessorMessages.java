@@ -24,5 +24,10 @@ import ch.qos.cal10n.LocaleData;
 @LocaleData({@Locale("en_US")})
 public enum SpringPreProcessorMessages {
 	STARTING,
+	MISSING_PROPERTY,
+	EMPTY_PROPERTY,
+	SPRING_STARTUP_ERROR,
+	ERROR_MESSAGE,
+	ERROR_TITLE,
 	SPRING_CLOSE_EXCEPTION
 }
