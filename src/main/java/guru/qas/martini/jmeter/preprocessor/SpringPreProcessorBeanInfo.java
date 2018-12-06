@@ -76,6 +76,13 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 		return messageFunction.apply(key);
 	}
 
+	/**
+	 * @return display name for TestElement
+	 */
+	protected String getDisplayName() {
+		return messageFunction.apply("displayName");
+	}
+
 	protected String getDisplayName(String property) {
 		String key = String.format("%s.displayName", property);
 		return messageFunction.apply(key);

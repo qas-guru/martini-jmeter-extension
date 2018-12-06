@@ -30,9 +30,9 @@ import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
-import org.apache.jorphan.util.JMeterStopTestException;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -77,6 +77,7 @@ public class SpringPreProcessor
 	protected transient SpringPreProcessorBeanInfo beanInfo;
 	protected transient IMessageConveyor messageConveyor;
 	protected transient LocLogger logger;
+	protected transient boolean usingIdMessages;
 
 	public List<Argument> getEnvironmentVariables() {
 		return environmentVariables;
@@ -107,12 +108,16 @@ public class SpringPreProcessor
 	}
 
 	protected void setUp() {
-		System.out.println("SET UP");
-		setUpLogger();
-		logger.info(STARTING, super.getName());
-
 		setUpBeanInfo();
+		setUpLogger();
+		setUpMessaging();
+
+		logger.info(STARTING, super.getName());
 		setUpSpringContext();
+	}
+
+	protected void setUpBeanInfo() {
+		beanInfo = new SpringPreProcessorBeanInfo();
 	}
 
 	protected void setUpLogger() {
@@ -122,8 +127,10 @@ public class SpringPreProcessor
 		logger = loggerFactory.getLocLogger(this.getClass());
 	}
 
-	protected void setUpBeanInfo() {
-		beanInfo = new SpringPreProcessorBeanInfo();
+	protected void setUpMessaging() {
+		String displayName = beanInfo.getDisplayName();
+		String trimmed = null == displayName ? "" : displayName.trim();
+		usingIdMessages = super.getName().trim().equals(trimmed);
 	}
 
 	protected void setUpSpringContext() {
@@ -132,11 +139,12 @@ public class SpringPreProcessor
 			setUpSpringContext(locations);
 		}
 		catch (Exception e) {
+			JMeterContextService.endTest();
 			logger.error(SPRING_STARTUP_ERROR, getName(), e);
-			String errorMessage = messageConveyor.getMessage(ERROR_MESSAGE);
+			String errorMessage = String.format("%s;\n%s.", messageConveyor.getMessage(ERROR_MESSAGE), e.getMessage());
 			String title = messageConveyor.getMessage(ERROR_TITLE, getName());
 			JMeterUtils.reportErrorToUser(errorMessage, title, e);
-			throw new JMeterStopTestException(errorMessage, e);
+			throw new ThreadDeath();
 		}
 	}
 
@@ -190,6 +198,9 @@ public class SpringPreProcessor
 		Object o = super.clone();
 		SpringPreProcessor clone = SpringPreProcessor.class.cast(o);
 		clone.springContext = springContext;
+		clone.beanInfo = beanInfo;
+		clone.messageConveyor = messageConveyor;
+		clone.logger = logger;
 		return clone;
 	}
 
@@ -216,6 +227,8 @@ public class SpringPreProcessor
 		tearDownSpring();
 		springContext = null;
 		logger = null;
+		messageConveyor = null;
+		beanInfo = null;
 	}
 
 	private void tearDownSpring() {
