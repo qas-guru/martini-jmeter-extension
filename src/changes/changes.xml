@@ -12,6 +12,7 @@
 	<body>
 		<release version="4.2" date="2018-12-06" description="Release 4.2 for Java 11">
 			<action dev="pcurich" type="add">
+				Removing directory assembly.
 				Adding new Spring PreProcessor.
 				<!--Adding new Martini Suite PreProcessor.-->
 				<!--Adding new Martini Filter Controller.-->

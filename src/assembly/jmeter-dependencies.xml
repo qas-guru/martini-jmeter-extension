@@ -2,7 +2,6 @@
 	<id>runtime-dependencies</id>
 	<formats>
 		<format>zip</format>
-		<format>dir</format>
 	</formats>
 	<baseDirectory>/</baseDirectory>
 	<dependencySets>
@@ -16,8 +15,8 @@
 				<include>guru.qas:martini-jmeter</include>
 			</includes>
 			<excludes>
-				<exclude>org.slf4j:slf4j-api</exclude>
-				<exclude>org.apache.httpcomponents:httpcore</exclude>
+				<!--<exclude>org.slf4j:slf4j-api</exclude>-->
+				<!--<exclude>org.apache.httpcomponents:httpcore</exclude>-->
 			</excludes>
 		</dependencySet>
 	</dependencySets>
