@@ -45,7 +45,6 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven.compiler.release>11</maven.compiler.release>
 		<jmeter.version>5.0</jmeter.version>
-		<javafx.version>11</javafx.version>
 		<maven.test.skip>true</maven.test.skip>
 	</properties>
 
@@ -198,17 +197,9 @@
 	<dependencies>
 
 		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-swing</artifactId>
-			<version>${javafx.version}</version>
-			<scope>runtime</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-web</artifactId>
-			<version>${javafx.version}</version>
-			<scope>runtime</scope>
+			<groupId>ch.qos.cal10n</groupId>
+			<artifactId>cal10n-api</artifactId>
+			<version>0.8.1</version>
 		</dependency>
 
 		<dependency>

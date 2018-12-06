@@ -17,6 +17,7 @@ limitations under the License.
 package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
+import java.util.Locale;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.processor.PreProcessor;
@@ -24,11 +25,23 @@ import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.util.JMeterUtils;
+import org.slf4j.cal10n.LocLogger;
+import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import ch.qos.cal10n.IMessageConveyor;
+import ch.qos.cal10n.MessageConveyor;
+
+import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessorMessages.*;
 
 /**
- * Creates and destroys a Spring application context on test start and end, making the ApplicationContext
- * accessible through variable martini.spring.application.context to setup and test threads.
+ * Manages a Spring ClassPathXmlApplicationContext, making the context accessible to setup and test threads
+ * through JMeterVariables as SpringPreProcessor.VARIABLE "martini.spring.application.context".
+ * <p>
+ * One enabled SpringPreProcessor should be configured at the top-level of the test plan before
+ * any ThreadGroup configurations.
  */
 @SuppressWarnings("WeakerAccess")
 public class SpringPreProcessor
@@ -40,20 +53,35 @@ public class SpringPreProcessor
 	public static final String VARIABLE = "martini.spring.application.context";
 
 	// Shared.
-	protected transient ApplicationContext springContext;
+	protected transient ClassPathXmlApplicationContext springContext;
+	protected transient LocLogger logger;
 
 	public SpringPreProcessor() {
 		super();
 	}
 
 	@Override
-	public void testStarted() { // todo: load
-		System.out.println("testStarted");
+	public void testStarted() {
+		System.out.println("Yo! testStarted()");
+		setUp();
 	}
 
 	@Override
 	public void testStarted(String host) {
-		System.out.println("testStarted(String)");
+		System.out.println("Yo! testStarted(String)");
+		setUp();
+	}
+
+	protected void setUp() {
+		setUpLogger();
+		logger.info(STARTING, super.getName(), System.identityHashCode(this));
+	}
+
+	protected void setUpLogger() {
+		Locale locale = JMeterUtils.getLocale();
+		IMessageConveyor messageConveyor = new MessageConveyor(locale);
+		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
+		logger = loggerFactory.getLocLogger(this.getClass());
 	}
 
 	@Override
@@ -66,7 +94,6 @@ public class SpringPreProcessor
 
 	@Override
 	public void process() {
-		System.out.println("process()");
 	}
 
 	@Override
@@ -75,12 +102,27 @@ public class SpringPreProcessor
 	}
 
 	@Override
-	public void testEnded() { // todo: nullify
-		System.out.println("testEnded()");
+	public void testEnded() {
+		tearDown();
 	}
 
 	@Override
 	public void testEnded(String host) {
-		System.out.println("testEnded(String)");
+		tearDown();
+	}
+
+	protected void tearDown() {
+		synchronized (ApplicationContext.class) {
+			if (null != springContext) {
+				try {
+					springContext.close();
+				}
+				catch (Exception e) {
+					logger.warn(SPRING_CLOSE_EXCEPTION, e);
+				}
+			}
+		}
+		springContext = null;
+		logger = null;
 	}
 }

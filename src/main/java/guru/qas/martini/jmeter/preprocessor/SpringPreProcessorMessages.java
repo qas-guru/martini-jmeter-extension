@@ -16,12 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
-import org.apache.jmeter.testbeans.BeanInfoSupport;
+import ch.qos.cal10n.BaseName;
+import ch.qos.cal10n.Locale;
+import ch.qos.cal10n.LocaleData;
 
-@SuppressWarnings("unused") // Used by bean introspection.
-public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
-
-	public SpringPreProcessorBeanInfo() {
-		super(SpringPreProcessor.class);
-	}
+@BaseName("guru.qas.martini.jmeter.preprocessor.springPreProcessorMessages")
+@LocaleData({@Locale("en_US")})
+public enum SpringPreProcessorMessages {
+	STARTING,
+	SPRING_CLOSE_EXCEPTION
 }
