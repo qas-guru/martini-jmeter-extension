@@ -43,13 +43,34 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 
 	public SpringPreProcessorBeanInfo() {
 		super(SpringPreProcessor.class);
+		init();
+	}
 
-		messageFunction = getMessageFunction();
+	protected void init() {
+		setUpIcon();
+		setUpMessageFunction();
+		setUpProperties();
+	}
 
+	protected void setUpIcon() {
+		super.setIcon("spring_icon_16x16.png");
+	}
+
+	protected void setUpMessageFunction() {
+		ResourceBundle bundle = getResourceBundle();
+		messageFunction = new MessageFunction(bundle);
+	}
+
+	protected void setUpProperties() {
 		String optionsLabel = getLabel(LABEL_OPTIONS);
 		createPropertyGroup(optionsLabel,
 			new String[]{PROPERTY_ENVIRONMENT_VARIABLES, PROPERTY_SPRING_CONFIG_LOCATIONS});
 
+		setEnvironmentVariablesDescriptor();
+		setConfigLocationsDescriptor();
+	}
+
+	protected void setEnvironmentVariablesDescriptor() {
 		PropertyDescriptor p = property(PROPERTY_ENVIRONMENT_VARIABLES);
 		p.setValue(NOT_UNDEFINED, Boolean.TRUE);
 		p.setValue(DEFAULT, new ArrayList<Argument>());
@@ -62,7 +83,10 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 		String descriptionLabel = getLabel(LABEL_DESCRIPTION);
 		p.setValue(TableEditor.HEADERS, new String[]{nameLabel, valueLabel, descriptionLabel});
 
-		p = property(PROPERTY_SPRING_CONFIG_LOCATIONS);
+	}
+
+	protected void setConfigLocationsDescriptor() {
+		PropertyDescriptor p = property(PROPERTY_SPRING_CONFIG_LOCATIONS);
 		p.setValue(NOT_UNDEFINED, Boolean.TRUE);
 		p.setValue(DEFAULT, new ArrayList<>());
 		p.setPropertyEditorClass(TableEditor.class);
@@ -86,11 +110,6 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 	protected String getDisplayName(String property) {
 		String key = String.format("%s.displayName", property);
 		return messageFunction.apply(key);
-	}
-
-	protected Function<String, String> getMessageFunction() {
-		ResourceBundle bundle = getResourceBundle();
-		return new MessageFunction(bundle);
 	}
 
 	@Nonnull
