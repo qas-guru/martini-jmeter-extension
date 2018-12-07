@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.AbstractTestElement;
@@ -140,10 +141,14 @@ public class SpringPreProcessor
 		}
 		catch (Exception e) {
 			JMeterContextService.endTest();
-			logger.error(SPRING_STARTUP_ERROR, getName(), e);
-			String errorMessage = String.format("%s;\n%s.", messageConveyor.getMessage(ERROR_MESSAGE), e.getMessage());
-			String title = messageConveyor.getMessage(ERROR_TITLE, getName());
-			JMeterUtils.reportErrorToUser(errorMessage, title, e);
+			String message = messageConveyor.getMessage(SPRING_STARTUP_ERROR, getName());
+			Throwable throwable = e.fillInStackTrace();
+			logger.error(message, throwable);
+			if (null != GuiPackage.getInstance()) {
+				String errorMessage = String.format("%s;\n%s.", messageConveyor.getMessage(ERROR_MESSAGE), e.getMessage());
+				String title = messageConveyor.getMessage(ERROR_TITLE, getName());
+				JMeterUtils.reportErrorToUser(errorMessage, title, e);
+			}
 			throw new ThreadDeath();
 		}
 	}

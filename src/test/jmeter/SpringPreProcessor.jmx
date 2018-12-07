@@ -17,10 +17,39 @@
         <collectionProp name="configurationLocations"/>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
-      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Simple Configuration" enabled="true">
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Simple Configuration" enabled="false">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations">
           <stringProp name="1055833234">springConfiguration.xml</stringProp>
+        </collectionProp>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Invalid JMeter Configuration" enabled="false">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations">
+          <stringProp name="1892116519">bogusConfiguration.xml</stringProp>
+        </collectionProp>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Invalid Spring Bean Configuration" enabled="false">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations">
+          <stringProp name="619101770">badBeanConfiguration.xml</stringProp>
+        </collectionProp>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Invalid Spring Configuration" enabled="true">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations">
+          <stringProp name="886465229">badSpringConfiguration.xml</stringProp>
+        </collectionProp>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Multiple Configuration" enabled="false">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations">
+          <stringProp name="1055833234">springConfiguration.xml</stringProp>
+          <stringProp name="-1796921333">secondaryConfiguration.xml</stringProp>
         </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
