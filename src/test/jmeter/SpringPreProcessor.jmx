@@ -9,12 +9,19 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
-      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+      <stringProp name="TestPlan.user_define_classpath">/Users/pennycurich/projects/sabbatical/jmeterMartini/src/test/resources</stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Unconfigured" enabled="true">
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Unconfigured" enabled="false">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations"/>
+      </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
+      <hashTree/>
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Simple Configuration" enabled="true">
+        <collectionProp name="environmentVariables"/>
+        <collectionProp name="configurationLocations">
+          <stringProp name="1055833234">springConfiguration.xml</stringProp>
+        </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group One" enabled="true">
