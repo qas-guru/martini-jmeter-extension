@@ -19,24 +19,24 @@ package guru.qas.martini.jmeter.preprocessor;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.jmeter.config.Argument;
-import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.AbstractTestElement;
-import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
+
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
@@ -51,7 +51,10 @@ import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMEN
 
 /**
  * Manages a Spring ClassPathXmlApplicationContext, making the context accessible to setup and test threads
- * through JMeterVariables as SpringPreProcessor.VARIABLE "martini.spring.application.context".
+ * through JMeterVariables as SpringPreProcessor.THREAD_CONTEXT_VARIABLE "martini.spring.application.context".
+ * It also makes the ClassPathXmlApplicationContext available to Samplers via the SamplerContext map as
+ * SpringPreProcessor.SAMPLER_CONTEXT_KEY "martini.spring.application.context".
+ * "
  * <p>
  * One enabled SpringPreProcessor should be configured at the top-level of the test plan before
  * any ThreadGroup configurations.
@@ -59,22 +62,23 @@ import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMEN
 @SuppressWarnings("WeakerAccess")
 public class SpringPreProcessor
 	extends AbstractTestElement
-	implements Serializable, Cloneable, PreProcessor, TestBean, TestStateListener, TestIterationListener {
+	implements Serializable, Cloneable, PreProcessor, TestBean, TestStateListener {
 
 	private static final long serialVersionUID = -1582951167073002597L;
+	protected static final AtomicReference<ClassPathXmlApplicationContext> CONTEXT_REF = new AtomicReference<>(null);
 
 	// These must match field names exactly.
-	static final String PROPERTY_SPRING_CONFIG_LOCATIONS = "configurationLocations";
-	static final String PROPERTY_ENVIRONMENT_VARIABLES = "environmentVariables";
+	protected static final String PROPERTY_SPRING_CONFIG_LOCATIONS = "configurationLocations";
+	protected static final String PROPERTY_ENVIRONMENT_VARIABLES = "environmentVariables";
 
-	public static final String VARIABLE = "martini.spring.application.context";
+	public static final String THREAD_CONTEXT_VARIABLE = "martini.spring.application.context";
+	public static final String SAMPLER_CONTEXT_KEY = THREAD_CONTEXT_VARIABLE;
 
 	// Serialized.
 	protected List<Argument> environmentVariables;
 	protected List<String> configurationLocations;
 
 	// Shared.
-	protected transient ClassPathXmlApplicationContext springContext;
 	protected transient SpringPreProcessorBeanInfo beanInfo;
 	protected transient IMessageConveyor messageConveyor;
 	protected transient LocLogger logger;
@@ -109,12 +113,18 @@ public class SpringPreProcessor
 	}
 
 	protected void setUp() {
-		setUpBeanInfo();
-		setUpLogger();
-		setUpMessaging();
+		try {
+			setUpBeanInfo();
+			setUpLogger();
+			setUpMessaging();
 
-		logger.info(STARTING, super.getName());
-		setUpSpringContext();
+			logger.info(STARTING, super.getName());
+			setUpSpringContext();
+		}
+		catch (Exception e) { // Last-ditch effort to warn user of unexpected exception.
+			Throwable t = e.fillInStackTrace();
+			t.printStackTrace();
+		}
 	}
 
 	protected void setUpBeanInfo() {
@@ -149,6 +159,7 @@ public class SpringPreProcessor
 				String title = messageConveyor.getMessage(ERROR_TITLE, getName());
 				JMeterUtils.reportErrorToUser(errorMessage, title, e);
 			}
+			tearDown();
 			throw new ThreadDeath();
 		}
 	}
@@ -170,10 +181,10 @@ public class SpringPreProcessor
 
 	protected void setUpSpringContext(String[] locations) {
 		ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext(locations, false);
+		checkState(CONTEXT_REF.compareAndSet(null, springContext), messageConveyor.getMessage(DUPLICATE_SPRING_CONTEXT));
 		setEnvironment(springContext);
 		springContext.refresh();
 		springContext.registerShutdownHook();
-		this.springContext = springContext;
 		setUpSpringContextVariable();
 	}
 
@@ -195,14 +206,14 @@ public class SpringPreProcessor
 	protected void setUpSpringContextVariable() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		variables.putObject(VARIABLE, springContext);
+		ClassPathXmlApplicationContext applicationContext = CONTEXT_REF.get();
+		variables.putObject(THREAD_CONTEXT_VARIABLE, applicationContext);
 	}
 
 	@Override
 	public Object clone() {
 		Object o = super.clone();
 		SpringPreProcessor clone = SpringPreProcessor.class.cast(o);
-		clone.springContext = springContext;
 		clone.beanInfo = beanInfo;
 		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
@@ -211,11 +222,9 @@ public class SpringPreProcessor
 
 	@Override
 	public void process() {
-	}
-
-	@Override
-	public void testIterationStart(LoopIterationEvent event) {
-		System.out.println("testIterationStart(LoopIterationEvent)");
+		JMeterContext threadContext = super.getThreadContext();
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		samplerContext.put(SAMPLER_CONTEXT_KEY, CONTEXT_REF.get());
 	}
 
 	@Override
@@ -230,21 +239,19 @@ public class SpringPreProcessor
 
 	protected void tearDown() {
 		tearDownSpring();
-		springContext = null;
 		logger = null;
 		messageConveyor = null;
 		beanInfo = null;
 	}
 
 	private void tearDownSpring() {
-		synchronized (ApplicationContext.class) {
-			if (null != springContext) {
-				try {
-					springContext.close();
-				}
-				catch (Exception e) {
-					logger.warn(SPRING_CLOSE_EXCEPTION, getName(), e);
-				}
+		ClassPathXmlApplicationContext springContext = CONTEXT_REF.getAndSet(null);
+		if (null != springContext) {
+			try {
+				springContext.close();
+			}
+			catch (Exception e) {
+				logger.warn(SPRING_CLOSE_EXCEPTION, getName(), e);
 			}
 		}
 	}
