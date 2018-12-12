@@ -16,18 +16,17 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
+import java.beans.BeanDescriptor;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
-import java.util.ResourceBundle;
 import java.util.function.Function;
-
-import javax.annotation.Nonnull;
 
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.gui.TableEditor;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import guru.qas.martini.ResourceBundleMessageFunction;
+
 import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessor.*;
 
 @SuppressWarnings({"unused", "WeakerAccess"}) // Used by bean introspection.
@@ -57,8 +56,8 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 	}
 
 	protected void setUpMessageFunction() {
-		ResourceBundle bundle = getResourceBundle();
-		messageFunction = new MessageFunction(bundle);
+		BeanDescriptor descriptor = super.getBeanDescriptor();
+		messageFunction = ResourceBundleMessageFunction.getInstance(descriptor);
 	}
 
 	protected void setUpProperties() {
@@ -98,39 +97,5 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 
 	protected String getLabel(String key) {
 		return messageFunction.apply(key);
-	}
-
-	/**
-	 * @return display name for TestElement
-	 */
-	protected String getDisplayName() {
-		return messageFunction.apply("displayName");
-	}
-
-	protected String getDisplayName(String property) {
-		String key = String.format("%s.displayName", property);
-		return messageFunction.apply(key);
-	}
-
-	@Nonnull
-	protected ResourceBundle getResourceBundle() {
-		Object value = super.getBeanDescriptor().getValue(RESOURCE_BUNDLE);
-		return ResourceBundle.class.cast(value);
-	}
-
-	protected static class MessageFunction implements Function<String, String> {
-
-		protected final ResourceBundle bundle;
-
-		protected MessageFunction(ResourceBundle bundle) {
-			this.bundle = bundle;
-		}
-
-		@Override
-		public String apply(String key) {
-			checkNotNull(key, "null String");
-			String trimmed = bundle.containsKey(key) ? bundle.getString(key).trim() : "";
-			return trimmed.isEmpty() ? key : trimmed;
-		}
 	}
 }

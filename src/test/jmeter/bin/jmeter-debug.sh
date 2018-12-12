@@ -103,7 +103,7 @@ fi
 JMETER_COMPLETE_ARGS=true
 
 # add the Java9 args before the user given ones
-JVM_ARGS="$JAVA9_OPTS $JVM_ARGS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+JVM_ARGS="$JAVA9_OPTS $JVM_ARGS"
 export JVM_ARGS JMETER_COMPLETE_ARGS
 
 "${PRGDIR}/jmeter" "$@"

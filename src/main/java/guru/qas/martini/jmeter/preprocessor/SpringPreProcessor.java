@@ -18,31 +18,24 @@ package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.jmeter.config.Argument;
-import org.apache.jmeter.gui.GuiPackage;
-import org.apache.jmeter.processor.PreProcessor;
+import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.testelement.AbstractTestElement;
-import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.testelement.TestElement;
+import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jmeter.util.JMeterUtils;
 
-import org.slf4j.cal10n.LocLogger;
-import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 
-import ch.qos.cal10n.IMessageConveyor;
-import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.jmeter.ArgumentListPropertySource;
 
 import static com.google.common.base.Preconditions.*;
@@ -61,8 +54,8 @@ import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMEN
  */
 @SuppressWarnings("WeakerAccess")
 public class SpringPreProcessor
-	extends AbstractTestElement
-	implements Serializable, Cloneable, PreProcessor, TestBean, TestStateListener {
+	extends AbstractPreProcessor
+	implements Serializable, Cloneable, TestBean, TestIterationListener, Thread.UncaughtExceptionHandler {
 
 	private static final long serialVersionUID = -1582951167073002597L;
 	protected static final AtomicReference<ClassPathXmlApplicationContext> CONTEXT_REF = new AtomicReference<>(null);
@@ -78,11 +71,8 @@ public class SpringPreProcessor
 	protected List<Argument> environmentVariables;
 	protected List<String> configurationLocations;
 
-	// Shared.
-	protected transient SpringPreProcessorBeanInfo beanInfo;
-	protected transient IMessageConveyor messageConveyor;
-	protected transient LocLogger logger;
-	protected transient boolean usingIdMessages;
+	// Per-thread.
+	protected ThreadLocal<Thread.UncaughtExceptionHandler> setUpExceptionHandler;
 
 	public List<Argument> getEnvironmentVariables() {
 		return environmentVariables;
@@ -103,71 +93,27 @@ public class SpringPreProcessor
 	}
 
 	@Override
-	public void testStarted() {
-		setUp();
+	protected BeanInfoSupport getBeanInfoSupport() {
+		return new SpringPreProcessorBeanInfo();
 	}
 
 	@Override
-	public void testStarted(String host) {
-		setUp();
-	}
-
-	protected void setUp() {
-		try {
-			setUpBeanInfo();
-			setUpLogger();
-			setUpMessaging();
-
-			logger.info(STARTING, super.getName());
-			setUpSpringContext();
-		}
-		catch (Exception e) { // Last-ditch effort to warn user of unexpected exception.
-			Throwable t = e.fillInStackTrace();
-			t.printStackTrace();
-		}
-	}
-
-	protected void setUpBeanInfo() {
-		beanInfo = new SpringPreProcessorBeanInfo();
-	}
-
-	protected void setUpLogger() {
-		Locale locale = JMeterUtils.getLocale();
-		messageConveyor = new MessageConveyor(locale);
-		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
-		logger = loggerFactory.getLocLogger(this.getClass());
-	}
-
-	protected void setUpMessaging() {
-		String displayName = beanInfo.getDisplayName();
-		String trimmed = null == displayName ? "" : displayName.trim();
-		usingIdMessages = super.getName().trim().equals(trimmed);
+	protected void completeSetup() {
+		setUpExceptionHandler = new ThreadLocal<>();
+		setUpExceptionHandler.set(Thread.getDefaultUncaughtExceptionHandler());
+		Thread.setDefaultUncaughtExceptionHandler(this);
+		setUpSpringContext();
 	}
 
 	protected void setUpSpringContext() {
-		try {
-			String[] locations = getLocations();
-			setUpSpringContext(locations);
-		}
-		catch (Exception e) {
-			JMeterContextService.endTest();
-			String message = messageConveyor.getMessage(SPRING_STARTUP_ERROR, getName());
-			Throwable throwable = e.fillInStackTrace();
-			logger.error(message, throwable);
-			if (null != GuiPackage.getInstance()) {
-				String errorMessage = String.format("%s;\n%s.", messageConveyor.getMessage(ERROR_MESSAGE), e.getMessage());
-				String title = messageConveyor.getMessage(ERROR_TITLE, getName());
-				JMeterUtils.reportErrorToUser(errorMessage, title, e);
-			}
-			tearDown();
-			throw new ThreadDeath();
-		}
+		String[] locations = getLocations();
+		setUpSpringContext(locations);
 	}
 
 	protected String[] getLocations() {
 		List<String> configured = getConfigurationLocations();
 		checkNotNull(configured,
-			messageConveyor.getMessage(MISSING_PROPERTY, beanInfo.getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+			messageConveyor.getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
 
 		List<String> locations = configured.stream()
 			.filter(Objects::nonNull)
@@ -175,7 +121,7 @@ public class SpringPreProcessor
 			.filter(item -> !item.isEmpty())
 			.collect(Collectors.toList());
 		checkArgument(!locations.isEmpty(),
-			messageConveyor.getMessage(EMPTY_PROPERTY, beanInfo.getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+			messageConveyor.getMessage(EMPTY_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
 		return locations.toArray(new String[]{});
 	}
 
@@ -199,25 +145,26 @@ public class SpringPreProcessor
 		String name = super.getName();
 		List<Argument> environmentVariables = getEnvironmentVariables();
 		checkNotNull(environmentVariables,
-			messageConveyor.getMessage(MISSING_PROPERTY, beanInfo.getDisplayName(PROPERTY_ENVIRONMENT_VARIABLES)));
+			messageConveyor.getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_ENVIRONMENT_VARIABLES)));
 		return ArgumentListPropertySource.builder().setName(name).setArguments(environmentVariables).build();
 	}
 
 	protected void setUpSpringContextVariable() {
 		JMeterContext threadContext = super.getThreadContext();
+		setUpSpringContextVariable(threadContext);
+	}
+
+	protected void setUpSpringContextVariable(JMeterContext threadContext) {
 		JMeterVariables variables = threadContext.getVariables();
 		ClassPathXmlApplicationContext applicationContext = CONTEXT_REF.get();
 		variables.putObject(THREAD_CONTEXT_VARIABLE, applicationContext);
 	}
 
 	@Override
-	public Object clone() {
-		Object o = super.clone();
-		SpringPreProcessor clone = SpringPreProcessor.class.cast(o);
-		clone.beanInfo = beanInfo;
-		clone.messageConveyor = messageConveyor;
-		clone.logger = logger;
-		return clone;
+	public void testIterationStart(LoopIterationEvent event) {
+		TestElement source = event.getSource();
+		JMeterContext threadContext = source.getThreadContext();
+		setUpSpringContextVariable(threadContext);
 	}
 
 	@Override
@@ -228,30 +175,25 @@ public class SpringPreProcessor
 	}
 
 	@Override
-	public void testEnded() {
-		tearDown();
-	}
-
-	@Override
-	public void testEnded(String host) {
-		tearDown();
-	}
-
-	protected void tearDown() {
+	protected void beginTearDown() {
 		tearDownSpring();
-		logger = null;
-		messageConveyor = null;
-		beanInfo = null;
 	}
 
 	private void tearDownSpring() {
 		ClassPathXmlApplicationContext springContext = CONTEXT_REF.getAndSet(null);
 		if (null != springContext) {
-			try {
-				springContext.close();
-			}
-			catch (Exception e) {
-				logger.warn(SPRING_CLOSE_EXCEPTION, getName(), e);
+			springContext.close();
+		}
+	}
+
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		super.tearDown();
+		if (null != setUpExceptionHandler) {
+			Thread.UncaughtExceptionHandler delegate = setUpExceptionHandler.get();
+			setUpExceptionHandler.remove();
+			if (null != delegate) {
+				delegate.uncaughtException(t, e);
 			}
 		}
 	}

@@ -20,10 +20,8 @@ import ch.qos.cal10n.BaseName;
 import ch.qos.cal10n.Locale;
 import ch.qos.cal10n.LocaleData;
 
-@BaseName("guru.qas.martini.jmeter.preprocessor.springPreProcessorMessages")
+@BaseName("guru.qas.martini.jmeter.preprocessor.martiniSuitePreProcessorMessages")
 @LocaleData({@Locale("en")})
-public enum SpringPreProcessorMessages {
-	MISSING_PROPERTY,
-	EMPTY_PROPERTY,
-	DUPLICATE_SPRING_CONTEXT
+public enum MartiniSuitePreProcessorMessages {
+	SPRING_APPLICATION_CONTEXT_UNAVAILABLE
 }
