@@ -17,25 +17,30 @@ limitations under the License.
 package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import guru.qas.martini.jmeter.Variables;
-import guru.qas.martini.runtime.event.EventManager;
 
 @SuppressWarnings("WeakerAccess")
+@Configurable
 public class MartiniSuitePreProcessor extends AbstractPreProcessor
 	implements Serializable, Cloneable, TestBean {
 
 	private static final long serialVersionUID = -3444643765535879540L;
 
-	// Shared
-	protected transient AtomicBoolean publishedEnd;
-	protected transient EventManager eventManager;
-	protected transient JMeterSuiteIdentifier suiteIdentifier;
+	// Shared.
+	protected transient MartiniSuitePreProcessorBean bean;
+
+	@Autowired
+	protected void set(MartiniSuitePreProcessorBean bean) {
+		this.bean = bean;
+	}
 
 	public MartiniSuitePreProcessor() {
 		super();
@@ -48,20 +53,17 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 
 	@Override
 	protected void completeSetup() {
-		publishedEnd = new AtomicBoolean(false);
-		ApplicationContext springContext = Variables.getSpringApplicationContext();
-		eventManager = springContext.getBean(EventManager.class);
-		suiteIdentifier = JMeterSuiteIdentifier.getInstance(springContext);
-		eventManager.publishBeforeSuite(this, suiteIdentifier);
+		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
+		AutowireCapableBeanFactory beanFactory = springContext.getAutowireCapableBeanFactory();
+		beanFactory.autowireBean(this);
+		bean.publishBeforeSuite();
 	}
 
 	@Override
 	public Object clone() {
 		Object o = super.clone();
 		MartiniSuitePreProcessor clone = MartiniSuitePreProcessor.class.cast(o);
-		clone.publishedEnd = publishedEnd;
-		clone.eventManager = eventManager;
-		clone.suiteIdentifier = suiteIdentifier;
+		clone.bean = bean;
 		return clone;
 	}
 
@@ -71,14 +73,7 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 
 	@Override
 	protected void beginTearDown() {
-		// TODO: nope nope, this needs to be registered as an event lifecycle occurrence
-		if (null != publishedEnd && null != eventManager && null != suiteIdentifier) {
-			if (publishedEnd.compareAndSet(false, true)) {
-				eventManager.publishAfterSuite(this, suiteIdentifier);
-			}
-		}
-		publishedEnd = null;
-		suiteIdentifier = null;
-		eventManager = null;
+		bean.publishAfterSuite();
+		bean = null;
 	}
 }

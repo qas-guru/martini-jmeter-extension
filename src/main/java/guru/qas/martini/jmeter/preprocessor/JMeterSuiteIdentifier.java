@@ -16,6 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -27,8 +28,10 @@ import javax.annotation.Nonnull;
 
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.util.JMeterUtils;
-
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
@@ -37,47 +40,25 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import guru.qas.martini.event.SuiteIdentifier;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
-public class JMeterSuiteIdentifier implements SuiteIdentifier {
+@Configurable
+public class JMeterSuiteIdentifier implements SuiteIdentifier, InitializingBean, ApplicationContextAware {
 
 	protected final UUID id;
 	protected String name;
-	protected final long startTimestamp;
-	protected final String hostname;
-	protected final String hostAddress;
-	protected final String username;
-	protected final ImmutableSet<String> profiles;
-	protected final ImmutableMap<String, String> environmentVariables;
+	protected Long startTimestamp;
+	protected String hostname;
+	protected String hostAddress;
+	protected String username;
+	protected ImmutableSet<String> profiles;
+	protected Map<String, String> environmentVariables;
 
-	protected void setName(String s) {
-		this.name = s;
-	}
-
-	protected JMeterSuiteIdentifier(
-		@Nonnull UUID id,
-		@Nonnull String name,
-		long startTimestamp,
-		String hostname,
-		String hostAddress,
-		String username,
-		Iterable<String> profiles,
-		Map<String, String> environmentVariables
-	) {
-		this.id = checkNotNull(id, "null UUID");
-		this.name = checkNotNull(name, "null String name");
-		this.startTimestamp = startTimestamp;
-		this.hostname = hostname;
-		this.hostAddress = hostAddress;
-		this.username = username;
-		this.profiles = null == profiles ? ImmutableSet.of() : ImmutableSet.copyOf(Sets.newLinkedHashSet(profiles));
-		this.environmentVariables = null == environmentVariables ? ImmutableMap.of() : ImmutableMap.copyOf(environmentVariables);
-	}
+	protected ApplicationContext springContext;
 
 	@Override
 	public UUID getId() {
@@ -106,7 +87,7 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 
 	@Override
 	public Optional<String> getUsername() {
-		return Optional.ofNullable(username);
+		return Optional.of(username);
 	}
 
 	@Override
@@ -119,27 +100,34 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 		return environmentVariables;
 	}
 
-	public static JMeterSuiteIdentifier getInstance(@Nonnull ApplicationContext springContext) {
-		checkNotNull(springContext, "null ApplicationContext");
-
-		UUID uuid = UUID.randomUUID();
-		String name = springContext.getDisplayName();
-		long startTime = JMeterContextService.getTestStartTime();
-		String hostname = JMeterUtils.getLocalHostName();
-		String hostAddress = JMeterUtils.getLocalHostIP();
-		String username = System.getProperty("user.name");
-		Collection<String> profiles = getProfiles(springContext);
-		Map<String, String> environmentVariables = getEnvironmentVariables(springContext);
-		return new JMeterSuiteIdentifier(uuid, name, startTime, hostname, hostAddress, username, profiles, environmentVariables);
+	protected JMeterSuiteIdentifier() {
+		this.id = UUID.randomUUID();
 	}
 
-	protected static Collection<String> getProfiles(ApplicationContext springContext) {
+	@Override
+	public void setApplicationContext(@Nonnull ApplicationContext c) {
+		this.springContext = checkNotNull(c, "null ApplicationContext");
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		name = springContext.getDisplayName();
+		startTimestamp = JMeterContextService.getTestStartTime();
+		hostname = JMeterUtils.getLocalHostName();
+		hostAddress = JMeterUtils.getLocalHostIP();
+		username = System.getProperty("user.name");
+		setUpProfiles();
+		setUpEnvironmentVariables();
+	}
+
+	protected void setUpProfiles() {
 		Environment environment = springContext.getEnvironment();
 		String[] activeProfiles = environment.getActiveProfiles();
-		return Sets.newLinkedHashSet(Lists.newArrayList(activeProfiles));
+		ArrayList<String> profileList = Lists.newArrayList(activeProfiles);
+		profiles = ImmutableSet.copyOf(profileList);
 	}
 
-	protected static Map<String, String> getEnvironmentVariables(ApplicationContext springContext) {
+	public void setUpEnvironmentVariables() {
 		Environment environment = springContext.getEnvironment();
 		Map<String, String> index = new LinkedHashMap<>();
 
@@ -157,7 +145,7 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 				});
 		}
 
-		return index;
+		environmentVariables = ImmutableMap.copyOf(index);
 	}
 
 	@Override

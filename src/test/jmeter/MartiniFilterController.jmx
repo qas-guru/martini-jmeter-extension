@@ -12,10 +12,11 @@
       <stringProp name="TestPlan.user_define_classpath">/Users/pennycurich/projects/sabbatical/jmeterMartini/src/test/resources</stringProp>
     </TestPlan>
     <hashTree>
-      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Simple Configuration" enabled="true">
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Default Spring Configuration" enabled="true">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations">
-          <stringProp name="1036268021">martiniSuiteConfiguration.xml</stringProp>
+          <stringProp name="1161742059">classpath*:**/jMeterMartiniContext.xml</stringProp>
+          <stringProp name="351899852">classpath*:**/martiniContext.xml</stringProp>
         </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
@@ -27,9 +28,9 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">2</stringProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>

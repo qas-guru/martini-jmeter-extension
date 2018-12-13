@@ -25,6 +25,8 @@ import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.gui.TableEditor;
 
+import com.google.common.collect.Lists;
+
 import guru.qas.martini.ResourceBundleMessageFunction;
 
 import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessor.*;
@@ -86,7 +88,8 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 	protected void setConfigLocationsDescriptor() {
 		PropertyDescriptor p = property(PROPERTY_SPRING_CONFIG_LOCATIONS);
 		p.setValue(NOT_UNDEFINED, Boolean.TRUE);
-		p.setValue(DEFAULT, new ArrayList<>());
+		p.setValue(DEFAULT,
+			Lists.newArrayList("classpath*:**/martiniContext.xml", "classpath*:**/jMeterMartiniContext.xml"));
 		p.setPropertyEditorClass(TableEditor.class);
 		p.setValue(TableEditor.CLASSNAME, String.class.getName());
 		p.setValue(TableEditor.OBJECT_PROPERTIES, new String[]{"value"});

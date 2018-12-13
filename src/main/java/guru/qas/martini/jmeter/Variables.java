@@ -21,7 +21,7 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.apache.jmeter.util.JMeterUtils;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.Martini;
@@ -39,12 +39,12 @@ public abstract class Variables {
 	private Variables() {
 	}
 
-	public static ApplicationContext getSpringApplicationContext() {
+	public static ConfigurableApplicationContext getSpringApplicationContext() {
 		JMeterContext threadContext = JMeterContextService.getContext();
 		JMeterVariables variables = threadContext.getVariables();
 		Object o = variables.getObject(SPRING_APPLICATION_CONTEXT);
-		checkState(ApplicationContext.class.isInstance(o),
+		checkState(ConfigurableApplicationContext.class.isInstance(o),
 			MESSAGE_CONVEYOR.getMessage(VariablesMessages.SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
-		return ClassPathXmlApplicationContext.class.cast(o);
+		return ConfigurableApplicationContext.class.cast(o);
 	}
 }
