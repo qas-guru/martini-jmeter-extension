@@ -81,7 +81,6 @@ public class SpringPreProcessorBeanInfo extends BeanInfoSupport {
 		String valueLabel = getLabel(LABEL_VALUE);
 		String descriptionLabel = getLabel(LABEL_DESCRIPTION);
 		p.setValue(TableEditor.HEADERS, new String[]{nameLabel, valueLabel, descriptionLabel});
-
 	}
 
 	protected void setConfigLocationsDescriptor() {
