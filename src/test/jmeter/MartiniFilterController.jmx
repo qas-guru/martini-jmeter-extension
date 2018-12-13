@@ -15,8 +15,7 @@
       <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Default Spring Configuration" enabled="true">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations">
-          <stringProp name="1161742059">classpath*:**/jMeterMartiniContext.xml</stringProp>
-          <stringProp name="351899852">classpath*:**/martiniContext.xml</stringProp>
+          <stringProp name="1036268021">martiniSuiteConfiguration.xml</stringProp>
         </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
@@ -38,7 +37,7 @@
       </ThreadGroup>
       <hashTree>
         <guru.qas.martini.jmeter.controller.MartiniFilterController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniFilterController" testname="Custom Martini Filter Controller" enabled="true">
-          <boolProp name="noMartiniFoundFatal">false</boolProp>
+          <boolProp name="noMartiniFoundFatal">true</boolProp>
           <longProp name="randomSeed">0</longProp>
           <boolProp name="shuffle">false</boolProp>
           <stringProp name="spelFilter">!isWIP()</stringProp>

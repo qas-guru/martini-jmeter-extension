@@ -267,9 +267,6 @@ public class MartiniFilterController extends AbstractGenericController
 			try {
 				lock.lockInterruptibly();
 				try {
-					if (true) {
-						throw new InterruptedException("HAALO!");
-					}
 					nextMartini = iterator.hasNext() ? iterator.next() : null;
 				}
 				finally {

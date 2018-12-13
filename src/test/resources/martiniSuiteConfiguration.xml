@@ -7,5 +7,6 @@
 			http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<import resource="classpath*:**/martiniContext.xml"/>
+	<import resource="classpath*:**/jMeterMartiniContext.xml"/>
 
 </beans>
