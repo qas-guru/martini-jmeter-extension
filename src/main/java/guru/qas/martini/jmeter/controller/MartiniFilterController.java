@@ -22,17 +22,20 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.apache.jmeter.engine.event.LoopIterationEvent;
+import org.apache.jmeter.engine.event.LoopIterationListener;
+import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.TestIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -40,13 +43,15 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Striped;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.jmeter.preprocessor.SpringPreProcessor;
+import guru.qas.martini.jmeter.SamplerContextKeys;
+import guru.qas.martini.jmeter.Variables;
 import guru.qas.martini.step.StepImplementation;
 
 import static com.google.common.base.Preconditions.*;
@@ -58,7 +63,7 @@ import static guru.qas.martini.jmeter.preprocessor.MartiniSuitePreProcessorMessa
  */
 @SuppressWarnings("WeakerAccess")
 public class MartiniFilterController extends AbstractGenericController
-	implements Serializable, Cloneable, TestBean, TestStateListener, TestIterationListener {
+	implements Serializable, Cloneable, TestBean, TestStateListener, LoopIterationListener {
 
 	private static final long serialVersionUID = 4631820992406669501L;
 
@@ -69,8 +74,6 @@ public class MartiniFilterController extends AbstractGenericController
 	protected static final String PROPERTY_SHUFFLE = "shuffle";
 	protected static final String PROPERTY_RANDOM_SEED = "randomSeed";
 
-	public static final String VARIABLE = "martini.filter.controller.martini";
-
 	// Serialized.
 	protected boolean noMartiniFoundFatal;
 	protected boolean unimplementedStepsFatal;
@@ -80,8 +83,11 @@ public class MartiniFilterController extends AbstractGenericController
 
 	// Shared
 	protected transient ImmutableList<Martini> martinis;
-	protected transient ConcurrentHashMap<Integer, Iterator<Martini>> index;
-	protected transient Striped<Lock> striped;
+	protected transient volatile ConcurrentHashMap<Integer, Iterator<Martini>> index;
+	protected transient volatile Striped<Lock> striped;
+
+	// Per-thread.
+	protected transient Martini martini;
 
 	public boolean isNoMartiniFoundFatal() {
 		return noMartiniFoundFatal;
@@ -145,11 +151,9 @@ public class MartiniFilterController extends AbstractGenericController
 		Collection<Martini> martinis = getMartinis();
 		checkState(!isNoMartiniFoundFatal() || !martinis.isEmpty(), messageConveyor.getMessage(NO_MARTINI_FOUND));
 
+		completeSetup(martinis);
 		if (martinis.isEmpty()) {
 			super.setDone(true);
-		}
-		else {
-			completeSetup(martinis);
 		}
 	}
 
@@ -180,7 +184,7 @@ public class MartiniFilterController extends AbstractGenericController
 			List<String> labels = unimplemented.stream()
 				.map(martini -> String.format("%s: %s", martini.getFeatureName(), martini.getScenarioName()))
 				.collect(Collectors.toList());
-			String message = messageConveyor.getMessage(UNIMPLEMENTED_STEPS, Joiner.on('\n').join(labels));
+			String message = messageConveyor.getMessage(UNIMPLEMENTED_STEPS, '\n' + Joiner.on('\n').join(labels));
 			throw new IllegalStateException(message);
 		}
 
@@ -208,7 +212,7 @@ public class MartiniFilterController extends AbstractGenericController
 	protected ClassPathXmlApplicationContext getSpringContext() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(SpringPreProcessor.THREAD_CONTEXT_VARIABLE);
+		Object o = variables.getObject(Variables.SPRING_APPLICATION_CONTEXT);
 		checkState(ApplicationContext.class.isInstance(o),
 			messageConveyor.getMessage(SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
 		return ClassPathXmlApplicationContext.class.cast(o);
@@ -228,24 +232,82 @@ public class MartiniFilterController extends AbstractGenericController
 		MartiniFilterController clone = MartiniFilterController.class.cast(o);
 		clone.index = index;
 		clone.striped = striped;
+		clone.martinis = martinis;
 		return clone;
 	}
 
 	@Override
-	public void testIterationStart(LoopIterationEvent event) {
-		TestElement source = event.getSource();
-		JMeterContext threadContext = source.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		variables.remove(VARIABLE);
+	public void iterationStart(LoopIterationEvent event) {
+		setMartini(null);
+	}
 
-		int iteration = variables.getIteration();
-		Iterator<Martini> iterator = index.computeIfAbsent(iteration, i -> this.martinis.iterator());
-		variables.putObject(VARIABLE, iterator);
+	protected void setMartini(@Nullable Martini martini) {
+		JMeterContext threadContext = super.getThreadContext();
+		JMeterVariables variables = threadContext.getVariables();
+		variables.remove(Variables.MARTINI);
+
+		Map<String, Object> samplerContext = threadContext.getSamplerContext();
+		samplerContext.remove(SamplerContextKeys.MARTINI);
+
+		this.martini = martini;
+		if (null != martini) {
+			variables.putObject(Variables.MARTINI, martini);
+			samplerContext.put(SamplerContextKeys.MARTINI, martini);
+		}
+	}
+
+	protected JMeterVariables getVariables() {
+		JMeterContext threadContext = super.getThreadContext();
+		return threadContext.getVariables();
+	}
+
+	@Override
+	public Sampler next() {
+		Sampler next = super.next();
+		if (null == next) {
+			setMartini(null);
+			next = super.next();
+		}
+
+		if (null == martini && null != next) {
+			int iteration = getIteration();
+			Iterator<Martini> iterator = index.computeIfAbsent(iteration, i -> martinis.iterator());
+
+			Lock lock = striped.get(iteration);
+			Martini nextMartini;
+			try {
+				lock.lockInterruptibly();
+				try {
+					if (true) {
+						throw new InterruptedException("HAALO!");
+					}
+					nextMartini = iterator.hasNext() ? iterator.next() : null;
+				}
+				finally {
+					lock.unlock();
+				}
+				setMartini(nextMartini);
+			}
+			catch (InterruptedException e) {
+				String stacktrace = Throwables.getStackTraceAsString(e);
+				logger.warn(INTERRUPTED, getName(), '\n' + stacktrace);
+				setDone(true);
+			}
+		}
+
+		return null != next && null != martini ? next : null;
+	}
+
+	protected int getIteration() {
+		JMeterVariables variables = getVariables();
+		return variables.getIteration();
 	}
 
 	@Override
 	protected void beginTearDown() {
 		index = null;
 		striped = null;
+		martinis = null;
+		martini = null;
 	}
 }

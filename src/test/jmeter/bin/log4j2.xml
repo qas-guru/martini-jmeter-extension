@@ -25,13 +25,13 @@
 
     <File name="jmeter-log" fileName="${sys:jmeter.logfile:-jmeter.log}" append="false">
       <PatternLayout>
-        <pattern>%d %p %c{1.}: %m%n</pattern>
+        <pattern>%d %t %p %c{1.}: %m%n</pattern>
       </PatternLayout>
     </File>
 
     <GuiLogEvent name="gui-log-event">
       <PatternLayout>
-        <pattern>%d %p %c{1.}: %m%n</pattern>
+        <pattern>%d %t %p %c{1.}: %m%n</pattern>
       </PatternLayout>
     </GuiLogEvent>
 
@@ -47,9 +47,18 @@
 
     <Logger name="org.apache" level="info"/>
 
-    <Logger name="guru.qas.martini.jmeter" level="debug"/>
+    <Logger name="guru.qas.martini.jmeter" additivity="false" level="debug">
+	<AppenderRef ref="jmeter-log"/>
+	<AppenderRef ref="gui-log-event"/>
+	<AppenderRef ref="STDOUT"/>
+    </Logger>
 
-    <Logger name="org.springframework" level="info"/>
+    <Logger name="org.springframework" additivity="false" level="info">
+	<AppenderRef ref="jmeter-log"/>
+	<AppenderRef ref="gui-log-event"/>
+	<AppenderRef ref="STDOUT"/>
+    </Logger>
+
     <!--
     <Logger name="org.apache.jmeter.control" level="debug" />
     <Logger name="org.apache.jmeter.testbeans" level="debug" />

@@ -14,16 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.controller;
+package guru.qas.martini.jmeter;
 
-import ch.qos.cal10n.BaseName;
-import ch.qos.cal10n.Locale;
-import ch.qos.cal10n.LocaleData;
+public interface SamplerContextKeys {
 
-@BaseName("guru.qas.martini.jmeter.controller.martiniControllerMessages")
-@LocaleData({@Locale("en")})
-public enum MartiniFilterControllerMessages {
-	NO_MARTINI_FOUND,
-	UNIMPLEMENTED_STEPS,
-	INTERRUPTED
+	String SPRING_APPLICATION_CONTEXT = Variables.SPRING_APPLICATION_CONTEXT;
+	String MARTINI = Variables.MARTINI;
 }

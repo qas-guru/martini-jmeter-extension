@@ -21,6 +21,7 @@ import java.beans.PropertyDescriptor;
 import java.util.function.Function;
 
 import org.apache.jmeter.testbeans.BeanInfoSupport;
+import org.apache.jmeter.testbeans.gui.GenericTestBeanCustomizer;
 import org.apache.jmeter.testbeans.gui.LongPropertyEditor;
 import org.apache.jmeter.testbeans.gui.TextAreaEditor;
 
@@ -30,8 +31,6 @@ import static guru.qas.martini.jmeter.controller.MartiniFilterController.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniFilterControllerBeanInfo extends BeanInfoSupport {
-
-	protected static final String LABEL_OPTIONS = "options.label";
 
 	protected Function<String, String> messageFunction;
 
@@ -51,7 +50,7 @@ public class MartiniFilterControllerBeanInfo extends BeanInfoSupport {
 	}
 
 	protected void setUpProperties() {
-		String label = messageFunction.apply(LABEL_OPTIONS);
+		String label = messageFunction.apply("options.label");
 		createPropertyGroup(label, new String[]{
 			PROPERTY_SPEL_FILTER,
 			PROPERTY_NO_MARTINI_FOUND_FATAL,
@@ -83,6 +82,7 @@ public class MartiniFilterControllerBeanInfo extends BeanInfoSupport {
 		p.setValue(NOT_UNDEFINED, Boolean.TRUE);
 		p.setValue(DEFAULT, "");
 		p.setPropertyEditorClass(TextAreaEditor.class);
+		p.setValue(GenericTestBeanCustomizer.TEXT_LANGUAGE, "text");
 	}
 
 	protected void setShuffleDescriptor() {

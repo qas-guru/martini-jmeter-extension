@@ -37,6 +37,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 
 import guru.qas.martini.jmeter.ArgumentListPropertySource;
+import guru.qas.martini.jmeter.SamplerContextKeys;
+import guru.qas.martini.jmeter.Variables;
 
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessorMessages.*;
@@ -63,9 +65,6 @@ public class SpringPreProcessor
 	// These must match field names exactly.
 	protected static final String PROPERTY_SPRING_CONFIG_LOCATIONS = "configurationLocations";
 	protected static final String PROPERTY_ENVIRONMENT_VARIABLES = "environmentVariables";
-
-	public static final String THREAD_CONTEXT_VARIABLE = "martini.spring.application.context";
-	public static final String SAMPLER_CONTEXT_KEY = THREAD_CONTEXT_VARIABLE;
 
 	// Serialized.
 	protected List<Argument> environmentVariables;
@@ -157,7 +156,7 @@ public class SpringPreProcessor
 	protected void setUpSpringContextVariable(JMeterContext threadContext) {
 		JMeterVariables variables = threadContext.getVariables();
 		ClassPathXmlApplicationContext applicationContext = CONTEXT_REF.get();
-		variables.putObject(THREAD_CONTEXT_VARIABLE, applicationContext);
+		variables.putObject(Variables.SPRING_APPLICATION_CONTEXT, applicationContext);
 	}
 
 	@Override
@@ -171,7 +170,7 @@ public class SpringPreProcessor
 	public void process() {
 		JMeterContext threadContext = super.getThreadContext();
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.put(SAMPLER_CONTEXT_KEY, CONTEXT_REF.get());
+		samplerContext.put(SamplerContextKeys.SPRING_APPLICATION_CONTEXT, CONTEXT_REF.get());
 	}
 
 	@Override
@@ -188,6 +187,7 @@ public class SpringPreProcessor
 
 	@Override
 	public void uncaughtException(Thread t, Throwable e) {
+		System.out.println("UNCAUGHT EXCEPTION");
 		super.tearDown();
 		if (null != setUpExceptionHandler) {
 			Thread.UncaughtExceptionHandler delegate = setUpExceptionHandler.get();

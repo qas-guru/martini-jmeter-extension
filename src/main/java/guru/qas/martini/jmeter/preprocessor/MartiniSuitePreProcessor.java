@@ -26,6 +26,7 @@ import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import guru.qas.martini.jmeter.Variables;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static com.google.common.base.Preconditions.*;
@@ -63,7 +64,7 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 	protected ClassPathXmlApplicationContext getSpringContext() {
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(SpringPreProcessor.THREAD_CONTEXT_VARIABLE);
+		Object o = variables.getObject(Variables.SPRING_APPLICATION_CONTEXT);
 		checkState(ApplicationContext.class.isInstance(o),
 			messageConveyor.getMessage(SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
 		return ClassPathXmlApplicationContext.class.cast(o);
