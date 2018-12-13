@@ -51,7 +51,6 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
-import guru.qas.martini.step.StepImplementation;
 
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.controller.MartiniFilterControllerMessages.*;
@@ -179,10 +178,7 @@ public class MartiniFilterController extends AbstractGenericController
 	protected void completeSetup(Collection<Martini> martinis) {
 		List<Martini> unimplemented = isUnimplementedStepsFatal() ? getUnimplemented(martinis) : ImmutableList.of();
 		if (!unimplemented.isEmpty()) {
-			List<String> labels = unimplemented.stream()
-				.map(martini -> String.format("%s: %s", martini.getFeatureName(), martini.getScenarioName()))
-				.collect(Collectors.toList());
-			String message = messageConveyor.getMessage(UNIMPLEMENTED_STEPS, '\n' + Joiner.on('\n').join(labels));
+			String message = messageConveyor.getMessage(UNIMPLEMENTED_STEPS, '\n' + Joiner.on('\n').join(unimplemented));
 			throw new IllegalStateException(message);
 		}
 
@@ -206,11 +202,10 @@ public class MartiniFilterController extends AbstractGenericController
 		return new Random(seed);
 	}
 
-
 	protected List<Martini> getUnimplemented(Collection<Martini> martinis) {
 		return martinis.stream()
 			.filter(martini -> martini.getStepIndex().values().stream()
-				.map(StepImplementation::getMethod)
+				.map(implementation -> implementation.getMethod().orElse(null))
 				.anyMatch(Objects::isNull))
 			.collect(Collectors.toList());
 	}
