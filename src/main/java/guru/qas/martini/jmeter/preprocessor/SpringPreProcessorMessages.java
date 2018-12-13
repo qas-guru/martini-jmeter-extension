@@ -25,5 +25,5 @@ import ch.qos.cal10n.LocaleData;
 public enum SpringPreProcessorMessages {
 	MISSING_PROPERTY,
 	EMPTY_PROPERTY,
-	DUPLICATE_SPRING_CONTEXT
+	DUPLICATE_SPRING_CONTEXT,
 }

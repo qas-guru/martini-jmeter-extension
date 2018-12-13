@@ -40,7 +40,6 @@ import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
@@ -50,13 +49,12 @@ import com.google.common.util.concurrent.Striped;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.jmeter.SamplerContextKeys;
+import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 import guru.qas.martini.step.StepImplementation;
 
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.controller.MartiniFilterControllerMessages.*;
-import static guru.qas.martini.jmeter.preprocessor.MartiniSuitePreProcessorMessages.SPRING_APPLICATION_CONTEXT_UNAVAILABLE;
 
 /**
  * Selects Martinis to execute, iterating over all matching Martinis per iteration.
@@ -168,7 +166,7 @@ public class MartiniFilterController extends AbstractGenericController
 	}
 
 	protected Mixologist getMixologist() {
-		ClassPathXmlApplicationContext springContext = getSpringContext();
+		ApplicationContext springContext = Variables.getSpringApplicationContext();
 		return springContext.getBean(Mixologist.class);
 	}
 
@@ -208,15 +206,6 @@ public class MartiniFilterController extends AbstractGenericController
 		return new Random(seed);
 	}
 
-	@SuppressWarnings("Duplicates")
-	protected ClassPathXmlApplicationContext getSpringContext() {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(Variables.SPRING_APPLICATION_CONTEXT);
-		checkState(ApplicationContext.class.isInstance(o),
-			messageConveyor.getMessage(SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
-		return ClassPathXmlApplicationContext.class.cast(o);
-	}
 
 	protected List<Martini> getUnimplemented(Collection<Martini> martinis) {
 		return martinis.stream()
@@ -247,12 +236,12 @@ public class MartiniFilterController extends AbstractGenericController
 		variables.remove(Variables.MARTINI);
 
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.remove(SamplerContextKeys.MARTINI);
+		samplerContext.remove(SamplerContext.MARTINI);
 
 		this.martini = martini;
 		if (null != martini) {
 			variables.putObject(Variables.MARTINI, martini);
-			samplerContext.put(SamplerContextKeys.MARTINI, martini);
+			samplerContext.put(SamplerContext.MARTINI, martini);
 		}
 	}
 

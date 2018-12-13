@@ -21,20 +21,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import guru.qas.martini.jmeter.Variables;
 import guru.qas.martini.runtime.event.EventManager;
 
-import static com.google.common.base.Preconditions.*;
-import static guru.qas.martini.jmeter.preprocessor.MartiniSuitePreProcessorMessages.*;
-
 @SuppressWarnings("WeakerAccess")
 public class MartiniSuitePreProcessor extends AbstractPreProcessor
-	implements Serializable, Cloneable, TestBean{
+	implements Serializable, Cloneable, TestBean {
 
 	private static final long serialVersionUID = -3444643765535879540L;
 
@@ -55,19 +49,10 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 	@Override
 	protected void completeSetup() {
 		publishedEnd = new AtomicBoolean(false);
-		ClassPathXmlApplicationContext springContext = getSpringContext();
+		ApplicationContext springContext = Variables.getSpringApplicationContext();
 		eventManager = springContext.getBean(EventManager.class);
 		suiteIdentifier = JMeterSuiteIdentifier.getInstance(springContext);
 		eventManager.publishBeforeSuite(this, suiteIdentifier);
-	}
-
-	protected ClassPathXmlApplicationContext getSpringContext() {
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(Variables.SPRING_APPLICATION_CONTEXT);
-		checkState(ApplicationContext.class.isInstance(o),
-			messageConveyor.getMessage(SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
-		return ClassPathXmlApplicationContext.class.cast(o);
 	}
 
 	@Override
@@ -86,6 +71,7 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 
 	@Override
 	protected void beginTearDown() {
+		// TODO: nope nope, this needs to be registered as an event lifecycle occurrence
 		if (null != publishedEnd && null != eventManager && null != suiteIdentifier) {
 			if (publishedEnd.compareAndSet(false, true)) {
 				eventManager.publishAfterSuite(this, suiteIdentifier);

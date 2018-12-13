@@ -16,7 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
-public interface SamplerContextKeys {
+public interface SamplerContext {
 
 	String SPRING_APPLICATION_CONTEXT = Variables.SPRING_APPLICATION_CONTEXT;
 	String MARTINI = Variables.MARTINI;

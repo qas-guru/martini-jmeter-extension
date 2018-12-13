@@ -16,13 +16,35 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
+import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterContextService;
+import org.apache.jmeter.threads.JMeterVariables;
+import org.apache.jmeter.util.JMeterUtils;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.Martini;
 
-public interface Variables {
+import static com.google.common.base.Preconditions.checkState;
 
-	String MARTINI = Martini.class.getName();
-	String SPRING_APPLICATION_CONTEXT = ApplicationContext.class.getName();
+@SuppressWarnings("WeakerAccess")
+public abstract class Variables {
 
+	public static final String MARTINI = Martini.class.getName();
+	public static final String SPRING_APPLICATION_CONTEXT = ApplicationContext.class.getName();
+
+	protected static final MessageConveyor MESSAGE_CONVEYOR = new MessageConveyor(JMeterUtils.getLocale());
+
+	private Variables() {
+	}
+
+	public static ApplicationContext getSpringApplicationContext() {
+		JMeterContext threadContext = JMeterContextService.getContext();
+		JMeterVariables variables = threadContext.getVariables();
+		Object o = variables.getObject(SPRING_APPLICATION_CONTEXT);
+		checkState(ApplicationContext.class.isInstance(o),
+			MESSAGE_CONVEYOR.getMessage(VariablesMessages.SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
+		return ClassPathXmlApplicationContext.class.cast(o);
+	}
 }

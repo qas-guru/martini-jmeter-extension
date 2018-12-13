@@ -29,7 +29,6 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.util.JMeterUtils;
 
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
@@ -120,11 +119,11 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 		return environmentVariables;
 	}
 
-	public static JMeterSuiteIdentifier getInstance(@Nonnull ClassPathXmlApplicationContext springContext) {
+	public static JMeterSuiteIdentifier getInstance(@Nonnull ApplicationContext springContext) {
 		checkNotNull(springContext, "null ApplicationContext");
 
 		UUID uuid = UUID.randomUUID();
-		String name = getSuiteName(springContext);
+		String name = springContext.getDisplayName();
 		long startTime = JMeterContextService.getTestStartTime();
 		String hostname = JMeterUtils.getLocalHostName();
 		String hostAddress = JMeterUtils.getLocalHostIP();
@@ -134,29 +133,30 @@ public class JMeterSuiteIdentifier implements SuiteIdentifier {
 		return new JMeterSuiteIdentifier(uuid, name, startTime, hostname, hostAddress, username, profiles, environmentVariables);
 	}
 
-	protected static String getSuiteName(ClassPathXmlApplicationContext springContext) {
-		return springContext.getDisplayName();
-	}
-
 	protected static Collection<String> getProfiles(ApplicationContext springContext) {
 		Environment environment = springContext.getEnvironment();
 		String[] activeProfiles = environment.getActiveProfiles();
 		return Sets.newLinkedHashSet(Lists.newArrayList(activeProfiles));
 	}
 
-	protected static Map<String, String> getEnvironmentVariables(ClassPathXmlApplicationContext springContext) {
-		ConfigurableEnvironment environment = springContext.getEnvironment();
+	protected static Map<String, String> getEnvironmentVariables(ApplicationContext springContext) {
+		Environment environment = springContext.getEnvironment();
 		Map<String, String> index = new LinkedHashMap<>();
-		environment.getPropertySources().stream()
-			.filter(EnumerablePropertySource.class::isInstance)
-			.map(EnumerablePropertySource.class::cast)
-			.forEach(s -> {
-				String[] propertyNames = s.getPropertyNames();
-				Arrays.stream(propertyNames).forEach(key -> {
-					Object property = s.getProperty(key);
-					index.put(key, null == property ? null : property.toString());
+
+		if (ConfigurableEnvironment.class.isInstance(environment)) {
+			ConfigurableEnvironment configurable = ConfigurableEnvironment.class.cast(environment);
+			configurable.getPropertySources().stream()
+				.filter(EnumerablePropertySource.class::isInstance)
+				.map(EnumerablePropertySource.class::cast)
+				.forEach(s -> {
+					String[] propertyNames = s.getPropertyNames();
+					Arrays.stream(propertyNames).forEach(key -> {
+						Object property = s.getProperty(key);
+						index.put(key, null == property ? null : property.toString());
+					});
 				});
-			});
+		}
+
 		return index;
 	}
 

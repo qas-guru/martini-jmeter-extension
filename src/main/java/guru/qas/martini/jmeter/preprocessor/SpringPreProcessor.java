@@ -37,7 +37,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 
 import guru.qas.martini.jmeter.ArgumentListPropertySource;
-import guru.qas.martini.jmeter.SamplerContextKeys;
+import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 
 import static com.google.common.base.Preconditions.*;
@@ -127,6 +127,7 @@ public class SpringPreProcessor
 	protected void setUpSpringContext(String[] locations) {
 		ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext(locations, false);
 		checkState(CONTEXT_REF.compareAndSet(null, springContext), messageConveyor.getMessage(DUPLICATE_SPRING_CONTEXT));
+		springContext.setDisplayName(this.getName());
 		setEnvironment(springContext);
 		springContext.refresh();
 		springContext.registerShutdownHook();
@@ -170,7 +171,7 @@ public class SpringPreProcessor
 	public void process() {
 		JMeterContext threadContext = super.getThreadContext();
 		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.put(SamplerContextKeys.SPRING_APPLICATION_CONTEXT, CONTEXT_REF.get());
+		samplerContext.put(SamplerContext.SPRING_APPLICATION_CONTEXT, CONTEXT_REF.get());
 	}
 
 	@Override

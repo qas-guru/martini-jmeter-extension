@@ -86,7 +86,6 @@ public final class MartiniControllerGui extends LogicControllerGui {
 		return panel;
 	}
 
-	@SuppressWarnings("Duplicates")
 	protected VerticalPanel getVerticalPanel(String key) {
 		VerticalPanel panel = new VerticalPanel();
 		MessageSource messageSource = getMessageSource();

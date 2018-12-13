@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.preprocessor;
+package guru.qas.martini.jmeter;
 
 import ch.qos.cal10n.BaseName;
 import ch.qos.cal10n.Locale;
 import ch.qos.cal10n.LocaleData;
 
-@BaseName("guru.qas.martini.jmeter.preprocessor.martiniSuitePreProcessorMessages")
+@BaseName("guru.qas.martini.jmeter.variablesMessages")
 @LocaleData({@Locale("en")})
-public enum MartiniSuitePreProcessorMessages {
+public enum VariablesMessages {
 	SPRING_APPLICATION_CONTEXT_UNAVAILABLE
 }
