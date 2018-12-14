@@ -9,13 +9,13 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
-      <stringProp name="TestPlan.user_define_classpath">/Users/pennycurich/projects/sabbatical/jmeterMartini/src/test/resources</stringProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
       <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Default Spring Configuration" enabled="true">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations">
-          <stringProp name="1036268021">martiniSuiteConfiguration.xml</stringProp>
+          <stringProp name="-1498695405">classpath*:**/martiniSuiteConfiguration.xml</stringProp>
         </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>

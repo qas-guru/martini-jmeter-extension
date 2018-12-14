@@ -45,7 +45,7 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven.compiler.release>11</maven.compiler.release>
 		<jmeter.version>5.0</jmeter.version>
-		<maven.test.skip>true</maven.test.skip>
+		<skipTests>true</skipTests>
 	</properties>
 
 	<distributionManagement>

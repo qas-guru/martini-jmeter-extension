@@ -53,7 +53,7 @@
 	<AppenderRef ref="STDOUT"/>
     </Logger>
 
-    <Logger name="org.springframework" additivity="false" level="info">
+    <Logger name="org.springframework" additivity="false" level="debug">
 	<AppenderRef ref="jmeter-log"/>
 	<AppenderRef ref="gui-log-event"/>
 	<AppenderRef ref="STDOUT"/>
