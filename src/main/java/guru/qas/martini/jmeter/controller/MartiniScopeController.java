@@ -18,14 +18,19 @@ package guru.qas.martini.jmeter.controller;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
+import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestPlan;
+import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterThread;
 import org.apache.jmeter.util.JMeterUtils;
+import org.apache.jorphan.collections.HashTree;
 import org.apache.jorphan.collections.ListedHashTree;
 import org.apache.jorphan.collections.SearchByClass;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +42,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import gherkin.ast.Feature;
+import gherkin.ast.Location;
+import gherkin.ast.ScenarioDefinition;
 import gherkin.ast.Tag;
 import guru.qas.martini.Martini;
 import guru.qas.martini.SyntheticMartini;
@@ -150,20 +157,30 @@ public class MartiniScopeController extends AbstractGenericController implements
 	protected Feature getFeature() {
 		JMeterContext threadContext = super.getThreadContext();
 
-		ListedHashTree tree = threadContext.getThread().getTestTree();
-		SearchByClass<TestPlan> search = new SearchByClass<>(TestPlan.class);
-		tree.traverse(search);
-		Collection<TestPlan> testPlans = search.getSearchResults();
-		TestPlan testPlan = Iterables.getFirst(testPlans, null);
+		JMeterThread thread = threadContext.getThread();
+		ListedHashTree tree = thread.getTestTree();
+		SearchByClass<MartiniScopeController> controllerSearch = new SearchByClass<>(MartiniScopeController.class);
+		tree.traverse(controllerSearch);
+
+		HashTree subTree = controllerSearch.getSubTree(this);
+		SearchByClass<Sampler> samplerSearch = new SearchByClass<>(Sampler.class);
+		subTree.traverse(samplerSearch);
+
+		Collection<Sampler> samplers = samplerSearch.getSearchResults();
+		List<Sampler> enabledSamplers = samplers.stream()
+			.filter(TestElement::isEnabled)
+			.collect(Collectors.toList());
 
 		List<Tag> tags = ImmutableList.of();
-		// Location(line, column) can be from test plan
+		Location location = new Location(0, 0);
 		String language = JMeterUtils.getLocale().getLanguage();
+		String keyword = "SyntheticFeature";
+		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
+		String name = threadGroup.getName();
+		String description = threadGroup.getComment();
+		List<ScenarioDefinition> definitions = ImmutableList.of();
 
-		//return new Feature(tags, location, language, keyword, name, description, scenarioDefinitions);
-		// TODO:     public Feature(List<Tag> tags, Location location, String language, String keyword, String name, String description, List<ScenarioDefinition> children) {
-
-		throw new UnsupportedOperationException();
+		return new Feature(tags, location, language, keyword, name, description, definitions);
 	}
 
 	@Override
