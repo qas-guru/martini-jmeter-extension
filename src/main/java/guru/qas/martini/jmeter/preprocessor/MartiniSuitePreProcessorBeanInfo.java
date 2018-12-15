@@ -16,13 +16,9 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
-import java.beans.BeanDescriptor;
-
 import java.util.function.Function;
 
 import org.apache.jmeter.testbeans.BeanInfoSupport;
-
-import guru.qas.martini.ResourceBundleMessageFunction;
 
 @SuppressWarnings({"unused", "WeakerAccess"}) // Used by bean introspection.
 public class MartiniSuitePreProcessorBeanInfo extends BeanInfoSupport {
@@ -31,28 +27,5 @@ public class MartiniSuitePreProcessorBeanInfo extends BeanInfoSupport {
 
 	public MartiniSuitePreProcessorBeanInfo() {
 		super(MartiniSuitePreProcessor.class);
-		init();
-	}
-
-	protected void init() {
-		setUpIcon();
-		setUpMessageFunction();
-		setUpProperties();
-	}
-
-	protected void setUpIcon() {
-		//super.setIcon("spring_icon_16x16.png");
-	}
-
-	protected void setUpMessageFunction() {
-		BeanDescriptor descriptor = super.getBeanDescriptor();
-		messageFunction = ResourceBundleMessageFunction.getInstance(descriptor);
-	}
-
-	protected void setUpProperties() {
-	}
-
-	protected String getLabel(String key) {
-		return messageFunction.apply(key);
 	}
 }

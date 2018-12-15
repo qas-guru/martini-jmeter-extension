@@ -20,10 +20,12 @@ import ch.qos.cal10n.BaseName;
 import ch.qos.cal10n.Locale;
 import ch.qos.cal10n.LocaleData;
 
-@BaseName("guru.qas.martini.jmeter.controller.martiniFilterControllerMessages")
+@BaseName("guru.qas.martini.jmeter.controller.defaultMartiniScopeControllerBeanMessages")
 @LocaleData({@Locale("en")})
-public enum MartiniFilterControllerMessages {
-	NO_MARTINI_FOUND,
-	UNIMPLEMENTED_STEPS,
-	INTERRUPTED
+public enum DefaultMartiniScopeControllerBeanMessages {
+	BEFORE_EVENT_ALREADY_PUBLISHED,
+	PUBLISHING_BEFORE_EVENT,
+	PUBLISHING_AFTER_EVENT,
+	AFTER_EVENT_NOT_PUBLISHED,
+	BEFORE_EVENT_NOT_PUBLISHED
 }

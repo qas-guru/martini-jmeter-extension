@@ -16,14 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import ch.qos.cal10n.BaseName;
-import ch.qos.cal10n.Locale;
-import ch.qos.cal10n.LocaleData;
+import org.apache.jmeter.testbeans.BeanInfoSupport;
 
-@BaseName("guru.qas.martini.jmeter.controller.martiniFilterControllerMessages")
-@LocaleData({@Locale("en")})
-public enum MartiniFilterControllerMessages {
-	NO_MARTINI_FOUND,
-	UNIMPLEMENTED_STEPS,
-	INTERRUPTED
+public class MartiniScopeControllerBeanInfo extends BeanInfoSupport {
+
+	public MartiniScopeControllerBeanInfo() {
+		super(MartiniScopeController.class);
+	}
 }

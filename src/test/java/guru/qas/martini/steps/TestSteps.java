@@ -25,7 +25,6 @@ import guru.qas.martini.annotation.When;
 public class TestSteps {
 
 	public TestSteps() {
-		System.out.println("TEST STEPS INSTANTIATED");
 	}
 
 	@Given("^a situation$")

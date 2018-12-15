@@ -23,5 +23,7 @@ import ch.qos.cal10n.LocaleData;
 @BaseName("guru.qas.martini.jmeter.variablesMessages")
 @LocaleData({@Locale("en")})
 public enum VariablesMessages {
-	SPRING_APPLICATION_CONTEXT_UNAVAILABLE
+	SPRING_APPLICATION_CONTEXT_NOT_SET,
+	INVALID_SPRING_APPLICATION_CONTEXT_INSTANCE,
+	INVALID_MARTINI_INSTANCE
 }

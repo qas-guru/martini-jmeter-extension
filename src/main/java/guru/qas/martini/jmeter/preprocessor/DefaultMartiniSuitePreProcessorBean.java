@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
 import com.google.common.util.concurrent.Monitor;
@@ -42,6 +43,7 @@ public class DefaultMartiniSuitePreProcessorBean implements MartiniSuitePreProce
 	protected final AtomicBoolean beforeSuitePublished;
 	protected final AtomicBoolean afterSuitePublished;
 
+	@Autowired
 	protected DefaultMartiniSuitePreProcessorBean(EventManager eventManager, SuiteIdentifier suiteIdentifier) {
 		MessageConveyor messageConveyor = new MessageConveyor(JMeterUtils.getLocale());
 		logger = new LocLoggerFactory(messageConveyor).getLocLogger(getClass());

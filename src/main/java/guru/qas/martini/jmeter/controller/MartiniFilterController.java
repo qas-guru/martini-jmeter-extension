@@ -222,10 +222,12 @@ public class MartiniFilterController extends AbstractGenericController
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		setMartini(null);
+		setMartini(getNextMartini());
 	}
 
 	protected void setMartini(@Nullable Martini martini) {
+		this.martini = null;
+
 		JMeterContext threadContext = super.getThreadContext();
 		JMeterVariables variables = threadContext.getVariables();
 		variables.remove(Variables.MARTINI);
@@ -247,36 +249,38 @@ public class MartiniFilterController extends AbstractGenericController
 
 	@Override
 	public Sampler next() {
-		Sampler next = super.next();
-		if (null == next) {
-			setMartini(null);
-			next = super.next();
+		Sampler sampler = null;
+		if (null != martini) {
+			sampler = super.next(); // Resets children if last child exhausted.
+			if (null == sampler) {
+				setMartini(getNextMartini());
+				sampler = null == martini ? null : super.next();
+			}
 		}
+		return sampler;
+	}
 
-		if (null == martini && null != next) {
-			int iteration = getIteration();
-			Iterator<Martini> iterator = index.computeIfAbsent(iteration, i -> martinis.iterator());
+	protected Martini getNextMartini() {
+		int iteration = getIteration();
+		Iterator<Martini> iterator = index.computeIfAbsent(iteration, i -> martinis.iterator());
 
-			Lock lock = striped.get(iteration);
-			Martini nextMartini;
+		Lock lock = striped.get(iteration);
+		Martini martini = null;
+		try {
+			lock.lockInterruptibly();
 			try {
-				lock.lockInterruptibly();
-				try {
-					nextMartini = iterator.hasNext() ? iterator.next() : null;
-				}
-				finally {
-					lock.unlock();
-				}
-				setMartini(nextMartini);
+				martini = iterator.hasNext() ? iterator.next() : null;
 			}
-			catch (InterruptedException e) {
-				String stacktrace = Throwables.getStackTraceAsString(e);
-				logger.warn(INTERRUPTED, getName(), '\n' + stacktrace);
-				setDone(true);
+			finally {
+				lock.unlock();
 			}
 		}
-
-		return null != next && null != martini ? next : null;
+		catch (InterruptedException e) {
+			String stacktrace = Throwables.getStackTraceAsString(e);
+			logger.warn(INTERRUPTED, getName(), '\n' + stacktrace);
+			setDone(true);
+		}
+		return martini;
 	}
 
 	protected int getIteration() {

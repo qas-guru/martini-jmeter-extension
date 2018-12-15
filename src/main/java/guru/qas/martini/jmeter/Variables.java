@@ -16,6 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
+import java.util.Optional;
+
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -26,7 +28,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.Martini;
 
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
+import static guru.qas.martini.jmeter.VariablesMessages.*;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class Variables {
@@ -40,11 +43,27 @@ public abstract class Variables {
 	}
 
 	public static ConfigurableApplicationContext getSpringApplicationContext() {
+		Object o = getVariable(SPRING_APPLICATION_CONTEXT);
+		checkNotNull(o, MESSAGE_CONVEYOR.getMessage(SPRING_APPLICATION_CONTEXT_NOT_SET));
+		checkState(ConfigurableApplicationContext.class.isInstance(o),
+			MESSAGE_CONVEYOR.getMessage(
+				INVALID_SPRING_APPLICATION_CONTEXT_INSTANCE,
+				ConfigurableApplicationContext.class,
+				o.getClass().getName()));
+		return ConfigurableApplicationContext.class.cast(o);
+	}
+
+	public static Object getVariable(String key) {
 		JMeterContext threadContext = JMeterContextService.getContext();
 		JMeterVariables variables = threadContext.getVariables();
-		Object o = variables.getObject(SPRING_APPLICATION_CONTEXT);
-		checkState(ConfigurableApplicationContext.class.isInstance(o),
-			MESSAGE_CONVEYOR.getMessage(VariablesMessages.SPRING_APPLICATION_CONTEXT_UNAVAILABLE));
-		return ConfigurableApplicationContext.class.cast(o);
+		return variables.getObject(key);
+	}
+
+	public static Optional<Martini> getMartini() {
+		Object o = getVariable(MARTINI);
+		boolean isMartini = Martini.class.isInstance(o);
+		checkState(null == o || isMartini,
+			MESSAGE_CONVEYOR.getMessage(INVALID_MARTINI_INSTANCE, Martini.class, null == o ? null : o.getClass()));
+		return isMartini ? Optional.of(Martini.class.cast(o)) : Optional.empty();
 	}
 }

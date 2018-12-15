@@ -16,14 +16,23 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import ch.qos.cal10n.BaseName;
-import ch.qos.cal10n.Locale;
-import ch.qos.cal10n.LocaleData;
+import javax.annotation.Nullable;
 
-@BaseName("guru.qas.martini.jmeter.controller.martiniFilterControllerMessages")
-@LocaleData({@Locale("en")})
-public enum MartiniFilterControllerMessages {
-	NO_MARTINI_FOUND,
-	UNIMPLEMENTED_STEPS,
-	INTERRUPTED
+import org.springframework.beans.factory.DisposableBean;
+
+import guru.qas.martini.result.MartiniResult;
+
+public interface MartiniScopeControllerBean extends DisposableBean {
+
+	void publishBeforeScenario(MartiniResult result);
+
+	void publishAfterScenario(@Nullable MartiniResult result);
+
+	/**
+	 * Should call publishAfterScenario().
+	 *
+	 * @throws Exception when problem encountered
+	 */
+	@Override
+	void destroy() throws Exception;
 }
