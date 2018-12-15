@@ -18,6 +18,7 @@ package guru.qas.martini.jmeter.controller;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
@@ -25,7 +26,6 @@ import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.TestPlan;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterThread;
@@ -37,17 +37,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.io.ByteArrayResource;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 import gherkin.ast.Feature;
 import gherkin.ast.Location;
+import gherkin.ast.Scenario;
 import gherkin.ast.ScenarioDefinition;
+import gherkin.ast.Step;
 import gherkin.ast.Tag;
+import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleLocation;
+import gherkin.pickles.PickleStep;
 import guru.qas.martini.Martini;
 import guru.qas.martini.SyntheticMartini;
+import guru.qas.martini.annotation.When;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.gherkin.DefaultRecipe;
 import guru.qas.martini.gherkin.FeatureWrapper;
 import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.jmeter.Variables;
@@ -142,45 +149,94 @@ public class MartiniScopeController extends AbstractGenericController implements
 	}
 
 	protected Recipe getRecipe() {
-		FeatureWrapper featureWrapper = getFeatureWrapper();
-		throw new UnsupportedOperationException();
-		//return new DefaultRecipe(featureWrapper, pickle, pickleLocation, scenarioDefinition);
+		HashTree hashTree = getHashTree();
+		Scenario scenario = getScenario(hashTree);
+		FeatureWrapper featureWrapper = getFeatureWrapper(scenario, hashTree);
+
+		Pickle pickle = getPickle(scenario, featureWrapper);
+		PickleLocation location = pickle.getLocations().get(0);
+
+		return new DefaultRecipe(featureWrapper, pickle, location, scenario);
 	}
 
-	protected FeatureWrapper getFeatureWrapper() {
-		Feature feature = getFeature();
-		// TODO: resource is the Test Plan
-		throw new UnsupportedOperationException();
-		//return new FeatureWrapper(feature, resource);
-	}
-
-	protected Feature getFeature() {
+	protected HashTree getHashTree() {
 		JMeterContext threadContext = super.getThreadContext();
-
 		JMeterThread thread = threadContext.getThread();
 		ListedHashTree tree = thread.getTestTree();
 		SearchByClass<MartiniScopeController> controllerSearch = new SearchByClass<>(MartiniScopeController.class);
 		tree.traverse(controllerSearch);
+		return controllerSearch.getSubTree(this);
+	}
 
-		HashTree subTree = controllerSearch.getSubTree(this);
+	protected Scenario getScenario(HashTree hashTree) {
+		Collection<Sampler> samplers = getSamplers(hashTree);
+		List<Step> steps = samplers.stream()
+			.filter(TestElement::isEnabled)
+			.map(this::getStep)
+			.collect(Collectors.toList());
+		return getScenario(steps);
+	}
+
+	protected List<Sampler> getSamplers(HashTree hashTree) {
 		SearchByClass<Sampler> samplerSearch = new SearchByClass<>(Sampler.class);
-		subTree.traverse(samplerSearch);
+		hashTree.traverse(samplerSearch);
 
 		Collection<Sampler> samplers = samplerSearch.getSearchResults();
-		List<Sampler> enabledSamplers = samplers.stream()
+		return samplers.stream()
 			.filter(TestElement::isEnabled)
 			.collect(Collectors.toList());
+	}
 
+	protected Step getStep(Sampler sampler) {
+		Location location = new Location(0, 0);
+		String keyword = When.class.getSimpleName();
+		String text = sampler.getName();
+		return new Step(location, keyword, text, null);
+	}
+
+	protected Scenario getScenario(List<Step> steps) {
+		ImmutableList<Tag> tags = ImmutableList.of();
+		Location location = new Location(0, 0);
+		String keyword = Scenario.class.getSimpleName();
+		String name = getName();
+		String description = super.getComment();
+		return new Scenario(tags, location, keyword, name, description, steps);
+	}
+
+	protected FeatureWrapper getFeatureWrapper(Scenario scenario, HashTree hashTree) {
+		Feature feature = getFeature(scenario);
+		String serialized = hashTree.toString();
+		ByteArrayResource resource = new ByteArrayResource(serialized.getBytes(), "JMeter HashTree");
+		return new FeatureWrapper(feature, resource);
+	}
+
+	protected Feature getFeature(Scenario scenario) {
 		List<Tag> tags = ImmutableList.of();
 		Location location = new Location(0, 0);
 		String language = JMeterUtils.getLocale().getLanguage();
-		String keyword = "SyntheticFeature";
+		String keyword = Feature.class.getSimpleName();
+
+		JMeterContext threadContext = super.getThreadContext();
 		AbstractThreadGroup threadGroup = threadContext.getThreadGroup();
 		String name = threadGroup.getName();
 		String description = threadGroup.getComment();
-		List<ScenarioDefinition> definitions = ImmutableList.of();
 
+		List<ScenarioDefinition> definitions = ImmutableList.of(scenario);
 		return new Feature(tags, location, language, keyword, name, description, definitions);
+	}
+
+	protected Pickle getPickle(Scenario scenario, FeatureWrapper featureWrapper) {
+		PickleLocation location = new PickleLocation(0, 0);
+
+		String name = featureWrapper.getName();
+		Locale locale = JMeterUtils.getLocale();
+		String language = locale.getLanguage();
+
+		List<PickleStep> pickleSteps = scenario.getSteps().stream()
+			.map(step -> new PickleStep(step.getText(), ImmutableList.of(), ImmutableList.of(location)))
+			.collect(Collectors.toList());
+
+		return new Pickle(name, language, pickleSteps, ImmutableList.of(), ImmutableList.of(location));
 	}
 
 	@Override
