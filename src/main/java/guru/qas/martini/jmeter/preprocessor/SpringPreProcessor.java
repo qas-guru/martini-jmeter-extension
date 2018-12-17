@@ -188,7 +188,6 @@ public class SpringPreProcessor
 
 	@Override
 	public void uncaughtException(Thread t, Throwable e) {
-		System.out.println("UNCAUGHT EXCEPTION");
 		super.tearDown();
 		if (null != setUpExceptionHandler) {
 			Thread.UncaughtExceptionHandler delegate = setUpExceptionHandler.get();

@@ -111,26 +111,10 @@ public class MartiniBeanController extends AbstractGenericController
 		Object clone;
 		if (started) {
 			try {
-				Class<? extends BeanController> implementation =
-					isBeanImplementationProvided() ? this.getImplementation() : BeanController.class;
-				ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
-
-				BeanController delegate;
-				if (isBeanNameProvided()) {
-					delegate = springContext.getBean(beanName, implementation);
-				}
-				else {
-					delegate = springContext.getBean(implementation);
-				}
-
-				getBeanProperties().stream()
-					.map(argument -> {
-						String name = argument.getName();
-						String value = argument.getValue();
-						return new StringProperty(name, value);
-					}).forEach(delegate::setProperty);
-
+				BeanController delegate = getDelegate();
+				setProperties(delegate);
 				delegate.setRunningVersion(true);
+				notifyStarted(delegate);
 				clone = delegate;
 			}
 			catch (Exception e) {
@@ -140,8 +124,38 @@ public class MartiniBeanController extends AbstractGenericController
 		else {
 			clone = super.clone();
 		}
-
 		return clone;
+	}
+
+	protected BeanController getDelegate() {
+		Class<? extends BeanController> implementation =
+			isBeanImplementationProvided() ? this.getImplementation() : BeanController.class;
+		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
+
+		return isBeanNameProvided() ?
+			springContext.getBean(beanName, implementation) :
+			springContext.getBean(implementation);
+	}
+
+	protected void setProperties(BeanController delegate) {
+		getBeanProperties().stream()
+			.map(argument -> {
+				String name = argument.getName();
+				String value = argument.getValue();
+				return new StringProperty(name, value);
+			}).forEach(delegate::setProperty);
+	}
+
+	protected void notifyStarted(BeanController delegate) {
+		if (TestStateListener.class.isInstance(delegate)) {
+			TestStateListener asListener = TestStateListener.class.cast(delegate);
+			if (null == host) {
+				asListener.testStarted();
+			}
+			else {
+				asListener.testStarted(host);
+			}
+		}
 	}
 
 	@Override

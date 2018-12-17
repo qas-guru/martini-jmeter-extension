@@ -24,15 +24,23 @@ import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import guru.qas.martini.jmeter.controller.BeanController;
 
 @SuppressWarnings("unused")
+@Component("DebugBeanController")
+@Lazy
+@Scope("prototype")
 public class DebugBeanController extends GenericController
 	implements Serializable, Cloneable, TestStateListener, LoopIterationListener, BeanController {
 
 	protected final Logger logger;
 
+	@Autowired
 	protected DebugBeanController() {
 		super();
 		logger = LoggerFactory.getLogger(getClass());
@@ -40,26 +48,26 @@ public class DebugBeanController extends GenericController
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		logger.debug("iterationStart(LoopIterationEvent)");
+		logger.info("iterationStart(LoopIterationEvent)");
 	}
 
 	@Override
 	public void testStarted() {
-		logger.debug("testStarted()");
+		logger.info("testStarted()");
 	}
 
 	@Override
 	public void testStarted(String host) {
-		logger.debug("testStarted(String)");
+		logger.info("testStarted(String)");
 	}
 
 	@Override
 	public void testEnded() {
-		logger.debug("testEnded()");
+		logger.info("testEnded()");
 	}
 
 	@Override
 	public void testEnded(String host) {
-		logger.debug("testEnded(String)");
+		logger.info("testEnded(String)");
 	}
 }

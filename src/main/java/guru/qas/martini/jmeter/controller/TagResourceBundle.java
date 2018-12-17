@@ -16,7 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -80,7 +79,7 @@ public class TagResourceBundle extends ResourceBundle {
 	@Nonnull
 	@Override
 	protected Set<String> handleKeySet() {
-		return tags;
+		return keySet();
 	}
 
 	@Nonnull
