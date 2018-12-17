@@ -16,12 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import org.apache.jmeter.testbeans.BeanInfoSupport;
+import org.apache.jmeter.control.Controller;
 
-@SuppressWarnings("WeakerAccess")
-public class MartiniScopeControllerBeanInfo extends BeanInfoSupport {
-
-	public MartiniScopeControllerBeanInfo() {
-		super(MartiniScopeController.class);
-	}
+public interface BeanController extends Controller {
 }
+

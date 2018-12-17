@@ -23,7 +23,7 @@ import org.apache.jorphan.gui.layout.VerticalLayout;
 import org.springframework.context.MessageSource;
 
 import guru.qas.martini.i18n.MessageSources;
-import guru.qas.martini.jmeter.sampler.MartiniSampler;
+import guru.qas.martini.jmeter.sampler.MartiniSamplerOld;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 @Deprecated
@@ -58,7 +58,7 @@ public class MartiniSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public TestElement createTestElement() {
-		MartiniSampler sampler = new MartiniSampler();
+		MartiniSamplerOld sampler = new MartiniSamplerOld();
 		modifyTestElement(sampler);
 		return sampler;
 	}

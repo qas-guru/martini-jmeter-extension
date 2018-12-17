@@ -16,12 +16,21 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import org.apache.jmeter.testbeans.BeanInfoSupport;
+import ch.qos.cal10n.BaseName;
+import ch.qos.cal10n.Locale;
+import ch.qos.cal10n.LocaleData;
 
-@SuppressWarnings("WeakerAccess")
-public class MartiniScopeControllerBeanInfo extends BeanInfoSupport {
-
-	public MartiniScopeControllerBeanInfo() {
-		super(MartiniScopeController.class);
-	}
+@BaseName("guru.qas.martini.jmeter.controller.martiniBeanControllerMessages")
+@LocaleData({@Locale("en")})
+public enum MartiniBeanControllerMessages {
+	NO_IMPLEMENTATION_OR_NAME_PROVIDED,
+	MISSING_IMPLEMENTATION,
+	INVALID_IMPLEMENTATION,
+	NO_DEFINITION_FOUND_BY_NAME,
+	IMPLEMENTATION_MISMATCH,
+	INVALID_BEAN_DEFINITION,
+	IMPLEMENTATION_NOT_DEFINED,
+	MULTIPLE_IMPLEMENTATIONS_FOUND,
+	SINGLETON_BEAN_NAME,
+	SINGLETON_BEAN_IMPLEMENTATION
 }

@@ -16,11 +16,10 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 import java.util.function.Function;
-
-import javax.annotation.Nonnull;
 
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.gui.GuiPackage;
@@ -38,7 +37,6 @@ import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.ResourceBundleMessageFunction;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -52,6 +50,7 @@ public abstract class AbstractGenericController extends GenericController
 	protected transient IMessageConveyor messageConveyor;
 	protected transient Function<String, String> messageFunction;
 	protected transient LocLogger logger;
+	protected String host;
 
 	public AbstractGenericController() {
 		super();
@@ -64,6 +63,7 @@ public abstract class AbstractGenericController extends GenericController
 
 	@Override
 	public void testStarted(String host) {
+		this.host = host;
 		setUp();
 	}
 
@@ -99,11 +99,11 @@ public abstract class AbstractGenericController extends GenericController
 		}
 	}
 
-	protected void setUpBeanInfoSupport() {
+	protected void setUpBeanInfoSupport() throws Exception {
 		beanInfoSupport = getBeanInfoSupport();
 	}
 
-	protected abstract BeanInfoSupport getBeanInfoSupport();
+	protected abstract BeanInfoSupport getBeanInfoSupport() throws Exception;
 
 	protected void setUpMessageFunction() {
 		messageFunction = ResourceBundleMessageFunction.getInstance(beanInfoSupport);
@@ -125,13 +125,8 @@ public abstract class AbstractGenericController extends GenericController
 		clone.beanInfoSupport = beanInfoSupport;
 		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
+		clone.host = host;
 		return clone;
-	}
-
-	protected String getDisplayName(@Nonnull String property) {
-		checkNotNull(property, "null String");
-		String key = String.format("%s.displayName", property);
-		return messageFunction.apply(key);
 	}
 
 	@Override
@@ -155,6 +150,7 @@ public abstract class AbstractGenericController extends GenericController
 		logger = null;
 		messageConveyor = null;
 		beanInfoSupport = null;
+		host = null;
 	}
 
 	protected abstract void beginTearDown() throws Exception;
