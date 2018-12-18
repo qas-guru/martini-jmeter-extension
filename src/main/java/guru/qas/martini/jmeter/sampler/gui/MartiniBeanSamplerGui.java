@@ -27,7 +27,7 @@ import org.springframework.context.MessageSource;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.jmeter.config.MartiniBeanConfig;
 import guru.qas.martini.jmeter.config.gui.MartiniBeanConfigGui;
-import guru.qas.martini.jmeter.sampler.MartiniBeanSampler;
+import guru.qas.martini.jmeter.sampler.DeprecatedMartiniBeanSampler;
 
 /**
  * Modeled after JavaTestSamplerGui.
@@ -69,7 +69,7 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 
 	@Override
 	public TestElement createTestElement() {
-		MartiniBeanSampler sampler = new MartiniBeanSampler();
+		DeprecatedMartiniBeanSampler sampler = new DeprecatedMartiniBeanSampler();
 		modifyTestElement(sampler);
 		return sampler;
 	}
@@ -78,7 +78,7 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 	public void modifyTestElement(TestElement element) {
 		element.clear();
 		configureTestElement(element);
-		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
+		DeprecatedMartiniBeanSampler sampler = DeprecatedMartiniBeanSampler.class.cast(element);
 		MartiniBeanConfig config = configurationPanel.createTestElement();
 		sampler.setConfig(config);
 	}
@@ -86,7 +86,7 @@ public class MartiniBeanSamplerGui extends AbstractSamplerGui {
 	@Override
 	public void configure(TestElement element) {
 		super.configure(element);
-		MartiniBeanSampler sampler = MartiniBeanSampler.class.cast(element);
+		DeprecatedMartiniBeanSampler sampler = DeprecatedMartiniBeanSampler.class.cast(element);
 		MartiniBeanConfig config = sampler.getConfig();
 		configurationPanel.setConfig(config);
 	}

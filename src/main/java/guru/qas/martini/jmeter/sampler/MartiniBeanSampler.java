@@ -16,146 +16,176 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.sampler;
 
-import java.util.Map;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
-import javax.annotation.Nullable;
-
-import org.apache.jmeter.protocol.java.sampler.JavaSamplerClient;
-import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
+import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
-import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.testelement.property.JMeterProperty;
-import org.apache.jmeter.testelement.property.ObjectProperty;
-import org.apache.jmeter.threads.JMeterContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
+import org.apache.jmeter.testbeans.TestBean;
+import org.apache.jmeter.testelement.TestStateListener;
+import org.apache.jmeter.threads.JMeterContextService;
+import org.apache.jmeter.util.JMeterUtils;
 
-import com.google.common.base.Throwables;
+import org.slf4j.cal10n.LocLogger;
+import org.slf4j.cal10n.LocLoggerFactory;
 
-import guru.qas.martini.Martini;
-import guru.qas.martini.jmeter.SpringBeanUtil;
-import guru.qas.martini.jmeter.config.MartiniBeanConfig;
-import guru.qas.martini.jmeter.control.MartiniScenarioController;
-import guru.qas.martini.result.MartiniResult;
+import ch.qos.cal10n.MessageConveyor;
+import guru.qas.martini.jmeter.DefaultExceptionReporter;
+import guru.qas.martini.jmeter.ExceptionReporter;
 
-import static com.google.common.base.Preconditions.checkState;
+import static guru.qas.martini.jmeter.sampler.MartiniBeanSamplerMessages.*;
 
-/**
- * Modeled after JavaSampler.
- */
-@SuppressWarnings({"unused", "WeakerAccess"})
-@Deprecated
-public class MartiniBeanSampler extends AbstractSampler implements Interruptible {
+@SuppressWarnings("WeakerAccess")
+public class MartiniBeanSampler extends AbstractSampler
+	implements Serializable, Cloneable, TestStateListener, TestBean {
 
-	private static final long serialVersionUID = 1813073201707263835L;
+	private static final long serialVersionUID = -8693642618909458802L;
 
-	private static final String CONFIG = "martini.bean.config";
+	// These must match field names exactly.
+	protected static final String PROPERTY_BEAN_IMPLEMENTATION = "beanImplementation";
+	protected static final String PROPERTY_BEAN_NAME = "beanName";
+	protected static final String PROPERTY_BEAN_PROPERTIES = "beanProperties";
 
-	protected transient Logger logger;
-	protected transient JavaSamplerClient delegate;
+	// Serialized.
+	protected String beanImplementation;
+	protected String beanName;
+	protected List<Argument> beanProperties;
+
+	// Per-thread.
+	protected transient boolean started;
+	protected transient String host;
+	protected transient MessageConveyor messageConveyor;
+	protected transient LocLogger logger;
+	protected transient ExceptionReporter reporter;
+
+	public String getBeanImplementation() {
+		return beanImplementation;
+	}
+
+	@SuppressWarnings("unused") // Accessed via introspection.
+	public void setBeanImplementation(String beanImplementation) {
+		this.beanImplementation = beanImplementation;
+	}
+
+	public String getBeanName() {
+		return beanName;
+	}
+
+	@SuppressWarnings("unused") // Accessed via introspection.
+	public void setBeanName(String beanName) {
+		this.beanName = beanName;
+	}
+
+	public List<Argument> getBeanProperties() {
+		return beanProperties;
+	}
+
+	@SuppressWarnings("unused") // Accessed via introspection.
+	public void setBeanProperties(List<Argument> beanProperties) {
+		this.beanProperties = beanProperties;
+	}
 
 	public MartiniBeanSampler() {
 		super();
-		setConfig(new MartiniBeanConfig());
-		logger = LoggerFactory.getLogger(this.getClass());
+		init();
 	}
 
-	protected Object readResolve() {
-		logger = LoggerFactory.getLogger(this.getClass());
+	public Object readResolve() {
+		init();
 		return this;
 	}
 
-	public void setConfig(MartiniBeanConfig config) {
-		ObjectProperty property = new ObjectProperty(CONFIG, config);
-		super.setProperty(property);
-	}
-
-	public MartiniBeanConfig getConfig() {
-		JMeterProperty property = super.getProperty(CONFIG);
-		Object o = property.getObjectValue();
-		checkState(MartiniBeanConfig.class.isInstance(o), "parameter %s is not of type %s: %s",
-			CONFIG, MartiniBeanConfig.class, null == o ? null : o.getClass());
-		return MartiniBeanConfig.class.cast(o);
+	protected void init() {
+		started = false;
+		beanProperties = new ArrayList<>();
 	}
 
 	@Override
-	public SampleResult sample(Entry entry) {
-		Martini martini = null;
-		SampleResult result;
-		try {
-			martini = getMartini();
-
-			setDelegate();
-			JavaSamplerContext javaSamplerContext = getConfig().getAsJavaSamplerContext();
-
-			delegate.setupTest(javaSamplerContext);
-			try {
-				result = delegate.runTest(javaSamplerContext);
+	public Object clone() {
+		Object clone;
+		if (started) {
+			/*
+						try {
+				BeanController delegate = getDelegate();
+				setProperties(delegate);
+				delegate.setRunningVersion(true);
+				notifyStarted(delegate);
+				clone = delegate;
 			}
-			finally {
-				delegate.teardownTest(javaSamplerContext);
+			catch (Exception e) {
+				throw new AssertionError(e);
 			}
+			 */
+			// TODO: get prototype bean
+			throw new UnsupportedOperationException();
 		}
-		catch (Exception e) {
-			logger.error("exception occurred while executing {} {}", this.getName(), delegate, e);
-			result = new SampleResult();
-			result.setTimeStamp(System.currentTimeMillis());
-			String stacktrace = Throwables.getStackTraceAsString(e).replaceAll("\r\n", "\n").replaceAll("\n", "\r");
-			result.setResponseMessage(stacktrace);
+		else {
+			clone = super.clone();
 		}
-		finally {
-			destroyDelegate();
-		}
-
-		setLabel(martini, result);
-		return result;
-	}
-
-	@Nullable
-	protected Martini getMartini() {
-		JMeterContext threadContext = super.getThreadContext();
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		Object o = samplerContext.get(MartiniScenarioController.KEY);
-		MartiniResult result = MartiniResult.class.isInstance(o) ? MartiniResult.class.cast(o) : null;
-		return null == result ? null : result.getMartini();
-	}
-
-	protected void setDelegate() {
-		MartiniBeanConfig martiniBeanConfig = getConfig();
-		String beanName = martiniBeanConfig.getBeanName();
-		String beanType = martiniBeanConfig.getBeanType();
-		delegate = SpringBeanUtil.getBean(beanName, beanType, JavaSamplerClient.class);
-	}
-
-	protected void destroyDelegate() {
-		try {
-			DisposableBean disposable = DisposableBean.class.isInstance(delegate) ? DisposableBean.class.cast(delegate) : null;
-			if (null != disposable) {
-				disposable.destroy();
-			}
-		}
-		catch (Exception e) {
-			logger.warn("{}: destroyDelegate() failure", getName(), e);
-		}
-		finally {
-			delegate = null;
-		}
-	}
-
-	protected void setLabel(@Nullable Martini martini, SampleResult result) {
-		if (result != null && result.getSampleLabel().trim().isEmpty()) {
-			String label = null == martini ? getName() :
-				String.format("%s:%s", martini.getScenarioName(), getName());
-			result.setSampleLabel(label);
-		}
+		return clone;
 	}
 
 	@Override
-	public boolean interrupt() {
-		Interruptible interruptible = Interruptible.class.isInstance(delegate) ? Interruptible.class.cast(delegate) : null;
-		return null != interruptible && interruptible.interrupt();
+	public void testStarted() {
+		setUp();
+	}
+
+	@Override
+	public void testStarted(String host) {
+		this.host = host;
+		setUp();
+	}
+
+	protected void setUp() {
+		try {
+			setUpLogger();
+			setUpExceptionReporter();
+			logger.info(STARTING, getName());
+		}
+		catch (Exception e) {
+			JMeterContextService.endTest();
+			reporter.logException(ERROR_IN_START_UP, e, getName());
+			reporter.showException(GUI_ERROR_TITLE, e, getName());
+			tearDown();
+			throw new ThreadDeath();
+		}
+		// TODO: validate input
+	}
+
+	protected void setUpLogger() {
+		Locale locale = JMeterUtils.getLocale();
+		messageConveyor = new MessageConveyor(locale);
+		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
+		logger = loggerFactory.getLocLogger(this.getClass());
+	}
+
+	protected void setUpExceptionReporter() {
+		reporter = new DefaultExceptionReporter(messageConveyor, logger, getName());
+	}
+
+	@Override
+	public SampleResult sample(Entry e) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void testEnded() {
+		tearDown();
+	}
+
+	@Override
+	public void testEnded(String host) {
+		tearDown();
+	}
+
+	protected void tearDown() {
+		messageConveyor = null;
+		logger = null;
+		host = null;
+		started = false;
 	}
 }

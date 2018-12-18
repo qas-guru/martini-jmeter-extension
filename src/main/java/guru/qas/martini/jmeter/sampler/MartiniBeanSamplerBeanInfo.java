@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.controller;
+package guru.qas.martini.jmeter.sampler;
 
 import java.beans.BeanDescriptor;
 import java.beans.PropertyDescriptor;
@@ -32,17 +32,18 @@ import org.apache.jmeter.testbeans.gui.TypeEditor;
 import org.apache.jmeter.util.JMeterUtils;
 
 import guru.qas.martini.ResourceBundleMessageFunction;
+import guru.qas.martini.jmeter.controller.BeanController;
 import guru.qas.martini.jmeter.TagResourceBundle;
 
-import static guru.qas.martini.jmeter.controller.MartiniBeanController.*;
+import static guru.qas.martini.jmeter.sampler.MartiniBeanSampler.*;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniBeanControllerBeanInfo extends BeanInfoSupport {
+public class MartiniBeanSamplerBeanInfo extends BeanInfoSupport {
 
 	protected Function<String, String> messageFunction;
 
-	public MartiniBeanControllerBeanInfo() throws IOException {
-		super(MartiniBeanController.class);
+	public MartiniBeanSamplerBeanInfo() throws IOException {
+		super(MartiniBeanSampler.class);
 		setUpMessageFunction();
 		init();
 	}
@@ -67,7 +68,7 @@ public class MartiniBeanControllerBeanInfo extends BeanInfoSupport {
 		PropertyDescriptor p = property(PROPERTY_BEAN_IMPLEMENTATION);
 		p.setValue(NOT_UNDEFINED, Boolean.FALSE);
 
-		List<String> tags = JMeterUtils.findClassesThatExtend(BeanController.class);
+		List<String> tags = JMeterUtils.findClassesThatExtend(BeanSampler.class);
 		p.setValue(GenericTestBeanCustomizer.TAGS, tags.toArray(new String[0]));
 		p.setValue(GenericTestBeanCustomizer.NOT_EXPRESSION, Boolean.FALSE);
 
@@ -86,7 +87,7 @@ public class MartiniBeanControllerBeanInfo extends BeanInfoSupport {
 	}
 
 	protected void setUpBeanProperties() {
-		PropertyDescriptor p = property(PROPERTY_BEAN_PROPERTIES);
+		PropertyDescriptor p = property(MartiniBeanSampler.PROPERTY_BEAN_PROPERTIES);
 		p.setValue(NOT_UNDEFINED, Boolean.TRUE);
 		p.setValue(DEFAULT, new ArrayList<Argument>());
 		p.setPropertyEditorClass(TableEditor.class);

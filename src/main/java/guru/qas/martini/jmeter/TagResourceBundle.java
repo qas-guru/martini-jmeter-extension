@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.controller;
+package guru.qas.martini.jmeter;
 
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -24,6 +24,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -37,8 +38,8 @@ public class TagResourceBundle extends ResourceBundle {
 	protected final ResourceBundle delegate;
 	protected final Set<String> tags;
 
-	protected TagResourceBundle(ResourceBundle delegate, Iterable<String> tags) {
-		this.delegate = delegate;
+	public TagResourceBundle(ResourceBundle delegate, @Nullable Iterable<String> tags) {
+		this.delegate = checkNotNull(delegate, "null ResourceBundle");
 		this.tags = null == tags ? ImmutableSet.of() : Sets.newLinkedHashSet(tags);
 	}
 

@@ -52,12 +52,12 @@ import guru.qas.martini.runtime.harness.MartiniCallable;
 
 @SuppressWarnings("WeakerAccess")
 @Deprecated
-public class MartiniSamplerOld extends AbstractSampler {
+public class DeprecatedMartiniSampler extends AbstractSampler {
 
 	protected final Logger logger;
 	protected final AtomicBoolean interrupted;
 
-	public MartiniSamplerOld() {
+	public DeprecatedMartiniSampler() {
 		super();
 		logger = LoggerFactory.getLogger(getClass());
 		interrupted = new AtomicBoolean(false);

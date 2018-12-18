@@ -14,29 +14,79 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.spring.controller;
+package guru.qas.martini.jmeter.spring.sampler;
 
-import java.io.Serializable;
-
-import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
+import org.apache.jmeter.samplers.AbstractSampler;
+import org.apache.jmeter.samplers.Entry;
+import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import guru.qas.martini.jmeter.controller.BeanController;
+import guru.qas.martini.jmeter.sampler.BeanSampler;
+
+@SuppressWarnings("unused")
+@Component("DebugBeanController")
+@Lazy
+@Scope("prototype")
+public class DebugBeanSampler extends AbstractSampler
+	implements TestStateListener, LoopIterationListener, BeanSampler {
+
+	protected final Logger logger;
+
+	public DebugBeanSampler() {
+		super();
+		logger = LoggerFactory.getLogger(getClass());
+	}
+
+	@Override
+	public void iterationStart(LoopIterationEvent event) {
+		logger.info("iterationStart(LoopIterationEvent)");
+	}
+
+	@Override
+	public void testStarted() {
+		logger.info("testStarted()");
+	}
+
+	@Override
+	public void testStarted(String host) {
+		logger.info("testStarted(String)");
+	}
+
+	@Override
+	public SampleResult sample(Entry e) {
+		logger.info("sample(Entry)");
+		SampleResult sampleResult = new SampleResult();
+		sampleResult.setSampleLabel(getName());
+		sampleResult.setSuccessful(true);
+		return sampleResult;
+	}
+
+	@Override
+	public void testEnded() {
+		logger.info("testEnded()");
+	}
+
+	@Override
+	public void testEnded(String host) {
+		logger.info("testEnded(String)");
+	}
+}
+
+/*
 
 @SuppressWarnings("unused")
 @Component("DebugBeanController")
 @Lazy
 @Scope("prototype")
 public class DebugBeanController extends GenericController
-	implements TestStateListener, LoopIterationListener, BeanController {
+	implements Serializable, Cloneable, TestStateListener, LoopIterationListener, BeanController {
 
 	protected final Logger logger;
 
@@ -71,3 +121,4 @@ public class DebugBeanController extends GenericController
 		logger.info("testEnded(String)");
 	}
 }
+ */
