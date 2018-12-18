@@ -18,7 +18,7 @@ package guru.qas.martini.jmeter;
 
 import org.apache.jmeter.testelement.TestElement;
 
-public interface BeanHelper<T extends TestElement> {
+public interface TestBeanFactory<T extends TestElement> {
 
-	T getClone();
+	T getBean();
 }

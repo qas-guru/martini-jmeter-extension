@@ -52,6 +52,7 @@ public class MartiniBeanControllerBeanInfo extends BeanInfoSupport {
 		messageFunction = ResourceBundleMessageFunction.getInstance(descriptor);
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void init() throws IOException {
 		String label = messageFunction.apply("options.label");
 		createPropertyGroup(label, new String[]{

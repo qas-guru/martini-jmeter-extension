@@ -42,10 +42,10 @@ import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
 
 import static com.google.common.base.Preconditions.*;
-import static guru.qas.martini.jmeter.DefaultBeanHelperMessages.*;
+import static guru.qas.martini.jmeter.DefaultTestBeanFactoryMessages.*;
 
 @SuppressWarnings("WeakerAccess")
-public class DefaultBeanHelper<T extends TestElement> implements BeanHelper<T> {
+public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFactory<T> {
 
 	protected final IMessageConveyor messageConveyor;
 	protected final String componentName;
@@ -54,7 +54,7 @@ public class DefaultBeanHelper<T extends TestElement> implements BeanHelper<T> {
 	protected final ImmutableList<Argument> properties;
 	protected final String host;
 
-	protected DefaultBeanHelper(
+	protected DefaultTestBeanFactory(
 		IMessageConveyor messageConveyor,
 		String componentName,
 		Class<? extends T> beanImplementation,
@@ -71,7 +71,7 @@ public class DefaultBeanHelper<T extends TestElement> implements BeanHelper<T> {
 	}
 
 	@Override
-	public T getClone() {
+	public T getBean() {
 		T delegate = getDelegate();
 		setProperties(delegate);
 		delegate.setName(componentName);
@@ -169,7 +169,7 @@ public class DefaultBeanHelper<T extends TestElement> implements BeanHelper<T> {
 			return this;
 		}
 
-		public DefaultBeanHelper<T> build() throws Exception {
+		public DefaultTestBeanFactory<T> build() throws Exception {
 			checkState(null != beanInfoSupport, "null BeanInfoSupport");
 			checkState(null != baseImplementation, "null Class");
 
@@ -184,7 +184,7 @@ public class DefaultBeanHelper<T extends TestElement> implements BeanHelper<T> {
 			assertValid(definitionName, definition);
 
 			String displayName = getDisplayName();
-			return new DefaultBeanHelper<>(messageConveyor, displayName, implementation, beanName, beanProperties, host);
+			return new DefaultTestBeanFactory<>(messageConveyor, displayName, implementation, beanName, beanProperties, host);
 		}
 
 		protected String getDisplayName() {

@@ -30,8 +30,8 @@ import org.apache.jmeter.testelement.property.JMeterProperty;
 
 import com.google.common.collect.ImmutableList;
 
-import guru.qas.martini.jmeter.BeanHelper;
-import guru.qas.martini.jmeter.DefaultBeanHelper;
+import guru.qas.martini.jmeter.TestBeanFactory;
+import guru.qas.martini.jmeter.DefaultTestBeanFactory;
 
 @SuppressWarnings("WeakerAccess")
 public class MartiniBeanSampler extends AbstractGenericSampler
@@ -50,7 +50,7 @@ public class MartiniBeanSampler extends AbstractGenericSampler
 	protected List<Argument> beanProperties;
 
 	// Per-thread, but should only be referenced by startup thread.
-	protected transient BeanHelper<BeanSampler> beanHelper;
+	protected transient TestBeanFactory<BeanSampler> testBeanFactory;
 	protected transient boolean started;
 
 	@SuppressWarnings("unused")
@@ -102,12 +102,13 @@ public class MartiniBeanSampler extends AbstractGenericSampler
 		return new MartiniBeanSamplerBeanInfo();
 	}
 
+	@SuppressWarnings("Duplicates")
 	@Override
 	public Object clone() {
 		Object clone;
 		if (started) {
 			try {
-				clone = beanHelper.getClone();
+				clone = testBeanFactory.getBean();
 			}
 			catch (Exception e) {
 				throw new AssertionError(e);
@@ -124,7 +125,7 @@ public class MartiniBeanSampler extends AbstractGenericSampler
 		JMeterProperty beanImplementationProperty = super.getProperty(PROPERTY_BEAN_IMPLEMENTATION);
 		JMeterProperty beanNameProperty = super.getProperty(PROPERTY_BEAN_NAME);
 		ImmutableList<Argument> arguments = ImmutableList.copyOf(getBeanProperties());
-		beanHelper = DefaultBeanHelper.<BeanSampler>builder()
+		testBeanFactory = DefaultTestBeanFactory.<BeanSampler>builder()
 			.setHost(host)
 			.setComponentName(getName())
 			.setBeanInfoSupport(beanInfoSupport)
@@ -144,6 +145,6 @@ public class MartiniBeanSampler extends AbstractGenericSampler
 	@Override
 	protected void beginTearDown() {
 		started = false;
-		beanHelper = null;
+		testBeanFactory = null;
 	}
 }

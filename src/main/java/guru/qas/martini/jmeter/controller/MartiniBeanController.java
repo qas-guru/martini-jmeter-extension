@@ -21,22 +21,17 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Nonnull;
-
 import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
-import org.apache.jmeter.testelement.property.StringProperty;
+import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.springframework.beans.factory.annotation.Configurable;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.context.ConfigurableApplicationContext;
 
-import guru.qas.martini.jmeter.Variables;
+import com.google.common.collect.ImmutableList;
 
-import static com.google.common.base.Preconditions.*;
-import static guru.qas.martini.jmeter.controller.MartiniBeanControllerMessages.*;
+import guru.qas.martini.jmeter.TestBeanFactory;
+import guru.qas.martini.jmeter.DefaultTestBeanFactory;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
@@ -55,19 +50,21 @@ public class MartiniBeanController extends AbstractGenericController
 	protected String beanName;
 	protected List<Argument> beanProperties;
 
-	// Per-thread.
+	// Per-thread, but should only be referenced by startup thread.
+	protected transient TestBeanFactory<BeanController> testBeanFactory;
 	protected transient boolean started;
 
+	@SuppressWarnings("unused")
 	public String getBeanImplementation() {
 		return beanImplementation;
 	}
 
 	@SuppressWarnings("unused") // Accessed via introspection.
-	public void setBeanImplementation(String s) {
-		String trimmed = null == s ? "" : s.trim();
-		this.beanImplementation = trimmed.isEmpty() ? null : trimmed;
+	public void setBeanImplementation(String beanImplementation) {
+		this.beanImplementation = beanImplementation;
 	}
 
+	@SuppressWarnings("unused")
 	public String getBeanName() {
 		return beanName;
 	}
@@ -77,17 +74,13 @@ public class MartiniBeanController extends AbstractGenericController
 		this.beanName = beanName;
 	}
 
-	@Nonnull
 	public List<Argument> getBeanProperties() {
 		return beanProperties;
 	}
 
 	@SuppressWarnings("unused") // Accessed via introspection.
 	public void setBeanProperties(List<Argument> beanProperties) {
-		this.beanProperties.clear();
-		if (null != beanProperties) {
-			this.beanProperties.addAll(beanProperties);
-		}
+		this.beanProperties = beanProperties;
 	}
 
 	public MartiniBeanController() {
@@ -101,21 +94,22 @@ public class MartiniBeanController extends AbstractGenericController
 	}
 
 	protected void init() {
-		started = false;
 		beanProperties = new ArrayList<>();
+		started = false;
 	}
 
-	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	protected BeanInfoSupport getBeanInfoSupport() throws IOException {
+		return new MartiniBeanControllerBeanInfo();
+	}
+
+	@SuppressWarnings("Duplicates")
 	@Override
 	public Object clone() {
 		Object clone;
 		if (started) {
 			try {
-				BeanController delegate = getDelegate();
-				setProperties(delegate);
-				delegate.setRunningVersion(true);
-				notifyStarted(delegate);
-				clone = delegate;
+				clone = testBeanFactory.getBean();
 			}
 			catch (Exception e) {
 				throw new AssertionError(e);
@@ -127,139 +121,21 @@ public class MartiniBeanController extends AbstractGenericController
 		return clone;
 	}
 
-	protected BeanController getDelegate() {
-		Class<? extends BeanController> implementation =
-			isBeanImplementationProvided() ? this.getImplementation() : BeanController.class;
-		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
-
-		return isBeanNameProvided() ?
-			springContext.getBean(beanName, implementation) :
-			springContext.getBean(implementation);
-	}
-
-	protected void setProperties(BeanController delegate) {
-		getBeanProperties().stream()
-			.map(argument -> {
-				String name = argument.getName();
-				String value = argument.getValue();
-				return new StringProperty(name, value);
-			}).forEach(delegate::setProperty);
-	}
-
-	protected void notifyStarted(BeanController delegate) {
-		if (TestStateListener.class.isInstance(delegate)) {
-			TestStateListener asListener = TestStateListener.class.cast(delegate);
-			if (null == host) {
-				asListener.testStarted();
-			}
-			else {
-				asListener.testStarted(host);
-			}
-		}
-	}
-
 	@Override
-	protected BeanInfoSupport getBeanInfoSupport() throws IOException {
-		return new MartiniBeanControllerBeanInfo();
-	}
-
-	@Override
-	protected void completeSetup() {
+	protected void completeSetup() throws Exception {
+		JMeterProperty beanImplementationProperty = super.getProperty(PROPERTY_BEAN_IMPLEMENTATION);
+		JMeterProperty beanNameProperty = super.getProperty(PROPERTY_BEAN_NAME);
+		ImmutableList<Argument> arguments = ImmutableList.copyOf(getBeanProperties());
+		testBeanFactory = DefaultTestBeanFactory.<BeanController>builder()
+			.setHost(host)
+			.setComponentName(getName())
+			.setBeanInfoSupport(beanInfoSupport)
+			.setBaseImplementation(BeanController.class)
+			.setBeanImplementationProperty(beanImplementationProperty)
+			.setBeanNameProperty(beanNameProperty)
+			.setBeanProperties(arguments)
+			.build();
 		started = true;
-		assertImplementationOrNameProvided();
-		assertValidImplementation();
-		assertValidBeanDefinition();
-	}
-
-	protected void assertImplementationOrNameProvided() {
-		if (!isBeanImplementationProvided() && !isBeanNameProvided()) {
-			String implementationLabel = messageFunction.apply(PROPERTY_BEAN_IMPLEMENTATION + ".displayName");
-			String nameLabel = getNameLabel();
-			String message = messageConveyor.getMessage(
-				NO_IMPLEMENTATION_OR_NAME_PROVIDED, implementationLabel, nameLabel);
-			throw new IllegalArgumentException(message);
-		}
-	}
-
-	protected boolean isBeanImplementationProvided() {
-		String implementation = getBeanImplementation();
-		return null != implementation && !implementation.trim().isEmpty();
-	}
-
-	protected boolean isBeanNameProvided() {
-		String name = getBeanName();
-		return null != name && !name.trim().isEmpty();
-	}
-
-	protected String getNameLabel() {
-		return messageFunction.apply(PROPERTY_BEAN_NAME + ".displayName");
-	}
-
-	protected void assertValidImplementation() {
-		if (isBeanImplementationProvided()) {
-			Class implementation = getImplementation();
-			assertValidImplementation(implementation);
-		}
-	}
-
-	protected Class getImplementation() {
-		String type = getBeanImplementation().trim();
-		return getImplementation(type, MISSING_IMPLEMENTATION, type);
-	}
-
-	protected Class<?> getImplementation(String className, MartiniBeanControllerMessages key, Object... args) {
-		String type = className.trim();
-		ClassLoader classLoader = getClass().getClassLoader();
-
-		try {
-			return Class.forName(type, false, classLoader);
-		}
-		catch (ClassNotFoundException e) {
-			String message = messageConveyor.getMessage(key, args);
-			throw new IllegalArgumentException(message, e);
-		}
-	}
-
-	protected void assertValidImplementation(Class c) {
-		checkState(BeanController.class.isAssignableFrom(c),
-			messageConveyor.getMessage(INVALID_IMPLEMENTATION, BeanController.class.getName(), c.getName()));
-	}
-
-	protected void assertValidBeanDefinition() {
-		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
-
-		if (isBeanNameProvided()) {
-			String beanName = this.getBeanName().trim();
-			checkArgument(springContext.containsBean(beanName) || springContext.containsBeanDefinition(beanName),
-				messageConveyor.getMessage(NO_DEFINITION_FOUND_BY_NAME, beanName));
-			checkArgument(!springContext.isSingleton(beanName),
-				messageConveyor.getMessage(SINGLETON_BEAN_NAME, beanName));
-
-			if (isBeanImplementationProvided()) {
-				ConfigurableListableBeanFactory beanFactory = springContext.getBeanFactory();
-				BeanDefinition definition = beanFactory.getMergedBeanDefinition(beanName);
-				String actualImplementation = definition.getBeanClassName();
-				Class<?> beanClass = getImplementation(
-					actualImplementation, INVALID_BEAN_DEFINITION, beanName, actualImplementation);
-
-				Class<?> expectedImplementation = getImplementation();
-				if (!expectedImplementation.isAssignableFrom(beanClass)) {
-					String message = messageConveyor.getMessage(
-						IMPLEMENTATION_MISMATCH, beanName, expectedImplementation, actualImplementation);
-					throw new IllegalArgumentException(message);
-				}
-			}
-		}
-		else {
-			Class<?> type = getImplementation();
-			String[] beanNamesForType = springContext.getBeanNamesForType(type, true, true);
-			int candidateCount = beanNamesForType.length;
-			checkArgument(0 < candidateCount, messageConveyor.getMessage(IMPLEMENTATION_NOT_DEFINED, type));
-			checkArgument(candidateCount < 2, messageConveyor.getMessage(MULTIPLE_IMPLEMENTATIONS_FOUND, type));
-			String beanName = beanNamesForType[0];
-			checkArgument(!springContext.isSingleton(beanName),
-				messageConveyor.getMessage(SINGLETON_BEAN_IMPLEMENTATION, type));
-		}
 	}
 
 	@Override

@@ -14,23 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.controller;
+package guru.qas.martini.jmeter;
 
 import ch.qos.cal10n.BaseName;
 import ch.qos.cal10n.Locale;
 import ch.qos.cal10n.LocaleData;
 
-@BaseName("guru.qas.martini.jmeter.controller.martiniBeanControllerMessages")
+@BaseName("guru.qas.martini.jmeter.defaultTestBeanFactoryMessages")
 @LocaleData({@Locale("en")})
-public enum MartiniBeanControllerMessages {
+public enum DefaultTestBeanFactoryMessages {
 	NO_IMPLEMENTATION_OR_NAME_PROVIDED,
 	MISSING_IMPLEMENTATION,
 	INVALID_IMPLEMENTATION,
-	NO_DEFINITION_FOUND_BY_NAME,
-	IMPLEMENTATION_MISMATCH,
-	INVALID_BEAN_DEFINITION,
-	IMPLEMENTATION_NOT_DEFINED,
-	MULTIPLE_IMPLEMENTATIONS_FOUND,
-	SINGLETON_BEAN_NAME,
-	SINGLETON_BEAN_IMPLEMENTATION
+	MISSING_BEAN_DEFINITION_BY_BASE_IMPLEMENTATION,
+	MISSING_BEAN_DEFINITION_BY_BASE_EXTENSION,
+	MISSING_BEAN_DEFINITION_BY_NAME_ONLY,
+	MISSING_BEAN_DEFINITION_BY_NAME_AND_IMPLEMENTATION,
+	MULTIPLE_BEAN_DEFINITIONS_BY_BASE_IMPLEMENTATION,
+	MULTIPLE_BEAN_DEFINITIONS_BY_BASE_EXTENSION,
+	BEAN_DEFINITION_NOT_PROTOTYPE
 }
