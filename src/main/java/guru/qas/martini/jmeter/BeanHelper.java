@@ -14,28 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.steps;
+package guru.qas.martini.jmeter;
 
-import guru.qas.martini.annotation.Given;
-import guru.qas.martini.annotation.Steps;
-import guru.qas.martini.annotation.Then;
-import guru.qas.martini.annotation.When;
+import org.apache.jmeter.testelement.TestElement;
 
-@Steps
-public class TestSteps {
+public interface BeanHelper<T extends TestElement> {
 
-	public TestSteps() {
-	}
-
-	@Given("^a situation$")
-	public void givenASituation() {
-	}
-
-	@When("^something happens$")
-	public void whenSomethingHappens() {
-	}
-
-	@Then("^an outcome is expected$")
-	public void thenAnOutcomeIsExpected() {
-	}
+	T getClone();
 }

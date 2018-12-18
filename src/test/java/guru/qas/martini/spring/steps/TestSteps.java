@@ -14,16 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.sampler;
+package guru.qas.martini.spring.steps;
 
-import ch.qos.cal10n.BaseName;
-import ch.qos.cal10n.Locale;
-import ch.qos.cal10n.LocaleData;
+import guru.qas.martini.annotation.Given;
+import guru.qas.martini.annotation.Steps;
+import guru.qas.martini.annotation.Then;
+import guru.qas.martini.annotation.When;
 
-@BaseName("guru.qas.martini.jmeter.sampler.martiniBeanSamplerMessages")
-@LocaleData({@Locale("en")})
-public enum MartiniBeanSamplerMessages {
-	STARTING,
-	ERROR_IN_START_UP,
-	GUI_ERROR_TITLE
+@Steps
+public class TestSteps {
+
+	public TestSteps() {
+	}
+
+	@Given("^a situation$")
+	public void givenASituation() {
+	}
+
+	@When("^something happens$")
+	public void whenSomethingHappens() {
+	}
+
+	@Then("^an outcome is expected$")
+	public void thenAnOutcomeIsExpected() {
+	}
 }

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 
-package guru.qas.martini.steps.jmeter.spring;
+package guru.qas.martini.spring.jmeter;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.spring.sampler;
+package guru.qas.martini.spring.jmeter;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
@@ -24,48 +24,57 @@ import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import guru.qas.martini.jmeter.sampler.BeanSampler;
 
-@SuppressWarnings("unused")
-@Component("DebugBeanSampler")
+@SuppressWarnings({"WeakerAccess", "unused"})
+@Component("TestSamplerBean")
 @Lazy
 @Scope("prototype")
-public class DebugBeanSampler extends AbstractSampler
-	implements TestStateListener, LoopIterationListener, BeanSampler {
+public class TestSamplerBean extends AbstractSampler
+	implements TestStateListener, LoopIterationListener, BeanSampler, InitializingBean {
 
-	protected final Logger logger;
+	protected Logger logger;
 
-	public DebugBeanSampler() {
-		super();
-		logger = LoggerFactory.getLogger(getClass());
+	@Autowired
+	protected TestSamplerBean() {
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		Class<? extends TestSamplerBean> implementation = getClass();
+		logger = LoggerFactory.getLogger(implementation);
 	}
 
 	@Override
 	public void iterationStart(LoopIterationEvent event) {
-		logger.info("iterationStart(LoopIterationEvent)");
+		logger.info("Loop started: " + event);
+	}
+
+	@Override
+	public SampleResult sample(Entry e) {
+		SampleResult result = new SampleResult();
+		result.setSampleLabel(super.getName());
+		result.sampleStart();
+		result.sampleEnd();
+		result.setSuccessful(true);
+		return result;
 	}
 
 	@Override
 	public void testStarted() {
 		logger.info("testStarted()");
+
 	}
 
 	@Override
 	public void testStarted(String host) {
-		logger.info("testStarted(String)");
-	}
-
-	@Override
-	public SampleResult sample(Entry e) {
-		logger.info("sample(Entry)");
-		SampleResult sampleResult = new SampleResult();
-		sampleResult.setSampleLabel(getName());
-		sampleResult.setSuccessful(true);
-		return sampleResult;
+		logger.info("testStarted(String): " + host);
 	}
 
 	@Override
@@ -75,6 +84,6 @@ public class DebugBeanSampler extends AbstractSampler
 
 	@Override
 	public void testEnded(String host) {
-		logger.info("testEnded(String)");
+		logger.info("testEnded(String): " + host);
 	}
 }

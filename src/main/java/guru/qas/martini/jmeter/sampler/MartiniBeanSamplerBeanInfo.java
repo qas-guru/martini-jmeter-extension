@@ -53,6 +53,7 @@ public class MartiniBeanSamplerBeanInfo extends BeanInfoSupport {
 		messageFunction = ResourceBundleMessageFunction.getInstance(descriptor);
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void init() throws IOException {
 		String label = messageFunction.apply("options.label");
 		createPropertyGroup(label, new String[]{
@@ -71,6 +72,7 @@ public class MartiniBeanSamplerBeanInfo extends BeanInfoSupport {
 		List<String> tags = JMeterUtils.findClassesThatExtend(BeanSampler.class);
 		p.setValue(GenericTestBeanCustomizer.TAGS, tags.toArray(new String[0]));
 		p.setValue(GenericTestBeanCustomizer.NOT_EXPRESSION, Boolean.FALSE);
+		p.setConstrained(true);
 
 		BeanDescriptor beanDescriptor = super.getBeanDescriptor();
 		Object o = beanDescriptor.getValue(GenericTestBeanCustomizer.RESOURCE_BUNDLE);

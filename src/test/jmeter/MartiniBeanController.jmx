@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.0 r1840935">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Martini Bean Controller Test Plan" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Martini Bean Sampler Test Plan" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
@@ -36,67 +36,28 @@
         <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Unconfigured Bean Controller" enabled="false">
+        <guru.qas.martini.jmeter.sampler.MartiniBeanSampler guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.sampler.MartiniBeanSampler" testname="Debug Martini Bean Sampler" enabled="false">
           <collectionProp name="beanProperties"/>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
+          <stringProp name="beanImplementation">guru.qas.martini.jmeter.spring.sampler.DebugBeanSampler</stringProp>
+          <stringProp name="beanName">DebugBeanSampler</stringProp>
+        </guru.qas.martini.jmeter.sampler.MartiniBeanSampler>
         <hashTree/>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Bogus Bean Name Controller" enabled="false">
-          <collectionProp name="beanProperties"/>
-          <stringProp name="beanName">Bogus</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree/>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Bogus Bean Implementation Controller" enabled="false">
-          <collectionProp name="beanProperties"/>
-          <stringProp name="beanImplementation">guru.qas.martini.jmeter.BogusController</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree/>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Singleton Debug Bean Controller" enabled="false">
-          <collectionProp name="beanProperties"/>
-          <stringProp name="beanImplementation">guru.qas.martini.steps.jmeter.spring.SingletonBeanController</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree/>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Multiple Definitions Bean Controller" enabled="false">
-          <collectionProp name="beanProperties"/>
-          <stringProp name="beanImplementation">guru.qas.martini.jmeter.spring.controller.DebugBeanController</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree/>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="By Name Bean Controller" enabled="true">
+        <guru.qas.martini.jmeter.sampler.MartiniBeanSampler guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.sampler.MartiniBeanSampler" testname="TestSamplerBean" enabled="true">
           <collectionProp name="beanProperties">
-            <elementProp name="test.property" elementType="Argument">
-              <stringProp name="Argument.name">test.property</stringProp>
-              <stringProp name="Argument.value">anyValue</stringProp>
-              <stringProp name="Argument.desc">trace</stringProp>
+            <elementProp name="some.property" elementType="Argument">
+              <stringProp name="Argument.name">some.property</stringProp>
+              <stringProp name="Argument.value">randomValue</stringProp>
+              <stringProp name="Argument.desc">a useful description</stringProp>
+            </elementProp>
+            <elementProp name="another.property" elementType="Argument">
+              <stringProp name="Argument.name">another.property</stringProp>
+              <stringProp name="Argument.desc">name of the test plan</stringProp>
+              <stringProp name="Argument.value">${__time(YMD)}</stringProp>
             </elementProp>
           </collectionProp>
-          <stringProp name="beanName">DebugBeanController</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree>
-          <guru.qas.martini.jmeter.controller.MartiniScopeController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniScopeController" testname="Martini Scope Controller" enabled="true"/>
-          <hashTree>
-            <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler" enabled="true">
-              <boolProp name="displayJMeterProperties">false</boolProp>
-              <boolProp name="displayJMeterVariables">true</boolProp>
-              <boolProp name="displaySystemProperties">false</boolProp>
-            </DebugSampler>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <guru.qas.martini.jmeter.controller.MartiniBeanController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniBeanController" testname="Debug Bean Controller" enabled="false">
-          <collectionProp name="beanProperties"/>
-          <stringProp name="beanImplementation">guru.qas.martini.jmeter.spring.controller.DebugBeanController</stringProp>
-          <stringProp name="beanName">DebugBeanController</stringProp>
-        </guru.qas.martini.jmeter.controller.MartiniBeanController>
-        <hashTree>
-          <guru.qas.martini.jmeter.controller.MartiniScopeController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniScopeController" testname="Martini Scope Controller" enabled="true"/>
-          <hashTree>
-            <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler" enabled="true">
-              <boolProp name="displayJMeterProperties">false</boolProp>
-              <boolProp name="displayJMeterVariables">true</boolProp>
-              <boolProp name="displaySystemProperties">false</boolProp>
-            </DebugSampler>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
+          <stringProp name="beanImplementation">guru.qas.martini.spring.jmeter.TestSamplerBean</stringProp>
+        </guru.qas.martini.jmeter.sampler.MartiniBeanSampler>
+        <hashTree/>
       </hashTree>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>

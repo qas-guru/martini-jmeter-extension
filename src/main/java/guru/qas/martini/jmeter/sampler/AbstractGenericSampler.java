@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter.controller;
+package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
 import java.util.Locale;
 import java.util.function.Function;
 
-import org.apache.jmeter.control.GenericController;
+import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
@@ -35,13 +35,13 @@ import guru.qas.martini.ResourceBundleMessageFunction;
 import guru.qas.martini.jmeter.DefaultExceptionReporter;
 import guru.qas.martini.jmeter.ExceptionReporter;
 
-import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.*;
+import static guru.qas.martini.jmeter.sampler.AbstractGenericSamplerMessages.*;
 
-@SuppressWarnings("WeakerAccess")
-public abstract class AbstractGenericController extends GenericController
+@SuppressWarnings({"WeakerAccess", "Duplicates"})
+public abstract class AbstractGenericSampler extends AbstractSampler
 	implements Serializable, Cloneable, TestBean, TestStateListener {
 
-	private static final long serialVersionUID = -1015565560550196871L;
+	private static final long serialVersionUID = -4371566971973617334L;
 
 	// Shared.
 	protected transient BeanInfoSupport beanInfoSupport;
@@ -51,7 +51,7 @@ public abstract class AbstractGenericController extends GenericController
 	protected transient String host;
 	protected transient ExceptionReporter reporter;
 
-	public AbstractGenericController() {
+	public AbstractGenericSampler() {
 		super();
 	}
 
@@ -118,7 +118,7 @@ public abstract class AbstractGenericController extends GenericController
 	@Override
 	public Object clone() {
 		Object o = super.clone();
-		AbstractGenericController clone = AbstractGenericController.class.cast(o);
+		AbstractGenericSampler clone = AbstractGenericSampler.class.cast(o);
 		clone.beanInfoSupport = beanInfoSupport;
 		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
