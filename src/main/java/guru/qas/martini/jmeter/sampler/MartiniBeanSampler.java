@@ -107,7 +107,7 @@ public class MartiniBeanSampler extends AbstractSampler
 	@Override
 	public Object clone() {
 		Object clone;
-		if (started) {
+		if (started) { // TODO:
 			/*
 						try {
 				BeanController delegate = getDelegate();
@@ -120,7 +120,6 @@ public class MartiniBeanSampler extends AbstractSampler
 				throw new AssertionError(e);
 			}
 			 */
-			// TODO: get prototype bean
 			throw new UnsupportedOperationException();
 		}
 		else {
@@ -140,14 +139,19 @@ public class MartiniBeanSampler extends AbstractSampler
 		setUp();
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void setUp() {
 		try {
+			setUpMessageConveyor();
 			setUpLogger();
 			setUpExceptionReporter();
 			logger.info(STARTING, getName());
 		}
 		catch (Exception e) {
 			JMeterContextService.endTest();
+			if (null == reporter) {
+				reporter = new DefaultExceptionReporter();
+			}
 			reporter.logException(ERROR_IN_START_UP, e, getName());
 			reporter.showException(GUI_ERROR_TITLE, e, getName());
 			tearDown();
@@ -156,15 +160,18 @@ public class MartiniBeanSampler extends AbstractSampler
 		// TODO: validate input
 	}
 
-	protected void setUpLogger() {
+	protected void setUpMessageConveyor() {
 		Locale locale = JMeterUtils.getLocale();
 		messageConveyor = new MessageConveyor(locale);
+	}
+
+	protected void setUpLogger() {
 		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
 		logger = loggerFactory.getLocLogger(this.getClass());
 	}
 
 	protected void setUpExceptionReporter() {
-		reporter = new DefaultExceptionReporter(messageConveyor, logger, getName());
+		reporter = new DefaultExceptionReporter(messageConveyor, logger);
 	}
 
 	@Override

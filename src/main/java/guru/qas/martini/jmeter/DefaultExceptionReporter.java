@@ -16,6 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
+import javax.annotation.Nullable;
+
 import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.Logger;
@@ -24,22 +26,22 @@ import org.slf4j.cal10n.LocLogger;
 
 import com.google.common.base.Throwables;
 
-import ch.qos.cal10n.MessageConveyor;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import ch.qos.cal10n.IMessageConveyor;
 
 @SuppressWarnings("WeakerAccess")
 public class DefaultExceptionReporter implements ExceptionReporter {
 
 	protected final Logger defaultLogger;
-	protected final MessageConveyor messageConveyor;
+	protected final IMessageConveyor messageConveyor;
 	protected final LocLogger logger;
-	protected final String componentName;
 
-	public DefaultExceptionReporter(MessageConveyor messageConveyor, LocLogger logger, String componentName) {
-		this.messageConveyor = checkNotNull(messageConveyor, "null MessageConveyor");
-		this.logger = checkNotNull(logger, "null LocLogger");
-		this.componentName = checkNotNull(componentName);
+	public DefaultExceptionReporter() {
+		this(null, null);
+	}
+
+	public DefaultExceptionReporter(@Nullable IMessageConveyor messageConveyor, @Nullable LocLogger logger) {
+		this.messageConveyor = messageConveyor;
+		this.logger = logger;
 		defaultLogger = LoggerFactory.getLogger(this.getClass());
 	}
 

@@ -16,13 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.controller;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 import java.util.function.Function;
 
 import org.apache.jmeter.control.GenericController;
-import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
@@ -31,13 +29,15 @@ import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 
-import com.google.common.base.Throwables;
-
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.ResourceBundleMessageFunction;
+import guru.qas.martini.jmeter.DefaultExceptionReporter;
+import guru.qas.martini.jmeter.ExceptionReporter;
 
 import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.*;
+import static guru.qas.martini.jmeter.sampler.MartiniBeanSamplerMessages.ERROR_IN_START_UP;
+import static guru.qas.martini.jmeter.sampler.MartiniBeanSamplerMessages.GUI_ERROR_TITLE;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractGenericController extends GenericController
@@ -51,6 +51,7 @@ public abstract class AbstractGenericController extends GenericController
 	protected transient Function<String, String> messageFunction;
 	protected transient LocLogger logger;
 	protected String host;
+	protected transient ExceptionReporter reporter;
 
 	public AbstractGenericController() {
 		super();
@@ -67,36 +68,41 @@ public abstract class AbstractGenericController extends GenericController
 		setUp();
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void setUp() {
 		try {
-			setUpBeanInfoSupport();
+			setUpMessageConveyor();
 			setUpLogger();
-			setUpMessageFunction();
+			setUpExceptionReporter();
 			logger.info(STARTING, getName());
+			setUpBeanInfoSupport();
+			setUpMessageFunction();
 			completeSetup();
 		}
 		catch (Exception e) {
 			JMeterContextService.endTest();
-			reportException(e);
+			if (null == reporter) {
+				reporter = new DefaultExceptionReporter();
+			}
+			reporter.logException(ERROR_IN_START_UP, e, getName());
+			reporter.showException(GUI_ERROR_TITLE, e, getName());
 			tearDown();
 			throw new ThreadDeath();
 		}
 	}
 
-	protected void reportException(Exception e) {
-		try {
-			String message = messageConveyor.getMessage(ERROR_IN_START_UP, getName());
-			logger.error(message, e);
+	protected void setUpMessageConveyor() {
+		Locale locale = JMeterUtils.getLocale();
+		messageConveyor = new MessageConveyor(locale);
+	}
 
-			if (null != GuiPackage.getInstance()) {
-				String stacktrace = Throwables.getStackTraceAsString(e);
-				String title = messageConveyor.getMessage(GUI_ERROR_TITLE, getName());
-				JMeterUtils.reportErrorToUser(stacktrace, title, e);
-			}
-		}
-		catch (Exception ignored) {
-			e.printStackTrace();
-		}
+	protected void setUpLogger() {
+		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
+		logger = loggerFactory.getLocLogger(this.getClass());
+	}
+
+	protected void setUpExceptionReporter() {
+		reporter = new DefaultExceptionReporter(messageConveyor, logger);
 	}
 
 	protected void setUpBeanInfoSupport() throws Exception {
@@ -109,13 +115,6 @@ public abstract class AbstractGenericController extends GenericController
 		messageFunction = ResourceBundleMessageFunction.getInstance(beanInfoSupport);
 	}
 
-	protected void setUpLogger() {
-		Locale locale = JMeterUtils.getLocale();
-		messageConveyor = new MessageConveyor(locale);
-		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
-		logger = loggerFactory.getLocLogger(this.getClass());
-	}
-
 	protected abstract void completeSetup() throws Exception;
 
 	@Override
@@ -126,6 +125,7 @@ public abstract class AbstractGenericController extends GenericController
 		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
 		clone.host = host;
+		clone.reporter = reporter;
 		return clone;
 	}
 
@@ -144,12 +144,13 @@ public abstract class AbstractGenericController extends GenericController
 			beginTearDown();
 		}
 		catch (Exception e) {
-			String message = messageConveyor.getMessage(AbstractGenericControllerMessages.ERROR_IN_TEAR_DOWN, getName());
-			logger.warn(message, e);
+			reporter.logException(ERROR_IN_TEAR_DOWN, e, getName());
 		}
+
 		logger = null;
 		messageConveyor = null;
 		beanInfoSupport = null;
+		reporter = null;
 		host = null;
 	}
 
