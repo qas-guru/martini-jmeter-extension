@@ -18,6 +18,8 @@ package guru.qas.martini.jmeter;
 
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -27,6 +29,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.Martini;
+import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.result.MartiniResult;
 
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.VariablesMessages.*;
@@ -36,10 +40,43 @@ public abstract class Variables {
 
 	public static final String MARTINI = Martini.class.getName();
 	public static final String SPRING_APPLICATION_CONTEXT = ApplicationContext.class.getName();
+	public static final String SUITE_IDENTIFIER = SuiteIdentifier.class.getName();
+	public static final String MARTINI_RESULT = MartiniResult.class.getName();
 
 	protected static final MessageConveyor MESSAGE_CONVEYOR = new MessageConveyor(JMeterUtils.getLocale());
 
 	private Variables() {
+	}
+
+	public static void set(@Nullable ConfigurableApplicationContext c) {
+		set(SPRING_APPLICATION_CONTEXT, c);
+	}
+
+	public static void set(@Nullable SuiteIdentifier i) {
+		set(SUITE_IDENTIFIER, i);
+	}
+
+	public static void set(@Nullable Martini martini) {
+		set(MARTINI, martini);
+	}
+
+	public static void set(@Nullable MartiniResult r) {
+		set(MARTINI_RESULT, r);
+	}
+
+	public static void set(String key, Object value) {
+		JMeterVariables variables = getVariables();
+		variables.putObject(key, value);
+	}
+
+	protected static JMeterVariables getVariables() {
+		JMeterContext threadContext = JMeterContextService.getContext();
+		return threadContext.getVariables();
+	}
+
+	public static int getIteration() {
+		JMeterVariables variables = getVariables();
+		return variables.getIteration();
 	}
 
 	public static ConfigurableApplicationContext getSpringApplicationContext() {
@@ -54,16 +91,14 @@ public abstract class Variables {
 	}
 
 	public static Object getVariable(String key) {
-		JMeterContext threadContext = JMeterContextService.getContext();
-		JMeterVariables variables = threadContext.getVariables();
+		JMeterVariables variables = getVariables();
 		return variables.getObject(key);
 	}
 
 	public static Optional<Martini> getMartini() {
 		Object o = getVariable(MARTINI);
-		boolean isMartini = Martini.class.isInstance(o);
-		checkState(null == o || isMartini,
+		checkState(null == o || Martini.class.isInstance(o),
 			MESSAGE_CONVEYOR.getMessage(INVALID_MARTINI_INSTANCE, Martini.class, null == o ? null : o.getClass()));
-		return isMartini ? Optional.of(Martini.class.cast(o)) : Optional.empty();
+		return null == o ? Optional.empty() : Optional.of(Martini.class.cast(o));
 	}
 }

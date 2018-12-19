@@ -18,7 +18,6 @@ package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -27,10 +26,7 @@ import org.apache.jmeter.config.Argument;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestIterationListener;
-import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterVariables;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -131,7 +127,7 @@ public class SpringPreProcessor
 		setEnvironment(springContext);
 		springContext.refresh();
 		springContext.registerShutdownHook();
-		setUpSpringContextVariable();
+		Variables.set(springContext);
 	}
 
 	protected void setEnvironment(ClassPathXmlApplicationContext context) {
@@ -149,29 +145,16 @@ public class SpringPreProcessor
 		return ArgumentListPropertySource.builder().setName(name).setArguments(environmentVariables).build();
 	}
 
-	protected void setUpSpringContextVariable() {
-		JMeterContext threadContext = super.getThreadContext();
-		setUpSpringContextVariable(threadContext);
-	}
-
-	protected void setUpSpringContextVariable(JMeterContext threadContext) {
-		JMeterVariables variables = threadContext.getVariables();
-		ClassPathXmlApplicationContext applicationContext = CONTEXT_REF.get();
-		variables.putObject(Variables.SPRING_APPLICATION_CONTEXT, applicationContext);
-	}
-
 	@Override
 	public void testIterationStart(LoopIterationEvent event) {
-		TestElement source = event.getSource();
-		JMeterContext threadContext = source.getThreadContext();
-		setUpSpringContextVariable(threadContext);
+		ClassPathXmlApplicationContext springContext = CONTEXT_REF.get();
+		Variables.set(springContext);
 	}
 
 	@Override
 	public void process() {
-		JMeterContext threadContext = super.getThreadContext();
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.put(SamplerContext.SPRING_APPLICATION_CONTEXT, CONTEXT_REF.get());
+		ClassPathXmlApplicationContext springContext = CONTEXT_REF.get();
+		SamplerContext.set(springContext);
 	}
 
 	@Override

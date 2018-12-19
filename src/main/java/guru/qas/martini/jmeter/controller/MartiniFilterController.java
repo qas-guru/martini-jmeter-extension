@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +36,6 @@ import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
-import org.apache.jmeter.threads.JMeterContext;
-import org.apache.jmeter.threads.JMeterVariables;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.Joiner;
@@ -226,25 +223,9 @@ public class MartiniFilterController extends AbstractGenericController
 	}
 
 	protected void setMartini(@Nullable Martini martini) {
-		this.martini = null;
-
-		JMeterContext threadContext = super.getThreadContext();
-		JMeterVariables variables = threadContext.getVariables();
-		variables.remove(Variables.MARTINI);
-
-		Map<String, Object> samplerContext = threadContext.getSamplerContext();
-		samplerContext.remove(SamplerContext.MARTINI);
-
 		this.martini = martini;
-		if (null != martini) {
-			variables.putObject(Variables.MARTINI, martini);
-			samplerContext.put(SamplerContext.MARTINI, martini);
-		}
-	}
-
-	protected JMeterVariables getVariables() {
-		JMeterContext threadContext = super.getThreadContext();
-		return threadContext.getVariables();
+		Variables.set(martini);
+		SamplerContext.set(martini);
 	}
 
 	@Override
@@ -261,7 +242,7 @@ public class MartiniFilterController extends AbstractGenericController
 	}
 
 	protected Martini getNextMartini() {
-		int iteration = getIteration();
+		int iteration = Variables.getIteration();
 		Iterator<Martini> iterator = index.computeIfAbsent(iteration, i -> martinis.iterator());
 
 		Lock lock = striped.get(iteration);
@@ -281,11 +262,6 @@ public class MartiniFilterController extends AbstractGenericController
 			setDone(true);
 		}
 		return martini;
-	}
-
-	protected int getIteration() {
-		JMeterVariables variables = getVariables();
-		return variables.getIteration();
 	}
 
 	@Override

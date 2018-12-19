@@ -16,11 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
@@ -34,24 +36,39 @@ import static guru.qas.martini.jmeter.preprocessor.DefaultMartiniSuitePreProceso
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
-public class DefaultMartiniSuitePreProcessorBean implements MartiniSuitePreProcessorBean {
+public class DefaultMartiniSuitePreProcessorBean implements InitializingBean, MartiniSuitePreProcessorBean {
 
-	protected final LocLogger logger;
 	protected final EventManager eventManager;
 	protected final SuiteIdentifier suiteIdentifier;
-	protected final Monitor monitor;
 	protected final AtomicBoolean beforeSuitePublished;
 	protected final AtomicBoolean afterSuitePublished;
 
+	protected LocLogger logger;
+	protected Monitor monitor;
+
 	@Autowired
 	protected DefaultMartiniSuitePreProcessorBean(EventManager eventManager, SuiteIdentifier suiteIdentifier) {
-		MessageConveyor messageConveyor = new MessageConveyor(JMeterUtils.getLocale());
-		logger = new LocLoggerFactory(messageConveyor).getLocLogger(getClass());
 		this.eventManager = eventManager;
 		this.suiteIdentifier = suiteIdentifier;
-		monitor = new Monitor();
 		beforeSuitePublished = new AtomicBoolean(false);
 		afterSuitePublished = new AtomicBoolean(false);
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		setUpLogger();
+		setUpMonitor();
+	}
+
+	protected void setUpLogger() {
+		Locale locale = JMeterUtils.getLocale();
+		MessageConveyor messageConveyor = new MessageConveyor(locale);
+		Class<? extends DefaultMartiniSuitePreProcessorBean> implementation = getClass();
+		logger = new LocLoggerFactory(messageConveyor).getLocLogger(implementation);
+	}
+
+	protected void setUpMonitor() {
+		monitor = new Monitor();
 	}
 
 	@Override

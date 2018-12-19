@@ -57,6 +57,7 @@ import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.gherkin.DefaultRecipe;
 import guru.qas.martini.gherkin.FeatureWrapper;
 import guru.qas.martini.gherkin.Recipe;
+import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.MartiniResult;
@@ -123,6 +124,8 @@ public class MartiniScopeController extends AbstractGenericController implements
 	protected void endScenario() {
 		delegate.publishAfterScenario(martiniResult);
 		martiniResult = null;
+		Variables.set(martiniResult);
+		SamplerContext.set(martiniResult);
 	}
 
 	@Override
@@ -141,6 +144,8 @@ public class MartiniScopeController extends AbstractGenericController implements
 			.build(categories);
 		delegate.publishBeforeScenario(result);
 		this.martiniResult = result;
+		Variables.set(martiniResult);
+		SamplerContext.set(martiniResult);
 	}
 
 	protected Martini getSyntheticMartini() {

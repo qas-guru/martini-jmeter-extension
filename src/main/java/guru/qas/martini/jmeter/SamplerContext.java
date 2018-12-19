@@ -16,8 +16,47 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
-public interface SamplerContext {
+import java.util.Map;
 
-	String SPRING_APPLICATION_CONTEXT = Variables.SPRING_APPLICATION_CONTEXT;
-	String MARTINI = Variables.MARTINI;
+import javax.annotation.Nullable;
+
+import org.apache.jmeter.threads.JMeterContext;
+import org.apache.jmeter.threads.JMeterContextService;
+import org.springframework.context.ConfigurableApplicationContext;
+
+import guru.qas.martini.Martini;
+import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.result.MartiniResult;
+
+@SuppressWarnings("WeakerAccess")
+public abstract class SamplerContext {
+
+	private SamplerContext() {
+	}
+
+	public static void set(@Nullable ConfigurableApplicationContext c) {
+		set(Variables.SPRING_APPLICATION_CONTEXT, c);
+	}
+
+	public static void set(@Nullable SuiteIdentifier i) {
+		set(Variables.SUITE_IDENTIFIER, i);
+	}
+
+	public static void set(@Nullable Martini m) {
+		set(Variables.MARTINI, m);
+	}
+
+	public static void set(@Nullable MartiniResult r) {
+		set(Variables.MARTINI_RESULT, r);
+	}
+
+	public static void set(String key, Object value) {
+		Map<String, Object> samplerContext = getSamplerContext();
+		samplerContext.put(key, value);
+	}
+
+	public static Map<String, Object> getSamplerContext() {
+		JMeterContext context = JMeterContextService.getContext();
+		return context.getSamplerContext();
+	}
 }
