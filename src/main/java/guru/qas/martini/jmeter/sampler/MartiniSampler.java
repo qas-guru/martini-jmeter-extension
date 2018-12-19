@@ -18,15 +18,15 @@ package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
 
-import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
-import org.apache.jmeter.testelement.TestStateListener;
 
 @SuppressWarnings("RedundantThrows")
 public class MartiniSampler extends AbstractGenericSampler
-	implements Serializable, Cloneable, TestStateListener, TestBean {
+	implements Serializable, Cloneable, TestBean {
+
+	private static final long serialVersionUID = -4970886293526746276L;
 
 	public MartiniSampler() {
 		super();
@@ -46,7 +46,13 @@ public class MartiniSampler extends AbstractGenericSampler
 	}
 
 	@Override
-	public SampleResult sample(Entry e) {
-		return null;
+	protected void completeSample(SampleResult result) {
+		String label = super.getName();
+		result.setSampleLabel(label);
+
+		// TODO: ensure we have a Martini.
+		// TODO: ensure we're in a scenario scope.
+		// TODO: each step is a sub-result.
+		// TODO: We get the elapsed time from our stopwatch, which should be injected.
 	}
 }
