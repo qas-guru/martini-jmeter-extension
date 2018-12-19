@@ -21,6 +21,8 @@ import java.util.Locale;
 import java.util.function.Function;
 
 import org.apache.jmeter.samplers.AbstractSampler;
+import org.apache.jmeter.samplers.Entry;
+import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
@@ -28,6 +30,8 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
+
+import com.google.common.base.Throwables;
 
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
@@ -126,6 +130,23 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		clone.reporter = reporter;
 		return clone;
 	}
+
+	@Override
+	public SampleResult sample(Entry entry) { // Entry is always null.
+		SampleResult result = new SampleResult();
+		result.setSampleLabel(super.getName());
+		try {
+			completeSample(result);
+		}
+		catch (Exception e) {
+			result.setSuccessful(false);
+			String stacktrace = Throwables.getStackTraceAsString(e);
+			result.setResponseMessage(stacktrace);
+		}
+		return result;
+	}
+
+	protected abstract void completeSample(SampleResult result);
 
 	@Override
 	public void testEnded() {
