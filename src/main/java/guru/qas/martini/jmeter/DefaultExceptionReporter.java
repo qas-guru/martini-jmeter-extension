@@ -26,29 +26,26 @@ import org.slf4j.cal10n.LocLogger;
 
 import com.google.common.base.Throwables;
 
-import ch.qos.cal10n.IMessageConveyor;
-
 @SuppressWarnings("WeakerAccess")
 public class DefaultExceptionReporter implements ExceptionReporter {
 
 	protected final Logger defaultLogger;
-	protected final IMessageConveyor messageConveyor;
 	protected final LocLogger logger;
 
 	public DefaultExceptionReporter() {
-		this(null, null);
+		this(null);
 	}
 
-	public DefaultExceptionReporter(@Nullable IMessageConveyor messageConveyor, @Nullable LocLogger logger) {
-		this.messageConveyor = messageConveyor;
+	public DefaultExceptionReporter(@Nullable LocLogger logger) {
 		this.logger = logger;
-		defaultLogger = LoggerFactory.getLogger(this.getClass());
+		Class<? extends DefaultExceptionReporter> implementation = this.getClass();
+		defaultLogger = LoggerFactory.getLogger(implementation);
 	}
 
 	@Override
 	public void logException(Enum<?> key, Exception e, Object... arguments) {
 		execute(e, () -> {
-			String message = messageConveyor.getMessage(key, arguments);
+			String message = Messages.getMessage(key, arguments);
 			logger.error(message, e);
 		});
 	}
@@ -58,7 +55,7 @@ public class DefaultExceptionReporter implements ExceptionReporter {
 		execute(e, () -> {
 			if (null != GuiPackage.getInstance()) {
 				String stacktrace = Throwables.getStackTraceAsString(e);
-				String title = messageConveyor.getMessage(key, arguments);
+				String title = Messages.getMessage(key, arguments);
 				JMeterUtils.reportErrorToUser(stacktrace, title, e);
 			}
 		});

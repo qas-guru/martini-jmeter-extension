@@ -17,29 +17,29 @@ limitations under the License.
 package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
-import java.util.Locale;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 
-import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.processor.PreProcessor;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.AbstractTestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContextService;
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 
-import com.google.common.base.Throwables;
-
 import ch.qos.cal10n.IMessageConveyor;
-import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.ResourceBundleMessageFunction;
+import guru.qas.martini.jmeter.DefaultExceptionReporter;
+import guru.qas.martini.jmeter.ExceptionReporter;
+import guru.qas.martini.jmeter.Messages;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.ERROR_IN_START_UP;
+import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.ERROR_IN_TEAR_DOWN;
+import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.GUI_ERROR_TITLE;
 import static guru.qas.martini.jmeter.preprocessor.AbstractPreProcessorMessages.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -50,9 +50,9 @@ public abstract class AbstractPreProcessor extends AbstractTestElement
 
 	// Shared.
 	protected transient BeanInfoSupport beanInfoSupport;
-	protected transient IMessageConveyor messageConveyor;
 	protected transient Function<String, String> messageFunction;
 	protected transient LocLogger logger;
+	protected transient ExceptionReporter reporter;
 
 	public AbstractPreProcessor() {
 		super();
@@ -68,35 +68,25 @@ public abstract class AbstractPreProcessor extends AbstractTestElement
 		setUp();
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void setUp() {
 		try {
 			setUpBeanInfoSupport();
 			setUpLogger();
+			setUpExceptionReporter();
 			setUpMessageFunction();
 			logger.info(STARTING, getName());
 			completeSetup();
 		}
 		catch (Exception e) {
 			JMeterContextService.endTest();
-			reportException(e);
+			if (null == reporter) {
+				reporter = new DefaultExceptionReporter();
+			}
+			reporter.logException(ERROR_IN_START_UP, e, getName());
+			reporter.showException(GUI_ERROR_TITLE, e, getName());
 			tearDown();
 			throw new ThreadDeath();
-		}
-	}
-
-	protected void reportException(Exception e) {
-		try {
-			String message = messageConveyor.getMessage(ERROR_IN_START_UP, getName());
-			logger.error(message, e);
-
-			if (null != GuiPackage.getInstance()) {
-				String stacktrace = Throwables.getStackTraceAsString(e);
-				String title = messageConveyor.getMessage(GUI_ERROR_TITLE, getName());
-				JMeterUtils.reportErrorToUser(stacktrace, title, e);
-			}
-		}
-		catch (Exception ignored) {
-			e.printStackTrace();
 		}
 	}
 
@@ -111,10 +101,13 @@ public abstract class AbstractPreProcessor extends AbstractTestElement
 	}
 
 	protected void setUpLogger() {
-		Locale locale = JMeterUtils.getLocale();
-		messageConveyor = new MessageConveyor(locale);
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
 		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
 		logger = loggerFactory.getLocLogger(this.getClass());
+	}
+
+	protected void setUpExceptionReporter() {
+		reporter = new DefaultExceptionReporter(logger);
 	}
 
 	protected abstract void completeSetup() throws Exception;
@@ -124,7 +117,6 @@ public abstract class AbstractPreProcessor extends AbstractTestElement
 		Object o = super.clone();
 		AbstractPreProcessor clone = AbstractPreProcessor.class.cast(o);
 		clone.beanInfoSupport = beanInfoSupport;
-		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
 		return clone;
 	}
@@ -150,12 +142,11 @@ public abstract class AbstractPreProcessor extends AbstractTestElement
 			beginTearDown();
 		}
 		catch (Exception e) {
-			String message = messageConveyor.getMessage(ERROR_IN_TEAR_DOWN, getName());
-			logger.warn(message, e);
+			reporter.logException(ERROR_IN_TEAR_DOWN, e, getName());
 		}
 		logger = null;
-		messageConveyor = null;
 		beanInfoSupport = null;
+		reporter = null;
 	}
 
 	protected abstract void beginTearDown() throws Exception;

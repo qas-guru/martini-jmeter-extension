@@ -124,8 +124,8 @@ public class MartiniScopeController extends AbstractGenericController implements
 	protected void endScenario() {
 		delegate.publishAfterScenario(martiniResult);
 		martiniResult = null;
-		Variables.set(martiniResult);
-		SamplerContext.set(martiniResult);
+		Variables.set((MartiniResult) null);
+		SamplerContext.set((MartiniResult) null);
 	}
 
 	@Override
@@ -137,7 +137,7 @@ public class MartiniScopeController extends AbstractGenericController implements
 	}
 
 	protected void beginScenario() {
-		Martini martini = Variables.getMartini().orElseGet(this::getSyntheticMartini);
+		Martini martini = Variables.getOptionalMartini().orElseGet(this::getSyntheticMartini);
 		MartiniResult result = DefaultMartiniResult.builder()
 			.setMartiniSuiteIdentifier(suiteIdentifier)
 			.setMartini(martini)

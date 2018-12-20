@@ -20,8 +20,8 @@ import java.beans.BeanDescriptor;
 import java.beans.PropertyDescriptor;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Locale;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.jmeter.config.Argument;
@@ -30,7 +30,6 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.property.JMeterProperty;
 import org.apache.jmeter.testelement.property.StringProperty;
-import org.apache.jmeter.util.JMeterUtils;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -38,16 +37,12 @@ import org.springframework.context.ConfigurableApplicationContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import ch.qos.cal10n.IMessageConveyor;
-import ch.qos.cal10n.MessageConveyor;
-
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.DefaultTestBeanFactoryMessages.*;
 
 @SuppressWarnings("WeakerAccess")
 public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFactory<T> {
 
-	protected final IMessageConveyor messageConveyor;
 	protected final String componentName;
 	protected final Class<? extends T> beanImplementation;
 	protected final String beanName;
@@ -55,14 +50,12 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 	protected final String host;
 
 	protected DefaultTestBeanFactory(
-		IMessageConveyor messageConveyor,
 		String componentName,
 		Class<? extends T> beanImplementation,
 		@Nullable String beanName,
 		ImmutableList<Argument> properties,
 		@Nullable String host
 	) {
-		this.messageConveyor = messageConveyor;
 		this.componentName = componentName;
 		this.beanImplementation = beanImplementation;
 		this.beanName = beanName;
@@ -113,25 +106,20 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 	}
 
 	public static <T extends TestElement> Builder<T> builder() {
-		Locale locale = JMeterUtils.getLocale();
-		MessageConveyor messageConveyor = new MessageConveyor(locale);
-		return new Builder<T>(messageConveyor);
+		return new Builder<>();
 	}
 
 	public static class Builder<T extends TestElement> {
 
-		protected IMessageConveyor messageConveyor;
-
 		protected String host;
 		protected String componentName;
 		protected BeanInfoSupport beanInfoSupport;
-		protected Class<T> baseImplementation;
-		protected JMeterProperty beanImplementationProperty;
-		protected JMeterProperty beanNameProperty;
+		protected Class<T> baseType;
+		protected JMeterProperty baseTypeProperty;
+		protected JMeterProperty nameProperty;
 		protected ImmutableList<Argument> beanProperties;
 
-		protected Builder(IMessageConveyor messageConveyor) {
-			this.messageConveyor = messageConveyor;
+		protected Builder() {
 		}
 
 		public Builder<T> setHost(String s) {
@@ -149,18 +137,18 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 			return this;
 		}
 
-		public Builder<T> setBaseImplementation(Class<T> i) {
-			this.baseImplementation = i;
+		public Builder<T> setBaseType(Class<T> i) {
+			this.baseType = i;
 			return this;
 		}
 
-		public Builder<T> setBeanImplementationProperty(JMeterProperty p) {
-			beanImplementationProperty = p;
+		public Builder<T> setBaseTypeProperty(JMeterProperty p) {
+			baseTypeProperty = p;
 			return this;
 		}
 
-		public Builder<T> setBeanNameProperty(JMeterProperty p) {
-			beanNameProperty = p;
+		public Builder<T> setNameProperty(JMeterProperty p) {
+			nameProperty = p;
 			return this;
 		}
 
@@ -169,12 +157,13 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 			return this;
 		}
 
+		@SuppressWarnings("RedundantThrows")
 		public DefaultTestBeanFactory<T> build() throws Exception {
 			checkState(null != beanInfoSupport, "null BeanInfoSupport");
-			checkState(null != baseImplementation, "null Class");
+			checkState(null != baseType, "null Class");
 
-			String beanName = getStringValue(beanNameProperty);
-			String beanClass = getStringValue(beanImplementationProperty);
+			String beanName = getStringValue(nameProperty);
+			String beanClass = getStringValue(baseTypeProperty);
 
 			assertImplementationOrNameProvided(beanClass, beanName);
 
@@ -184,7 +173,7 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 			assertValid(definitionName, definition);
 
 			String displayName = getDisplayName();
-			return new DefaultTestBeanFactory<>(messageConveyor, displayName, implementation, beanName, beanProperties, host);
+			return new DefaultTestBeanFactory<>(displayName, implementation, beanName, beanProperties, host);
 		}
 
 		protected String getDisplayName() {
@@ -204,10 +193,9 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 
 		protected void assertImplementationOrNameProvided(String beanName, String implementation) {
 			if (null == beanName && null == implementation) {
-				String implementationDisplay = getDisplayName(beanImplementationProperty);
-				String nameDisplay = getDisplayName(beanNameProperty);
-				String message = messageConveyor.getMessage(
-					NO_IMPLEMENTATION_OR_NAME_PROVIDED, implementationDisplay, nameDisplay);
+				String typeLabel = getDisplayName(baseTypeProperty);
+				String nameLabel = getDisplayName(nameProperty);
+				String message = Messages.getMessage(BEAN_TYPE_OR_NAME_REQUIRED, typeLabel, nameLabel);
 				throw new IllegalStateException(message);
 			}
 		}
@@ -222,94 +210,108 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 			return null == match ? name : match.getDisplayName();
 		}
 
+		@SuppressWarnings("unchecked")
 		protected Class<T> getClass(String implementation) {
+			Class candidate = getCandidate(implementation);
+			assertExpectedType(candidate);
+			return (Class<T>) candidate;
+		}
+
+		protected Class getCandidate(String implementation) {
 			try {
 				Class<? extends Builder> myClass = this.getClass();
 				ClassLoader classLoader = myClass.getClassLoader();
-				Class candidate = Class.forName(implementation, false, classLoader);
-				if (!baseImplementation.isAssignableFrom(candidate)) {
-					String displayName = getDisplayName(beanImplementationProperty);
-					String message = messageConveyor.getMessage(
-						INVALID_IMPLEMENTATION, displayName, implementation, baseImplementation);
-					throw new IllegalArgumentException(message);
-				}
-				//noinspection unchecked
-				return (Class<T>) candidate;
+				return Class.forName(implementation, false, classLoader);
 			}
 			catch (ClassNotFoundException e) {
-				String displayName = getDisplayName(beanImplementationProperty);
-				String message = messageConveyor.getMessage(MISSING_IMPLEMENTATION, displayName, implementation);
+				String typeLabel = getDisplayName(baseTypeProperty);
+				String message = Messages.getMessage(MISSING_IMPLEMENTATION, typeLabel, implementation);
 				throw new IllegalArgumentException(message);
 			}
 		}
 
-		protected String getBeanDefinitionName(@Nullable Class<? extends T> implementation, @Nullable String beanName) {
-			String[] beanNames = getBeanNames(implementation);
+		protected void assertExpectedType(Class candidate) {
+			if (!this.baseType.isAssignableFrom(candidate)) {
+				String typeLabel = getDisplayName(baseTypeProperty);
+				String actualClassName = candidate.getName();
+				String expectedClassName = baseType.getName();
+				String message = Messages.getMessage(INVALID_IMPLEMENTATION, typeLabel, actualClassName, expectedClassName);
+				throw new IllegalArgumentException(message);
+			}
+		}
+
+		protected String getBeanDefinitionName(@Nullable Class<? extends T> type, @Nullable String beanName) {
+			String[] beanNames = getBeanNames(type);
 
 			String match;
-			if (null != beanName && Lists.newArrayList(beanNames).contains(beanName)) {
+			if (0 == beanNames.length) {
+				throw exceptionOnUndefinedBean(type);
+			}
+			else if (null != beanName && Lists.newArrayList(beanNames).contains(beanName)) {
 				match = beanName;
 			}
 			else if (null != beanName) {
-				String beanNameDisplay = this.getDisplayName(beanNameProperty);
-				String message;
-				if (null == implementation) {
-					String className = baseImplementation.getName();
-					message = messageConveyor.getMessage(
-						MISSING_BEAN_DEFINITION_BY_NAME_ONLY, beanNameDisplay, beanName, className);
-				}
-				else {
-					String implementationDisplay = this.getDisplayName(beanImplementationProperty);
-					String className = implementation.getName();
-					message = messageConveyor.getMessage(
-						MISSING_BEAN_DEFINITION_BY_NAME_AND_IMPLEMENTATION,
-						beanNameDisplay,
-						beanName,
-						implementationDisplay,
-						className);
-				}
-				throw new IllegalArgumentException(message);
+				throw exceptionOnUndefinedBean(beanName, type);
 			}
 			else if (beanNames.length > 1) {
-				String message;
-				if (null == implementation) {
-					String className = baseImplementation.getName();
-					message = messageConveyor.getMessage(MULTIPLE_BEAN_DEFINITIONS_BY_BASE_IMPLEMENTATION, className);
-				}
-				else {
-					String display = this.getDisplayName(beanImplementationProperty);
-					String className = implementation.getName();
-					message = messageConveyor.getMessage(MULTIPLE_BEAN_DEFINITIONS_BY_BASE_EXTENSION, display, className);
-
-				}
-				throw new IllegalArgumentException(message);
+				throw exceptionOnAmbiguousBeanDefinition(type);
 			}
 			else {
 				match = beanNames[0];
 			}
-
 			return match;
 		}
 
-		protected String[] getBeanNames(@Nullable Class<? extends T> implementation) {
+		protected String[] getBeanNames(@Nullable Class<? extends T> type) {
 			ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
+			return null == type ?
+				springContext.getBeanNamesForType(baseType) :
+				springContext.getBeanNamesForType(type);
+		}
 
-			String[] beanNames = null == implementation ?
-				springContext.getBeanNamesForType(baseImplementation) : springContext.getBeanNamesForType(implementation);
-			if (0 == beanNames.length) {
-				String message;
-				if (null == implementation) {
-					String name = baseImplementation.getName();
-					message = messageConveyor.getMessage(MISSING_BEAN_DEFINITION_BY_BASE_IMPLEMENTATION, name);
-				}
-				else {
-					String displayName = this.getDisplayName(beanImplementationProperty);
-					String name = implementation.getName();
-					message = messageConveyor.getMessage(MISSING_BEAN_DEFINITION_BY_BASE_EXTENSION, displayName, name);
-				}
-				throw new IllegalStateException(message);
+		@SuppressWarnings("Duplicates")
+		protected IllegalStateException exceptionOnUndefinedBean(@Nullable Class<? extends T> type) {
+			String message;
+			if (null == type) {
+				String className = baseType.getName();
+				message = Messages.getMessage(MISSING_BEAN_DEFINITION_BY_BASE_IMPLEMENTATION, className);
 			}
-			return beanNames;
+			else {
+				String beanTypeLabel = this.getDisplayName(baseTypeProperty);
+				String className = type.getName();
+				message = Messages.getMessage(MISSING_BEAN_DEFINITION_BY_BASE_EXTENSION, beanTypeLabel, className);
+			}
+			throw new IllegalStateException(message);
+		}
+
+		protected IllegalStateException exceptionOnUndefinedBean(@Nonnull String beanName, @Nullable Class<? extends T> type) {
+			String beanNameLabel = getDisplayName(nameProperty);
+			String message;
+			if (null == type) {
+				String className = baseType.getName();
+				message = Messages.getMessage(MISSING_BEAN_DEFINITION_BY_NAME_ONLY, beanNameLabel, beanName, className);
+			}
+			else {
+				String beanTypeLabel = getDisplayName(baseTypeProperty);
+				String className = type.getName();
+				message = Messages.getMessage(MISSING_BEAN_DEFINITION_BY_NAME_AND_IMPLEMENTATION, beanNameLabel, beanName, beanTypeLabel, className);
+			}
+			throw new IllegalArgumentException(message);
+		}
+
+		@SuppressWarnings("Duplicates")
+		protected IllegalStateException exceptionOnAmbiguousBeanDefinition(@Nullable Class<? extends T> type) {
+			String message;
+			if (null == type) {
+				String className = baseType.getName();
+				message = Messages.getMessage(MULTIPLE_BEAN_DEFINITIONS_BY_BASE_IMPLEMENTATION, className);
+			}
+			else {
+				String label = this.getDisplayName(baseTypeProperty);
+				String className = type.getName();
+				message = Messages.getMessage(MULTIPLE_BEAN_DEFINITIONS_BY_BASE_EXTENSION, label, className);
+			}
+			throw new IllegalArgumentException(message);
 		}
 
 		protected BeanDefinition getBeanDefinition(String beanDefinitionName) {
@@ -321,7 +323,7 @@ public class DefaultTestBeanFactory<T extends TestElement> implements TestBeanFa
 		protected void assertValid(String definitionName, BeanDefinition definition) {
 			if (!definition.isPrototype()) {
 				String className = definition.getBeanClassName();
-				String message = messageConveyor.getMessage(BEAN_DEFINITION_NOT_PROTOTYPE, definitionName, className);
+				String message = Messages.getMessage(BEAN_DEFINITION_NOT_PROTOTYPE, definitionName, className);
 				throw new IllegalArgumentException(message);
 			}
 		}

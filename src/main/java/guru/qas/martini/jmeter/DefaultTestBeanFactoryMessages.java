@@ -23,7 +23,7 @@ import ch.qos.cal10n.LocaleData;
 @BaseName("guru.qas.martini.jmeter.defaultTestBeanFactoryMessages")
 @LocaleData({@Locale("en")})
 public enum DefaultTestBeanFactoryMessages {
-	NO_IMPLEMENTATION_OR_NAME_PROVIDED,
+	BEAN_TYPE_OR_NAME_REQUIRED,
 	MISSING_IMPLEMENTATION,
 	INVALID_IMPLEMENTATION,
 	MISSING_BEAN_DEFINITION_BY_BASE_IMPLEMENTATION,

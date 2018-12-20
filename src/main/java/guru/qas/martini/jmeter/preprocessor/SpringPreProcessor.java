@@ -33,10 +33,12 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 
 import guru.qas.martini.jmeter.ArgumentListPropertySource;
+import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 
 import static com.google.common.base.Preconditions.*;
+import static guru.qas.martini.jmeter.Messages.getMessage;
 import static guru.qas.martini.jmeter.preprocessor.SpringPreProcessorMessages.*;
 import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME;
 
@@ -108,7 +110,7 @@ public class SpringPreProcessor
 	protected String[] getLocations() {
 		List<String> configured = getConfigurationLocations();
 		checkNotNull(configured,
-			messageConveyor.getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+			getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
 
 		List<String> locations = configured.stream()
 			.filter(Objects::nonNull)
@@ -116,13 +118,13 @@ public class SpringPreProcessor
 			.filter(item -> !item.isEmpty())
 			.collect(Collectors.toList());
 		checkArgument(!locations.isEmpty(),
-			messageConveyor.getMessage(EMPTY_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
+			getMessage(EMPTY_PROPERTY, getDisplayName(PROPERTY_SPRING_CONFIG_LOCATIONS)));
 		return locations.toArray(new String[]{});
 	}
 
 	protected void setUpSpringContext(String[] locations) {
 		ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext(locations, false);
-		checkState(CONTEXT_REF.compareAndSet(null, springContext), messageConveyor.getMessage(DUPLICATE_SPRING_CONTEXT));
+		checkState(CONTEXT_REF.compareAndSet(null, springContext), getMessage(DUPLICATE_SPRING_CONTEXT));
 		springContext.setDisplayName(this.getName());
 		setEnvironment(springContext);
 		springContext.refresh();
@@ -140,8 +142,7 @@ public class SpringPreProcessor
 	protected ArgumentListPropertySource getJMeterPropertySource() {
 		String name = super.getName();
 		List<Argument> environmentVariables = getEnvironmentVariables();
-		checkNotNull(environmentVariables,
-			messageConveyor.getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_ENVIRONMENT_VARIABLES)));
+		checkNotNull(environmentVariables, getMessage(MISSING_PROPERTY, getDisplayName(PROPERTY_ENVIRONMENT_VARIABLES)));
 		return ArgumentListPropertySource.builder().setName(name).setArguments(environmentVariables).build();
 	}
 

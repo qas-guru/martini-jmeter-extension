@@ -130,9 +130,9 @@ public class MartiniBeanController extends AbstractGenericController
 			.setHost(host)
 			.setComponentName(getName())
 			.setBeanInfoSupport(beanInfoSupport)
-			.setBaseImplementation(BeanController.class)
-			.setBeanImplementationProperty(beanImplementationProperty)
-			.setBeanNameProperty(beanNameProperty)
+			.setBaseType(BeanController.class)
+			.setBaseTypeProperty(beanImplementationProperty)
+			.setNameProperty(beanNameProperty)
 			.setBeanProperties(arguments)
 			.build();
 		started = true;

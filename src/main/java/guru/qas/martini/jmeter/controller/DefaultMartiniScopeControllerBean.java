@@ -19,13 +19,13 @@ package guru.qas.martini.jmeter.controller;
 
 import javax.annotation.Nullable;
 
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Configurable;
 
-import ch.qos.cal10n.MessageConveyor;
+import ch.qos.cal10n.IMessageConveyor;
+import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
 
@@ -51,7 +51,7 @@ public class DefaultMartiniScopeControllerBean implements InitializingBean, Mart
 	}
 
 	protected void setUpLogger() {
-		MessageConveyor messageConveyor = new MessageConveyor(JMeterUtils.getLocale());
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
 		LocLoggerFactory factory = new LocLoggerFactory(messageConveyor);
 		logger = factory.getLocLogger(this.getClass());
 	}

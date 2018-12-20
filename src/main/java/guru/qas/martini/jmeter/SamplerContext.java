@@ -18,15 +18,19 @@ package guru.qas.martini.jmeter;
 
 import java.util.Map;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import guru.qas.martini.Assertions;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
+
+import static guru.qas.martini.jmeter.Variables.MARTINI_RESULT;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class SamplerContext {
@@ -47,16 +51,31 @@ public abstract class SamplerContext {
 	}
 
 	public static void set(@Nullable MartiniResult r) {
-		set(Variables.MARTINI_RESULT, r);
+		set(MARTINI_RESULT, r);
 	}
 
-	public static void set(String key, Object value) {
+	protected static void set(String key, @Nullable Object value) {
 		Map<String, Object> samplerContext = getSamplerContext();
 		samplerContext.put(key, value);
 	}
 
-	public static Map<String, Object> getSamplerContext() {
+	protected static Map<String, Object> getSamplerContext() {
 		JMeterContext context = JMeterContextService.getContext();
 		return context.getSamplerContext();
+	}
+
+	@Nonnull
+	public static MartiniResult getMartiniResult() {
+		return getValue(MARTINI_RESULT, MartiniResult.class);
+	}
+
+	protected static <T> T getValue(String key, Class<T> type) {
+		Map<String, Object> samplerContext = getSamplerContext();
+		Assertions assertions = new Assertions(SamplerContext.class.getSimpleName());
+		assertions.assertSet(samplerContext, key);
+		Object o = samplerContext.get(key);
+		assertions.assertNotNull(key, o);
+		assertions.assertIsInstance(key, o, type);
+		return type.cast(o);
 	}
 }

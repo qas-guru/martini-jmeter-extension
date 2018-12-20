@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
-import java.util.Locale;
 import java.util.function.Function;
 
 import org.apache.jmeter.samplers.AbstractSampler;
@@ -27,17 +26,16 @@ import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContextService;
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 
 import com.google.common.base.Throwables;
 
 import ch.qos.cal10n.IMessageConveyor;
-import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.ResourceBundleMessageFunction;
 import guru.qas.martini.jmeter.DefaultExceptionReporter;
 import guru.qas.martini.jmeter.ExceptionReporter;
+import guru.qas.martini.jmeter.Messages;
 
 import static guru.qas.martini.jmeter.sampler.AbstractGenericSamplerMessages.*;
 
@@ -49,7 +47,6 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 
 	// Shared.
 	protected transient BeanInfoSupport beanInfoSupport;
-	protected transient IMessageConveyor messageConveyor;
 	protected transient Function<String, String> messageFunction;
 	protected transient LocLogger logger;
 	protected transient String host;
@@ -73,7 +70,6 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 	@SuppressWarnings("Duplicates")
 	protected void setUp() {
 		try {
-			setUpMessageConveyor();
 			setUpLogger();
 			setUpExceptionReporter();
 			logger.info(STARTING, getName());
@@ -93,18 +89,14 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		}
 	}
 
-	protected void setUpMessageConveyor() {
-		Locale locale = JMeterUtils.getLocale();
-		messageConveyor = new MessageConveyor(locale);
-	}
-
 	protected void setUpLogger() {
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
 		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
 		logger = loggerFactory.getLocLogger(this.getClass());
 	}
 
 	protected void setUpExceptionReporter() {
-		reporter = new DefaultExceptionReporter(messageConveyor, logger);
+		reporter = new DefaultExceptionReporter(logger);
 	}
 
 	protected void setUpBeanInfoSupport() throws Exception {
@@ -124,7 +116,6 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		Object o = super.clone();
 		AbstractGenericSampler clone = AbstractGenericSampler.class.cast(o);
 		clone.beanInfoSupport = beanInfoSupport;
-		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
 		clone.host = host;
 		clone.reporter = reporter;
@@ -167,7 +158,6 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		}
 
 		logger = null;
-		messageConveyor = null;
 		beanInfoSupport = null;
 		reporter = null;
 		host = null;

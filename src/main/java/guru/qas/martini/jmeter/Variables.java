@@ -16,34 +16,34 @@ limitations under the License.
 
 package guru.qas.martini.jmeter;
 
+import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jmeter.util.JMeterUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import ch.qos.cal10n.MessageConveyor;
+import com.google.common.collect.ImmutableMap;
+
+import guru.qas.martini.Assertions;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
 
-import static com.google.common.base.Preconditions.*;
-import static guru.qas.martini.jmeter.VariablesMessages.*;
-
 @SuppressWarnings("WeakerAccess")
 public abstract class Variables {
+
+	protected static final Assertions ASSERTIONS = new Assertions(JMeterVariables.class.getSimpleName());
 
 	public static final String MARTINI = Martini.class.getName();
 	public static final String SPRING_APPLICATION_CONTEXT = ApplicationContext.class.getName();
 	public static final String SUITE_IDENTIFIER = SuiteIdentifier.class.getName();
 	public static final String MARTINI_RESULT = MartiniResult.class.getName();
-
-	protected static final MessageConveyor MESSAGE_CONVEYOR = new MessageConveyor(JMeterUtils.getLocale());
 
 	private Variables() {
 	}
@@ -64,7 +64,7 @@ public abstract class Variables {
 		set(MARTINI_RESULT, r);
 	}
 
-	public static void set(String key, Object value) {
+	protected static void set(String key, Object value) {
 		JMeterVariables variables = getVariables();
 		variables.putObject(key, value);
 	}
@@ -79,26 +79,42 @@ public abstract class Variables {
 		return variables.getIteration();
 	}
 
+	@Nonnull
 	public static ConfigurableApplicationContext getSpringApplicationContext() {
-		Object o = getVariable(SPRING_APPLICATION_CONTEXT);
-		checkNotNull(o, MESSAGE_CONVEYOR.getMessage(SPRING_APPLICATION_CONTEXT_NOT_SET));
-		checkState(ConfigurableApplicationContext.class.isInstance(o),
-			MESSAGE_CONVEYOR.getMessage(
-				INVALID_SPRING_APPLICATION_CONTEXT_INSTANCE,
-				ConfigurableApplicationContext.class,
-				o.getClass().getName()));
-		return ConfigurableApplicationContext.class.cast(o);
+		return getVariable(SPRING_APPLICATION_CONTEXT, ConfigurableApplicationContext.class);
 	}
 
-	public static Object getVariable(String key) {
+	public static Optional<Martini> getOptionalMartini() {
+		return getOptionalVariable(MARTINI, Martini.class);
+	}
+
+	@Nonnull
+	protected static <T> T getVariable(String key, Class<T> type) {
+		Map<String, Object> index = getVariablesMap();
+		ASSERTIONS.assertSet(index, key);
+		Object o = index.get(key);
+		ASSERTIONS.assertNotNull(key, o);
+		ASSERTIONS.assertIsInstance(key, o, type);
+		return type.cast(o);
+	}
+
+	protected static <T> Optional<T> getOptionalVariable(String key, Class<T> type) {
+		Map<String, Object> index = getVariablesMap();
+
+		T variable = null;
+		if (index.containsKey(key)) {
+			Object o = index.get(key);
+			ASSERTIONS.assertNotNull(key, o);
+			ASSERTIONS.assertIsInstance(key, o, type);
+			variable = type.cast(o);
+		}
+		return Optional.ofNullable(variable);
+	}
+
+	protected static ImmutableMap<String, Object> getVariablesMap() {
 		JMeterVariables variables = getVariables();
-		return variables.getObject(key);
-	}
-
-	public static Optional<Martini> getMartini() {
-		Object o = getVariable(MARTINI);
-		checkState(null == o || Martini.class.isInstance(o),
-			MESSAGE_CONVEYOR.getMessage(INVALID_MARTINI_INSTANCE, Martini.class, null == o ? null : o.getClass()));
-		return null == o ? Optional.empty() : Optional.of(Martini.class.cast(o));
+		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+		variables.getIterator().forEachRemaining(builder::put);
+		return builder.build();
 	}
 }

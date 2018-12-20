@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.jmeter.controller;
 
 import java.io.Serializable;
-import java.util.Locale;
 import java.util.function.Function;
 
 import org.apache.jmeter.control.GenericController;
@@ -25,15 +24,14 @@ import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.threads.JMeterContextService;
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 
 import ch.qos.cal10n.IMessageConveyor;
-import ch.qos.cal10n.MessageConveyor;
 import guru.qas.martini.ResourceBundleMessageFunction;
 import guru.qas.martini.jmeter.DefaultExceptionReporter;
 import guru.qas.martini.jmeter.ExceptionReporter;
+import guru.qas.martini.jmeter.Messages;
 
 import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.*;
 
@@ -45,7 +43,6 @@ public abstract class AbstractGenericController extends GenericController
 
 	// Shared.
 	protected transient BeanInfoSupport beanInfoSupport;
-	protected transient IMessageConveyor messageConveyor;
 	protected transient Function<String, String> messageFunction;
 	protected transient LocLogger logger;
 	protected transient String host;
@@ -69,7 +66,6 @@ public abstract class AbstractGenericController extends GenericController
 	@SuppressWarnings("Duplicates")
 	protected void setUp() {
 		try {
-			setUpMessageConveyor();
 			setUpLogger();
 			setUpExceptionReporter();
 			logger.info(STARTING, getName());
@@ -89,18 +85,15 @@ public abstract class AbstractGenericController extends GenericController
 		}
 	}
 
-	protected void setUpMessageConveyor() {
-		Locale locale = JMeterUtils.getLocale();
-		messageConveyor = new MessageConveyor(locale);
-	}
 
 	protected void setUpLogger() {
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
 		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
 		logger = loggerFactory.getLocLogger(this.getClass());
 	}
 
 	protected void setUpExceptionReporter() {
-		reporter = new DefaultExceptionReporter(messageConveyor, logger);
+		reporter = new DefaultExceptionReporter(logger);
 	}
 
 	protected void setUpBeanInfoSupport() throws Exception {
@@ -120,7 +113,6 @@ public abstract class AbstractGenericController extends GenericController
 		Object o = super.clone();
 		AbstractGenericController clone = AbstractGenericController.class.cast(o);
 		clone.beanInfoSupport = beanInfoSupport;
-		clone.messageConveyor = messageConveyor;
 		clone.logger = logger;
 		clone.host = host;
 		clone.reporter = reporter;
@@ -137,6 +129,7 @@ public abstract class AbstractGenericController extends GenericController
 		tearDown();
 	}
 
+	@SuppressWarnings("Duplicates")
 	protected void tearDown() {
 		try {
 			beginTearDown();
@@ -146,7 +139,6 @@ public abstract class AbstractGenericController extends GenericController
 		}
 
 		logger = null;
-		messageConveyor = null;
 		beanInfoSupport = null;
 		reporter = null;
 		host = null;

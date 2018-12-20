@@ -17,12 +17,22 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
+import java.util.Map;
 
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
+import org.springframework.beans.factory.annotation.Configurable;
+
+import gherkin.ast.Step;
+import guru.qas.martini.Martini;
+import guru.qas.martini.jmeter.SamplerContext;
+import guru.qas.martini.result.MartiniResult;
+import guru.qas.martini.result.StepResult;
+import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("RedundantThrows")
+@Configurable
 public class MartiniSampler extends AbstractGenericSampler
 	implements Serializable, Cloneable, TestBean {
 
@@ -42,17 +52,22 @@ public class MartiniSampler extends AbstractGenericSampler
 	}
 
 	@Override
-	protected void beginTearDown() throws Exception {
-	}
-
-	@Override
 	protected void completeSample(SampleResult result) {
+		MartiniResult martiniResult = SamplerContext.getMartiniResult();
+		Martini martini = martiniResult.getMartini();
+		Map<Step, StepImplementation> index = martini.getStepIndex();
+
+
 		String label = super.getName();
 		result.setSampleLabel(label);
 
-		// TODO: ensure we have a Martini.
-		// TODO: ensure we're in a scenario scope.
+
+
 		// TODO: each step is a sub-result.
-		// TODO: We get the elapsed time from our stopwatch, which should be injected.
+	}
+
+
+	@Override
+	protected void beginTearDown() throws Exception {
 	}
 }

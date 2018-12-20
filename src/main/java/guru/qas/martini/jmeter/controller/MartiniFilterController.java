@@ -46,6 +46,7 @@ import com.google.common.util.concurrent.Striped;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
+import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 
@@ -143,7 +144,7 @@ public class MartiniFilterController extends AbstractGenericController
 		striped = Striped.lock(10);
 
 		Collection<Martini> martinis = getMartinis();
-		checkState(!isNoMartiniFoundFatal() || !martinis.isEmpty(), messageConveyor.getMessage(NO_MARTINI_FOUND));
+		checkState(!isNoMartiniFoundFatal() || !martinis.isEmpty(), Messages.getMessage(NO_MARTINI_FOUND));
 
 		completeSetup(martinis);
 		if (martinis.isEmpty()) {
@@ -175,7 +176,7 @@ public class MartiniFilterController extends AbstractGenericController
 	protected void completeSetup(Collection<Martini> martinis) {
 		List<Martini> unimplemented = isUnimplementedStepsFatal() ? getUnimplemented(martinis) : ImmutableList.of();
 		if (!unimplemented.isEmpty()) {
-			String message = messageConveyor.getMessage(UNIMPLEMENTED_STEPS, '\n' + Joiner.on('\n').join(unimplemented));
+			String message = Messages.getMessage(UNIMPLEMENTED_STEPS, '\n' + Joiner.on('\n').join(unimplemented));
 			throw new IllegalStateException(message);
 		}
 

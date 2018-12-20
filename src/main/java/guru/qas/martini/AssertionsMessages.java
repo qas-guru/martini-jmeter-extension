@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.jmeter;
+package guru.qas.martini;
 
 import ch.qos.cal10n.BaseName;
 import ch.qos.cal10n.Locale;
 import ch.qos.cal10n.LocaleData;
 
-@BaseName("guru.qas.martini.jmeter.variablesMessages")
+@BaseName("guru.qas.martini.assertionsMessages")
 @LocaleData({@Locale("en")})
-public enum VariablesMessages {
-	SPRING_APPLICATION_CONTEXT_NOT_SET,
-	INVALID_SPRING_APPLICATION_CONTEXT_INSTANCE,
-	INVALID_MARTINI_INSTANCE
+public enum AssertionsMessages {
+	NULL_VALUE, INVALID_TYPE, NOT_SET
 }

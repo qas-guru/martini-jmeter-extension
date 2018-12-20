@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.jmeter.config.Argument;
-import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
@@ -129,16 +128,16 @@ public class MartiniBeanSampler extends AbstractGenericSampler
 			.setHost(host)
 			.setComponentName(getName())
 			.setBeanInfoSupport(beanInfoSupport)
-			.setBaseImplementation(BeanSampler.class)
-			.setBeanImplementationProperty(beanImplementationProperty)
-			.setBeanNameProperty(beanNameProperty)
+			.setBaseType(BeanSampler.class)
+			.setBaseTypeProperty(beanImplementationProperty)
+			.setNameProperty(beanNameProperty)
 			.setBeanProperties(arguments)
 			.build();
 		started = true;
 	}
 
 	@Override
-	public SampleResult sample(Entry e) {
+	protected void completeSample(SampleResult result) {
 		throw new UnsupportedOperationException();
 	}
 

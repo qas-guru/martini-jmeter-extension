@@ -16,10 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.preprocessor;
 
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.jmeter.util.JMeterUtils;
 import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -28,8 +26,9 @@ import org.springframework.beans.factory.annotation.Configurable;
 
 import com.google.common.util.concurrent.Monitor;
 
-import ch.qos.cal10n.MessageConveyor;
+import ch.qos.cal10n.IMessageConveyor;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static guru.qas.martini.jmeter.preprocessor.DefaultMartiniSuitePreProcesorBeanMessages.*;
@@ -61,8 +60,7 @@ public class DefaultMartiniSuitePreProcessorBean implements InitializingBean, Ma
 	}
 
 	protected void setUpLogger() {
-		Locale locale = JMeterUtils.getLocale();
-		MessageConveyor messageConveyor = new MessageConveyor(locale);
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
 		Class<? extends DefaultMartiniSuitePreProcessorBean> implementation = getClass();
 		logger = new LocLoggerFactory(messageConveyor).getLocLogger(implementation);
 	}
