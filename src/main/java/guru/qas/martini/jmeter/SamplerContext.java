@@ -30,7 +30,7 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
 
-import static guru.qas.martini.jmeter.Variables.MARTINI_RESULT;
+import static guru.qas.martini.jmeter.Variables.*;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class SamplerContext {
@@ -47,7 +47,7 @@ public abstract class SamplerContext {
 	}
 
 	public static void set(@Nullable Martini m) {
-		set(Variables.MARTINI, m);
+		set(MARTINI, m);
 	}
 
 	public static void set(@Nullable MartiniResult r) {
@@ -65,8 +65,13 @@ public abstract class SamplerContext {
 	}
 
 	@Nonnull
-	public static MartiniResult getMartiniResult() {
-		return getValue(MARTINI_RESULT, MartiniResult.class);
+	public static Martini getMartini() {
+		return getValue(MARTINI, Martini.class);
+	}
+
+	@Nonnull
+	public static ConfigurableApplicationContext getSpringApplicationContext() {
+		return getValue(SPRING_APPLICATION_CONTEXT, ConfigurableApplicationContext.class);
 	}
 
 	protected static <T> T getValue(String key, Class<T> type) {

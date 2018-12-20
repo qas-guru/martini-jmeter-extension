@@ -20,8 +20,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import guru.qas.martini.jmeter.Messages;
-
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.AssertionsMessages.*;
 

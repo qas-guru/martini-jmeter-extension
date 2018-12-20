@@ -17,21 +17,28 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.List;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
+
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
+import guru.qas.martini.event.Status;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
-import guru.qas.martini.step.StepImplementation;
+import guru.qas.martini.runtime.harness.MartiniCallable;
 
-@SuppressWarnings("RedundantThrows")
+@SuppressWarnings({"RedundantThrows", "WeakerAccess"})
 @Configurable
 public class MartiniSampler extends AbstractGenericSampler
 	implements Serializable, Cloneable, TestBean {
@@ -52,20 +59,77 @@ public class MartiniSampler extends AbstractGenericSampler
 	}
 
 	@Override
-	protected void completeSample(SampleResult result) {
-		MartiniResult martiniResult = SamplerContext.getMartiniResult();
-		Martini martini = martiniResult.getMartini();
-		Map<Step, StepImplementation> index = martini.getStepIndex();
+	protected void completeSample(SampleResult result) throws Exception {
+		Martini martini = SamplerContext.getMartini();
+		setLabel(result, martini);
 
-
-		String label = super.getName();
-		result.setSampleLabel(label);
-
-
-
-		// TODO: each step is a sub-result.
+		MartiniResult martiniResult = getMartiniResult(martini);
+		setSubResults(result, martiniResult);
+		setSuccessful(result, martiniResult);
 	}
 
+	protected void setLabel(SampleResult result, Martini martini) {
+		String scenarioName = martini.getScenarioName();
+		result.setSampleLabel(scenarioName);
+	}
+
+	protected MartiniResult getMartiniResult(Martini martini) throws Exception {
+		Callable<MartiniResult> callable = getCallable(martini);
+		return callable.call();
+	}
+
+	protected Callable<MartiniResult> getCallable(Martini martini) {
+		ConfigurableApplicationContext springContext = SamplerContext.getSpringApplicationContext();
+		MartiniCallable callable = new MartiniCallable(martini);
+		AutowireCapableBeanFactory beanFactory = springContext.getAutowireCapableBeanFactory();
+		beanFactory.autowireBean(callable);
+		beanFactory.initializeBean(callable, callable.getClass().getName());
+		return callable;
+	}
+
+	protected void setSubResults(SampleResult parent, MartiniResult martiniResult) {
+		List<StepResult> stepResults = martiniResult.getStepResults();
+		stepResults.stream().map(this::getSubResult).forEach(parent::addSubResult);
+	}
+
+	protected SampleResult getSubResult(StepResult stepResult) {
+		SampleResult subResult = new SampleResult();
+		setLabel(subResult, stepResult);
+		setExecutionTime(subResult, stepResult);
+		setSuccessful(subResult, stepResult);
+		return subResult;
+	}
+
+	protected void setLabel(SampleResult subResult, StepResult stepResult) {
+		Step step = stepResult.getStep();
+		String keyword = step.getKeyword();
+		String text = step.getText();
+		String label = String.format("%s %s", keyword, text);
+		subResult.setSampleLabel(label);
+	}
+
+	protected void setExecutionTime(SampleResult subResult, StepResult stepResult) {
+		stepResult.getExecutionTime(TimeUnit.MILLISECONDS).ifPresent(elapsed -> {
+			if (subResult.isStampedAtStart()) {
+				stepResult.getStartTimestamp()
+					.ifPresent(timestamp -> subResult.setStampAndTime(timestamp, elapsed));
+			}
+			else {
+				stepResult.getEndTimestamp()
+					.ifPresent(timestamp -> subResult.setStampAndTime(timestamp, elapsed));
+			}
+		});
+	}
+
+	protected void setSuccessful(SampleResult subResult, StepResult stepResult) {
+		Status status = stepResult.getStatus().orElse(null);
+		subResult.setSuccessful(Status.PASSED == status);
+	}
+
+	protected void setSuccessful(SampleResult result, MartiniResult martiniResult) {
+		Status status = martiniResult.getStatus().orElse(null);
+		result.setSuccessful(Status.PASSED == status);
+	}
 
 	@Override
 	protected void beginTearDown() throws Exception {

@@ -26,6 +26,8 @@ import org.slf4j.cal10n.LocLogger;
 
 import com.google.common.base.Throwables;
 
+import guru.qas.martini.Messages;
+
 @SuppressWarnings("WeakerAccess")
 public class DefaultExceptionReporter implements ExceptionReporter {
 

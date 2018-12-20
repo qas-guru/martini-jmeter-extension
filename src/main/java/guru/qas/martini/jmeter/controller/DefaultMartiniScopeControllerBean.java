@@ -25,7 +25,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Configurable;
 
 import ch.qos.cal10n.IMessageConveyor;
-import guru.qas.martini.jmeter.Messages;
+import guru.qas.martini.Messages;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
 

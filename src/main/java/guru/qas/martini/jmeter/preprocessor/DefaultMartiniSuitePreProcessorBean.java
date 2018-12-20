@@ -27,8 +27,8 @@ import org.springframework.beans.factory.annotation.Configurable;
 import com.google.common.util.concurrent.Monitor;
 
 import ch.qos.cal10n.IMessageConveyor;
+import guru.qas.martini.Messages;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static guru.qas.martini.jmeter.preprocessor.DefaultMartiniSuitePreProcesorBeanMessages.*;

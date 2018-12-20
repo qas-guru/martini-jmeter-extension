@@ -37,6 +37,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import guru.qas.martini.Messages;
+
 import static com.google.common.base.Preconditions.*;
 import static guru.qas.martini.jmeter.DefaultTestBeanFactoryMessages.*;
 

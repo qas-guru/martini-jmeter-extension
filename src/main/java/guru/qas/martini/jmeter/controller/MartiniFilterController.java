@@ -45,8 +45,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Striped;
 
 import guru.qas.martini.Martini;
+import guru.qas.martini.Messages;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.jmeter.Messages;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 

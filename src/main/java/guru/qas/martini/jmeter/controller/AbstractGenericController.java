@@ -28,10 +28,10 @@ import org.slf4j.cal10n.LocLogger;
 import org.slf4j.cal10n.LocLoggerFactory;
 
 import ch.qos.cal10n.IMessageConveyor;
+import guru.qas.martini.Messages;
 import guru.qas.martini.ResourceBundleMessageFunction;
 import guru.qas.martini.jmeter.DefaultExceptionReporter;
 import guru.qas.martini.jmeter.ExceptionReporter;
-import guru.qas.martini.jmeter.Messages;
 
 import static guru.qas.martini.jmeter.controller.AbstractGenericControllerMessages.*;
 
