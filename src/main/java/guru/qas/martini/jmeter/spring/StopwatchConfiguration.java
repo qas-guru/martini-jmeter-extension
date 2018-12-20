@@ -16,11 +16,10 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.spring;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-
-import com.google.common.base.Stopwatch;
 
 import guru.qas.martini.annotation.ScenarioScoped;
 
@@ -28,9 +27,9 @@ import guru.qas.martini.annotation.ScenarioScoped;
 @Lazy
 public class StopwatchConfiguration {
 
-	@Bean(name = "jmeterStopwatch")
+	@Bean(name = "jmeterStopWatch")
 	@ScenarioScoped
-	Stopwatch getJMeterStopwatch() {
-		return Stopwatch.createUnstarted();
+	StopWatch getJMeterStopwatch() {
+		return new StopWatch();
 	}
 }

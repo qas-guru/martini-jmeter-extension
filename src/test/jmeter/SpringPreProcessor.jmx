@@ -53,7 +53,7 @@
         </collectionProp>
       </guru.qas.martini.jmeter.preprocessor.SpringPreProcessor>
       <hashTree/>
-      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Duplicate Simple Configuration" enabled="false">
+      <guru.qas.martini.jmeter.preprocessor.SpringPreProcessor guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.preprocessor.SpringPreProcessor" testname="Duplicate Simple Configuration" enabled="true">
         <collectionProp name="environmentVariables"/>
         <collectionProp name="configurationLocations">
           <stringProp name="1055833234">springConfiguration.xml</stringProp>
