@@ -44,15 +44,12 @@
           <boolProp name="unimplementedStepsFatal">true</boolProp>
         </guru.qas.martini.jmeter.controller.MartiniFilterController>
         <hashTree>
-          <guru.qas.martini.jmeter.controller.MartiniScopeController guiclass="TestBeanGUI" testclass="guru.qas.martini.jmeter.controller.MartiniScopeController" testname="Custom Martini Scope Controller" enabled="true"/>
-          <hashTree>
-            <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler" enabled="true">
-              <boolProp name="displayJMeterProperties">false</boolProp>
-              <boolProp name="displayJMeterVariables">true</boolProp>
-              <boolProp name="displaySystemProperties">false</boolProp>
-            </DebugSampler>
-            <hashTree/>
-          </hashTree>
+          <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler" enabled="true">
+            <boolProp name="displayJMeterProperties">false</boolProp>
+            <boolProp name="displayJMeterVariables">true</boolProp>
+            <boolProp name="displaySystemProperties">false</boolProp>
+          </DebugSampler>
+          <hashTree/>
         </hashTree>
       </hashTree>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">

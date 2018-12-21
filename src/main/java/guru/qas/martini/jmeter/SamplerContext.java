@@ -54,9 +54,14 @@ public abstract class SamplerContext {
 		set(MARTINI_RESULT, r);
 	}
 
-	protected static void set(String key, @Nullable Object value) {
+	protected static void set(String key, Object value) {
 		Map<String, Object> samplerContext = getSamplerContext();
-		samplerContext.put(key, value);
+		if (null == value) {
+			samplerContext.remove(key);
+		}
+		else {
+			samplerContext.put(key, value);
+		}
 	}
 
 	protected static Map<String, Object> getSamplerContext() {

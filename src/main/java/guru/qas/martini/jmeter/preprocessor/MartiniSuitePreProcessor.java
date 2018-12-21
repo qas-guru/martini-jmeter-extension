@@ -17,35 +17,28 @@ limitations under the License.
 package guru.qas.martini.jmeter.preprocessor;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.Nonnull;
 
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import guru.qas.martini.event.BeforeSuiteEvent;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.jmeter.SamplerContext;
 import guru.qas.martini.jmeter.Variables;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @SuppressWarnings("WeakerAccess")
 @Configurable
 public class MartiniSuitePreProcessor extends AbstractPreProcessor
-	implements Serializable, Cloneable, TestBean, ApplicationListener<BeforeSuiteEvent> {
+	implements Serializable, Cloneable, TestBean {
 
 	private static final long serialVersionUID = -3444643765535879540L;
 
 	// Shared.
 	protected transient MartiniSuitePreProcessorBean bean;
-	protected transient AtomicReference<SuiteIdentifier> suiteIdentifierRef;
 
 	@Autowired
 	protected void set(MartiniSuitePreProcessorBean bean) {
@@ -63,7 +56,6 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 
 	@Override
 	protected void completeSetup() {
-		suiteIdentifierRef = new AtomicReference<>(null);
 		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
 		AutowireCapableBeanFactory beanFactory = springContext.getAutowireCapableBeanFactory();
 		beanFactory.autowireBean(this);
@@ -79,17 +71,9 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 	}
 
 	@Override
-	public void onApplicationEvent(@Nonnull BeforeSuiteEvent event) {
-		checkNotNull(event, "null BeforeSuiteEvent");
-		SuiteIdentifier suiteIdentifier = event.getPayload();
-		if (suiteIdentifierRef.compareAndSet(null, suiteIdentifier)) {
-			Variables.set(suiteIdentifier);
-		}
-	}
-
-	@Override
 	public void process() {
-		SuiteIdentifier suiteIdentifier = suiteIdentifierRef.get();
+		ConfigurableApplicationContext springContext = Variables.getSpringApplicationContext();
+		SuiteIdentifier suiteIdentifier = springContext.getBean(SuiteIdentifier.class);
 		SamplerContext.set(suiteIdentifier);
 	}
 
@@ -97,6 +81,5 @@ public class MartiniSuitePreProcessor extends AbstractPreProcessor
 	protected void beginTearDown() {
 		bean.publishAfterSuite();
 		bean = null;
-		suiteIdentifierRef.set(null);
 	}
 }
