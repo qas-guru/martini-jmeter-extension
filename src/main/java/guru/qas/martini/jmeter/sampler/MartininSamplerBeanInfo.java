@@ -19,9 +19,9 @@ package guru.qas.martini.jmeter.sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniSamplerBeanInfoSupport extends BeanInfoSupport {
+public class MartininSamplerBeanInfo extends BeanInfoSupport {
 
-	public MartiniSamplerBeanInfoSupport() {
+	public MartininSamplerBeanInfo() {
 		super(MartiniSampler.class);
 	}
 }

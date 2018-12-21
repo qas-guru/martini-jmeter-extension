@@ -16,8 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.jmeter.spring.controller;
 
-import java.io.Serializable;
-
 import org.apache.jmeter.control.GenericController;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;

@@ -51,7 +51,7 @@ public class MartiniSampler extends AbstractGenericSampler
 
 	@Override
 	protected BeanInfoSupport getBeanInfoSupport() throws Exception {
-		return new MartiniSamplerBeanInfoSupport();
+		return new MartininSamplerBeanInfo();
 	}
 
 	@Override
