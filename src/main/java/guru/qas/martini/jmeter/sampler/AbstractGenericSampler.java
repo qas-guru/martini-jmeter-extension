@@ -77,6 +77,7 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		return interrupted.compareAndSet(false, true);
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	protected boolean isInterrupted() {
 		return interrupted.get() || Thread.currentThread().isInterrupted();
 	}
@@ -154,7 +155,7 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		SampleResult result = new SampleResult();
 		result.setSampleLabel(super.getName());
 		try {
-			checkState(!isInterrupted(), Messages.getMessage(INTERRUPTED));
+			assertNotInterrupted();
 			completeSample(result);
 		}
 		catch (Exception e) {
@@ -163,6 +164,10 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 			result.setResponseMessage(stacktrace);
 		}
 		return result;
+	}
+
+	protected void assertNotInterrupted() {
+		checkState(!isInterrupted(), Messages.getMessage(INTERRUPTED));
 	}
 
 	protected abstract void completeSample(SampleResult result) throws Exception;

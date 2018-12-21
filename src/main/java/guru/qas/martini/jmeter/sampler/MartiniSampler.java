@@ -64,10 +64,12 @@ public class MartiniSampler extends AbstractGenericSampler
 		setLabel(result, martini);
 
 		Callable<MartiniResult> callable = getCallable(martini);
+		super.assertNotInterrupted();
 		result.sampleStart();
 		MartiniResult martiniResult = callable.call();
 		result.sampleEnd();
 
+		super.assertNotInterrupted();
 		setSubResults(result, martiniResult);
 		setSuccessful(result, martiniResult);
 	}
