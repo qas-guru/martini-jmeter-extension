@@ -63,7 +63,11 @@ public class MartiniSampler extends AbstractGenericSampler
 		Martini martini = SamplerContext.getMartini();
 		setLabel(result, martini);
 
-		MartiniResult martiniResult = getMartiniResult(martini);
+		Callable<MartiniResult> callable = getCallable(martini);
+		result.sampleStart();
+		MartiniResult martiniResult = callable.call();
+		result.sampleEnd();
+
 		setSubResults(result, martiniResult);
 		setSuccessful(result, martiniResult);
 	}
@@ -71,11 +75,6 @@ public class MartiniSampler extends AbstractGenericSampler
 	protected void setLabel(SampleResult result, Martini martini) {
 		String scenarioName = martini.getScenarioName();
 		result.setSampleLabel(scenarioName);
-	}
-
-	protected MartiniResult getMartiniResult(Martini martini) throws Exception {
-		Callable<MartiniResult> callable = getCallable(martini);
-		return callable.call();
 	}
 
 	protected Callable<MartiniResult> getCallable(Martini martini) {
@@ -89,7 +88,9 @@ public class MartiniSampler extends AbstractGenericSampler
 
 	protected void setSubResults(SampleResult parent, MartiniResult martiniResult) {
 		List<StepResult> stepResults = martiniResult.getStepResults();
-		stepResults.stream().map(this::getSubResult).forEach(parent::addSubResult);
+		stepResults.stream()
+			.map(this::getSubResult)
+			.forEach(subResult -> parent.addSubResult(subResult, false));
 	}
 
 	protected SampleResult getSubResult(StepResult stepResult) {
@@ -102,8 +103,8 @@ public class MartiniSampler extends AbstractGenericSampler
 
 	protected void setLabel(SampleResult subResult, StepResult stepResult) {
 		Step step = stepResult.getStep();
-		String keyword = step.getKeyword();
-		String text = step.getText();
+		String keyword = step.getKeyword().trim();
+		String text = step.getText().trim();
 		String label = String.format("%s %s", keyword, text);
 		subResult.setSampleLabel(label);
 	}
