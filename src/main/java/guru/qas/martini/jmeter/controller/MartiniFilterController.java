@@ -32,6 +32,8 @@ import javax.annotation.Nullable;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
+
+import org.apache.jmeter.samplers.SampleMonitor;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
@@ -58,7 +60,7 @@ import static guru.qas.martini.jmeter.controller.MartiniFilterControllerMessages
  */
 @SuppressWarnings("WeakerAccess")
 public class MartiniFilterController extends AbstractGenericController
-	implements Serializable, Cloneable, TestBean, TestStateListener, LoopIterationListener {
+	implements Serializable, Cloneable, TestBean, TestStateListener, LoopIterationListener, SampleMonitor {
 
 	private static final long serialVersionUID = 4631820992406669501L;
 
@@ -226,7 +228,6 @@ public class MartiniFilterController extends AbstractGenericController
 	protected void setMartini(@Nullable Martini martini) {
 		this.martini = martini;
 		Variables.set(martini);
-		SamplerContext.set(martini);
 	}
 
 	@Override
@@ -263,6 +264,15 @@ public class MartiniFilterController extends AbstractGenericController
 			setDone(true);
 		}
 		return martini;
+	}
+
+	@Override
+	public void sampleStarting(Sampler sampler) {
+		SamplerContext.set(martini);
+	}
+
+	@Override
+	public void sampleEnded(Sampler sampler) {
 	}
 
 	@Override

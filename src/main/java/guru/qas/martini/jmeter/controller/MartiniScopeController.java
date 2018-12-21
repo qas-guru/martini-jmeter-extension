@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.engine.event.LoopIterationListener;
+import org.apache.jmeter.samplers.SampleMonitor;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testelement.TestElement;
@@ -65,7 +66,8 @@ import guru.qas.martini.tag.Categories;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
-public class MartiniScopeController extends AbstractGenericController implements LoopIterationListener {
+public class MartiniScopeController extends AbstractGenericController
+	implements LoopIterationListener, SampleMonitor {
 
 	// Shared.
 	protected MartiniScopeControllerBean delegate;
@@ -125,7 +127,6 @@ public class MartiniScopeController extends AbstractGenericController implements
 		delegate.publishAfterScenario(martiniResult);
 		martiniResult = null;
 		Variables.set((MartiniResult) null);
-		SamplerContext.set((MartiniResult) null);
 	}
 
 	@Override
@@ -145,7 +146,6 @@ public class MartiniScopeController extends AbstractGenericController implements
 		delegate.publishBeforeScenario(result);
 		this.martiniResult = result;
 		Variables.set(martiniResult);
-		SamplerContext.set(martiniResult);
 	}
 
 	protected Martini getSyntheticMartini() {
@@ -242,6 +242,15 @@ public class MartiniScopeController extends AbstractGenericController implements
 			.collect(Collectors.toList());
 
 		return new Pickle(name, language, pickleSteps, ImmutableList.of(), ImmutableList.of(location));
+	}
+
+	@Override
+	public void sampleStarting(Sampler sampler) {
+		SamplerContext.set(martiniResult);
+	}
+
+	@Override
+	public void sampleEnded(Sampler sampler) {
 	}
 
 	@Override

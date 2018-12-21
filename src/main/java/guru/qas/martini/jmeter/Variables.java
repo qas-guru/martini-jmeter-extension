@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import org.apache.jmeter.threads.JMeterContext;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.google.common.collect.ImmutableMap;
@@ -41,7 +40,7 @@ public abstract class Variables {
 	protected static final Assertions ASSERTIONS = new Assertions(JMeterVariables.class.getSimpleName());
 
 	public static final String MARTINI = Martini.class.getName();
-	public static final String SPRING_APPLICATION_CONTEXT = ApplicationContext.class.getName();
+	public static final String SPRING_APPLICATION_CONTEXT = ConfigurableApplicationContext.class.getName();
 	public static final String SUITE_IDENTIFIER = SuiteIdentifier.class.getName();
 	public static final String MARTINI_RESULT = MartiniResult.class.getName();
 
@@ -64,9 +63,14 @@ public abstract class Variables {
 		set(MARTINI_RESULT, r);
 	}
 
-	protected static void set(String key, Object value) {
+	protected static void set(String key, @Nullable Object value) {
 		JMeterVariables variables = getVariables();
-		variables.putObject(key, value);
+		if (null == value) {
+			variables.remove(key);
+		}
+		else {
+			variables.putObject(key, value);
+		}
 	}
 
 	protected static JMeterVariables getVariables() {

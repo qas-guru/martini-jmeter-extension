@@ -46,9 +46,8 @@ import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMEN
 /**
  * Manages a Spring ClassPathXmlApplicationContext, making the context accessible to setup and test threads
  * through JMeterVariables as SpringPreProcessor.THREAD_CONTEXT_VARIABLE "martini.spring.application.context".
- * It also makes the ClassPathXmlApplicationContext available to Samplers via the SamplerContext map as
- * SpringPreProcessor.SAMPLER_CONTEXT_KEY "martini.spring.application.context".
- * "
+ * It also makes the ConfigurableApplicationContext available to Samplers via the SamplerContext map under
+ * key specified by Variables.SPRING_APPLICATION_CONTEXT.
  * <p>
  * One enabled SpringPreProcessor should be configured at the top-level of the test plan before
  * any ThreadGroup configurations.

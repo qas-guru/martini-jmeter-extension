@@ -34,7 +34,8 @@ import static guru.qas.martini.jmeter.controller.DefaultMartiniScopeControllerBe
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
-public class DefaultMartiniScopeControllerBean implements InitializingBean, MartiniScopeControllerBean {
+public class DefaultMartiniScopeControllerBean
+	implements InitializingBean, MartiniScopeControllerBean {
 
 	private final EventManager eventManager;
 	private final ThreadLocal<MartiniResult> threadLocal;
