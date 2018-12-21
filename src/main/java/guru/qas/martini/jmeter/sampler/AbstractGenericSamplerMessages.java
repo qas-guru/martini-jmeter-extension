@@ -25,6 +25,7 @@ import ch.qos.cal10n.LocaleData;
 public enum AbstractGenericSamplerMessages {
 	STARTING,
 	ERROR_IN_START_UP,
+	INTERRUPTED,
 	GUI_ERROR_TITLE,
 	ERROR_IN_TEAR_DOWN
 }

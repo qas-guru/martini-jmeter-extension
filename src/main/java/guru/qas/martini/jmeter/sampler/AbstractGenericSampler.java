@@ -17,10 +17,12 @@ limitations under the License.
 package guru.qas.martini.jmeter.sampler;
 
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.samplers.Entry;
+import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.BeanInfoSupport;
 import org.apache.jmeter.testbeans.TestBean;
@@ -37,11 +39,12 @@ import guru.qas.martini.ResourceBundleMessageFunction;
 import guru.qas.martini.jmeter.DefaultExceptionReporter;
 import guru.qas.martini.jmeter.ExceptionReporter;
 
+import static com.google.common.base.Preconditions.checkState;
 import static guru.qas.martini.jmeter.sampler.AbstractGenericSamplerMessages.*;
 
 @SuppressWarnings({"WeakerAccess", "Duplicates"})
 public abstract class AbstractGenericSampler extends AbstractSampler
-	implements Serializable, Cloneable, TestBean, TestStateListener {
+	implements Serializable, Cloneable, TestBean, TestStateListener, Interruptible {
 
 	private static final long serialVersionUID = -4371566971973617334L;
 
@@ -52,8 +55,30 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 	protected transient String host;
 	protected transient ExceptionReporter reporter;
 
+	// Per-thread.
+	protected transient AtomicBoolean interrupted;
+
 	public AbstractGenericSampler() {
 		super();
+		init();
+	}
+
+	public Object readResolve() {
+		init();
+		return this;
+	}
+
+	protected void init() {
+		interrupted = new AtomicBoolean(false);
+	}
+
+	@Override
+	public boolean interrupt() {
+		return interrupted.compareAndSet(false, true);
+	}
+
+	protected boolean isInterrupted() {
+		return interrupted.get() || Thread.currentThread().isInterrupted();
 	}
 
 	@Override
@@ -72,10 +97,12 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		try {
 			setUpLogger();
 			setUpExceptionReporter();
-			logger.info(STARTING, getName());
-			setUpBeanInfoSupport();
-			setUpMessageFunction();
-			completeSetup();
+			if (!isInterrupted()) {
+				logger.info(STARTING, getName());
+				setUpBeanInfoSupport();
+				setUpMessageFunction();
+				completeSetup();
+			}
 		}
 		catch (Exception e) {
 			JMeterContextService.endTest();
@@ -127,6 +154,7 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		SampleResult result = new SampleResult();
 		result.setSampleLabel(super.getName());
 		try {
+			checkState(!isInterrupted(), Messages.getMessage(INTERRUPTED));
 			completeSample(result);
 		}
 		catch (Exception e) {
@@ -161,6 +189,7 @@ public abstract class AbstractGenericSampler extends AbstractSampler
 		beanInfoSupport = null;
 		reporter = null;
 		host = null;
+		interrupted.set(false);
 	}
 
 	protected abstract void beginTearDown() throws Exception;
