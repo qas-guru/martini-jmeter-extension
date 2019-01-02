@@ -10,18 +10,20 @@
 	</properties>
 
 	<body>
-		<release version="4.2" date="2018-12-06" description="Release 4.2 for Java 11">
+		<release version="4.2" date="2019-01-02" description="Release 4.2 for Java 11">
+			<action dev="pcurich" type="update">
+				Updating Variables utility.
+			</action>
 			<action dev="pcurich" type="add">
-				Removing directory assembly.
 				Adding new Spring PreProcessor.
-				<!--Adding new Martini Suite PreProcessor.-->
-				<!--Adding new Martini Filter Controller.-->
-				<!--Adding new Martini Scope Controller.-->
-				<!--Adding new Martini Sampler.-->
-				<!--Adding new Bean Sampler.-->
+				Adding new Scope Controller.
+				Adding new Filter Controller.
+				Adding new Bean Sampler.
+				Adding new Martini Sampler.
 			</action>
 			<action dev="pcurich" type="remove">
-				Removing old code.
+				Removing directory assembly.
+				Removing deprecated code.
 			</action>
 		</release>
 		<release version="4.1.0.1" date="2018-12-08" description="Release 4.1.0.1 for Java 11">
