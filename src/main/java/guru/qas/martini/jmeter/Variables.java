@@ -94,7 +94,7 @@ public abstract class Variables {
 
 	@Nonnull
 	protected static <T> T getVariable(String key, Class<T> type) {
-		Map<String, Object> index = asMap();
+		Map<String, Object> index = getAsMap();
 		ASSERTIONS.assertSet(index, key);
 		Object o = index.get(key);
 		ASSERTIONS.assertNotNull(key, o);
@@ -103,7 +103,7 @@ public abstract class Variables {
 	}
 
 	protected static <T> Optional<T> getOptionalVariable(String key, Class<T> type) {
-		Map<String, Object> index = asMap();
+		Map<String, Object> index = getAsMap();
 
 		T variable = null;
 		if (index.containsKey(key)) {
@@ -115,7 +115,7 @@ public abstract class Variables {
 		return Optional.ofNullable(variable);
 	}
 
-	public static ImmutableMap<String, Object> asMap() {
+	public static ImmutableMap<String, Object> getAsMap() {
 		JMeterVariables variables = getVariables();
 		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
 		variables.getIterator().forEachRemaining(builder::put);
