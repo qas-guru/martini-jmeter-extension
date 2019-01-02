@@ -115,7 +115,7 @@ public abstract class Variables {
 		return Optional.ofNullable(variable);
 	}
 
-	protected static ImmutableMap<String, Object> getVariablesMap() {
+	public static ImmutableMap<String, Object> getVariablesMap() {
 		JMeterVariables variables = getVariables();
 		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
 		variables.getIterator().forEachRemaining(builder::put);
