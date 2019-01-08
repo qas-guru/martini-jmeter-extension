@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="4.2.1" date="2019-01-08" description="Release 4.2.1">
+			<action dev="pcurich" type="remove">
+				Removing StopWatch configuration.
+			</action>
+		</release>
 		<release version="4.2" date="2019-01-02" description="Release 4.2 for Java 11">
 			<action dev="pcurich" type="update">
 				Updating Variables utility.
