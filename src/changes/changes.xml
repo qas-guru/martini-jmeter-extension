@@ -11,6 +11,13 @@
 
 	<body>
 		<release version="4.2.1" date="2019-01-08" description="Release 4.2.1">
+			<action dev="pcurich" type="update">
+				Updating Martini core version.
+			</action>
+			<action dev="pcurich" type="update">
+				guru.qas.martini.jmeter.controller.MartiniFilterController will use a SecureRandom when shuffle
+				is selected but no random seed is provided.
+			</action>
 			<action dev="pcurich" type="remove">
 				Removing StopWatch configuration.
 			</action>

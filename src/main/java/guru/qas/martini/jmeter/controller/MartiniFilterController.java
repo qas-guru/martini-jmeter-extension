@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Penny Rohr Curich
+Copyright 2018-2019 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ limitations under the License.
 package guru.qas.martini.jmeter.controller;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -197,9 +198,7 @@ public class MartiniFilterController extends AbstractGenericController
 
 	protected Random getRandom() {
 		Long seed = getRandomSeed();
-		String message = "";
-		checkNotNull(seed, message);
-		return new Random(seed);
+		return null == seed ? new SecureRandom() : new Random(seed);
 	}
 
 	protected List<Martini> getUnimplemented(Collection<Martini> martinis) {
