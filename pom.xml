@@ -9,7 +9,7 @@
 
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-jmeter</artifactId>
-	<version>4.2.1-SNAPSHOT</version>
+	<version>4.2.1</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -225,7 +225,7 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>4.1.2-SNAPSHOT</version>
+			<version>4.1.2</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
